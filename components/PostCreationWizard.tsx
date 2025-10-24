@@ -1,0 +1,311 @@
+// Fix: Implemented the PostCreationWizard component which was previously missing.
+import React, { useState, useRef } from 'react';
+import type { UserSettings, DraftPost } from '../types';
+import { generatePostIdeas, generateDraftPost, generatePostImage, enhanceImage } from '../services/geminiService';
+import Loader from './Loader';
+import SparklesIcon from './icons/SparklesIcon';
+import WandIcon from './icons/WandIcon';
+import ClipboardListIcon from './icons/ClipboardListIcon';
+import PostIcon from './icons/PostIcon';
+import UploadIcon from './icons/UploadIcon';
+
+interface PostCreationWizardProps {
+  settings: UserSettings;
+  onAddToDrafts: (draft: DraftPost) => void;
+  onPublish: (draft: DraftPost) => void;
+  onClose: () => void;
+}
+
+type WizardStep = 'topic' | 'ideas' | 'draft';
+
+const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAddToDrafts, onPublish, onClose }) => {
+  const [step, setStep] = useState<WizardStep>('topic');
+  const [topic, setTopic] = useState('');
+  const [ideas, setIdeas] = useState<string[]>([]);
+  const [generatedDraft, setGeneratedDraft] = useState<Omit<DraftPost, 'id'>>({ title: '', text: '', imageUrl: undefined });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [enhancementPrompt, setEnhancementPrompt] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleGenerateIdeas = async () => {
+    if (!topic) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await generatePostIdeas(topic, settings);
+      setIdeas(result);
+      setStep('ideas');
+    } catch (err) {
+      setError('Failed to generate ideas. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectIdea = async (idea: string) => {
+    setIsLoading(true);
+    setError(null);
+    setGeneratedDraft({ title: '', text: '', imageUrl: undefined });
+    setStep('draft');
+    try {
+      const draftContent = await generateDraftPost(idea, settings);
+      setGeneratedDraft(draftContent);
+    } catch (err) {
+      setError('Failed to generate draft. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDraftChange = (field: 'title' | 'text', value: string) => {
+    setGeneratedDraft(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleGenerateImage = async () => {
+    if (!generatedDraft.text) return;
+    setIsImageLoading(true);
+    setError(null);
+    try {
+        const imageUrl = await generatePostImage(generatedDraft.text);
+        setGeneratedDraft(prev => ({...prev, imageUrl}));
+    } catch (err) {
+        setError('Failed to generate image. Please try again.');
+    } finally {
+        setIsImageLoading(false);
+    }
+  };
+
+  const handleEnhanceImage = async () => {
+    if (!generatedDraft.imageUrl || !enhancementPrompt) return;
+    setIsImageLoading(true);
+    setError(null);
+    try {
+        const newImageUrl = await enhanceImage(generatedDraft.imageUrl, enhancementPrompt);
+        setGeneratedDraft(prev => ({...prev, imageUrl: newImageUrl}));
+        setEnhancementPrompt('');
+    } catch (err) {
+        setError('Failed to enhance image. Please try again.');
+    } finally {
+        setIsImageLoading(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGeneratedDraft(prev => ({ ...prev, imageUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
+  const handleAddToDrafts = () => {
+    const newDraft: DraftPost = {
+      id: new Date().toISOString(),
+      ...generatedDraft
+    };
+    onAddToDrafts(newDraft);
+    onClose();
+  };
+
+  const handlePublish = async () => {
+    setIsPublishing(true);
+    const postToPublish: DraftPost = {
+      id: new Date().toISOString(),
+      ...generatedDraft
+    };
+    // The onPublish function from App.tsx now handles all logic including errors
+    await onPublish(postToPublish);
+    setIsPublishing(false);
+    onClose();
+  };
+
+  const resetWizard = () => {
+    setStep('topic');
+    setTopic('');
+    setIdeas([]);
+    setGeneratedDraft({ title: '', text: '', imageUrl: undefined });
+    setError(null);
+  };
+  
+  const renderTopicStep = () => (
+    <div>
+        <h3 className="text-lg font-semibold text-content mb-2">What's on your mind?</h3>
+        <p className="text-sm text-content-secondary mb-4">Enter a topic, a question, or a simple idea, and the AI will generate post concepts for you.</p>
+        <textarea
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g., The future of AI in product management..."
+            className="w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+            rows={4}
+        />
+        <div className="mt-4 flex justify-end">
+            <button
+                onClick={handleGenerateIdeas}
+                disabled={!topic || isLoading}
+                className="flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-primary hover:bg-brand-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-secondary disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+                {isLoading ? <Loader /> : <SparklesIcon className="w-5 h-5 mr-2" />}
+                Generate Ideas
+            </button>
+        </div>
+    </div>
+  );
+
+  const renderIdeasStep = () => (
+    <div>
+      <h3 className="text-lg font-semibold text-content mb-2">Choose an Idea</h3>
+      <p className="text-sm text-content-secondary mb-4">Select one of the AI-generated concepts to develop it into a full post.</p>
+      <div className="space-y-3">
+        {ideas.map((idea, index) => (
+          <button
+            key={index}
+            onClick={() => handleSelectIdea(idea)}
+            className="w-full text-left p-4 bg-base-100 border border-base-300 rounded-lg hover:bg-base-200 hover:border-brand-primary transition-all duration-200 flex items-center space-x-3"
+          >
+             <WandIcon className="w-5 h-5 text-brand-primary flex-shrink-0" />
+            <span className="flex-grow">{idea}</span>
+          </button>
+        ))}
+      </div>
+       <div className="mt-6 flex justify-between items-center">
+            <button onClick={resetWizard} className="text-sm font-semibold text-brand-primary hover:text-brand-secondary">
+                &larr; Start Over
+            </button>
+        </div>
+    </div>
+  );
+
+  const renderDraftStep = () => (
+    <div>
+       <h3 className="text-lg font-semibold text-content mb-2">Review & Refine Your Draft</h3>
+       <p className="text-sm text-content-secondary mb-4">Make any final adjustments to the title, text, and image before saving or publishing.</p>
+       {isLoading && !generatedDraft.title ? (
+            <div className="flex flex-col items-center justify-center h-64 bg-base-200 rounded-lg">
+                <Loader className="h-8 w-8 text-brand-primary" />
+                <p className="mt-4 text-content-secondary">Generating your masterpiece...</p>
+            </div>
+       ) : (
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+            <div>
+              <label htmlFor="draftTitle" className="block text-sm font-medium text-content-secondary">Title</label>
+              <input type="text" id="draftTitle" value={generatedDraft.title} onChange={(e) => handleDraftChange('title', e.target.value)} className="mt-1 block w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm font-semibold focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
+            </div>
+            <div>
+              <label htmlFor="draftText" className="block text-sm font-medium text-content-secondary">Text</label>
+              <textarea id="draftText" value={generatedDraft.text} onChange={(e) => handleDraftChange('text', e.target.value)} rows={8} className="mt-1 block w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
+            </div>
+            
+            {/* Image Section */}
+            <div>
+              <label className="block text-sm font-medium text-content-secondary mb-2">Image</label>
+              {isImageLoading ? (
+                 <div className="flex items-center justify-center h-48 bg-base-200 rounded-lg"><Loader className="h-6 w-6 text-brand-primary" /></div>
+              ) : generatedDraft.imageUrl ? (
+                <div className="space-y-3">
+                  <img src={generatedDraft.imageUrl} alt="Post visual" className="w-full h-auto max-h-80 object-cover rounded-md" />
+                  <div className="flex items-center gap-2">
+                      <input type="text" value={enhancementPrompt} onChange={(e) => setEnhancementPrompt(e.target.value)} placeholder="e.g., make it more futuristic" className="flex-grow px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
+                      <button onClick={handleEnhanceImage} disabled={!enhancementPrompt || isImageLoading} className="flex-shrink-0 flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-primary hover:bg-brand-secondary focus:outline-none disabled:bg-gray-400">
+                          <WandIcon className="w-4 h-4 mr-2" /> Enhance
+                      </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                      <button onClick={handleGenerateImage} className="text-xs btn btn-sm btn-outline">Regenerate</button>
+                      <button onClick={handleUploadClick} className="text-xs btn btn-sm btn-outline">Replace Image</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  <button onClick={handleGenerateImage} className="w-1/2 flex items-center justify-center gap-2 p-4 border-2 border-dashed border-base-300 rounded-lg hover:border-brand-primary">
+                    <SparklesIcon className="w-5 h-5 text-brand-primary" /> Generate with AI
+                  </button>
+                  <button onClick={handleUploadClick} className="w-1/2 flex items-center justify-center gap-2 p-4 border-2 border-dashed border-base-300 rounded-lg hover:border-brand-primary">
+                    <UploadIcon className="w-5 h-5 text-brand-primary" /> Upload Your Own
+                  </button>
+                </div>
+              )}
+               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            </div>
+        </div>
+       )}
+       {!isLoading && generatedDraft.title && (
+           <div className="mt-6 pt-4 border-t border-base-300 flex flex-col sm:flex-row justify-end gap-3">
+               <button 
+                onClick={handleAddToDrafts}
+                disabled={isPublishing}
+                className="flex items-center justify-center px-4 py-2 border border-base-300 text-sm font-medium rounded-md shadow-sm text-content bg-base-100 hover:bg-base-200 focus:outline-none disabled:bg-gray-400"
+               >
+                   <ClipboardListIcon className="w-5 h-5 mr-2" />
+                   Add to Drafts
+               </button>
+               <button 
+                onClick={handlePublish}
+                disabled={isPublishing}
+                className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:bg-gray-400"
+               >
+                   {isPublishing ? (
+                       <>
+                           <Loader className="w-5 h-5 mr-2"/>
+                           Publishing...
+                       </>
+                   ) : (
+                       <>
+                           <PostIcon className="w-5 h-5 mr-2" />
+                           Publish Now
+                       </>
+                   )}
+               </button>
+           </div>
+       )}
+       <div className="mt-4 flex justify-between items-center">
+            <button onClick={() => setStep('ideas')} className="text-sm font-semibold text-brand-primary hover:text-brand-secondary disabled:text-gray-400" disabled={isLoading}>
+                &larr; Back to Ideas
+            </button>
+        </div>
+    </div>
+  );
+
+  const renderStepContent = () => {
+    switch(step) {
+      case 'topic':
+        return renderTopicStep();
+      case 'ideas':
+        return renderIdeasStep();
+      case 'draft':
+        return renderDraftStep();
+      default:
+        return <div>Invalid step</div>;
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
+        <div className="bg-base-100 p-6 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-content flex items-center">
+                    <SparklesIcon className="w-6 h-6 mr-3 text-brand-primary" />
+                    New Post Generator
+                </h2>
+                <button onClick={onClose} className="text-sm font-semibold text-content-secondary hover:text-content">
+                    &times; Close
+                </button>
+            </div>
+            {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert"><p>{error}</p></div>}
+            {renderStepContent()}
+        </div>
+    </div>
+  );
+};
+
+export default PostCreationWizard;

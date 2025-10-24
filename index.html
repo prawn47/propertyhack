@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QUORD.ai: LinkedIn Content Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <style>
+      /* Custom styles for animations and brand colors */
+      :root {
+        --brand-primary: #4F46E5; /* Indigo 600 */
+        --brand-secondary: #4338CA; /* Indigo 700 */
+      }
+      .bg-brand-primary { background-color: var(--brand-primary) !important; }
+      .bg-brand-secondary { background-color: var(--brand-secondary) !important; }
+      .text-brand-primary { color: var(--brand-primary) !important; }
+      .text-brand-secondary { color: var(--brand-secondary) !important; }
+      .hover\:bg-brand-secondary:hover { background-color: var(--brand-secondary) !important; }
+      .hover\:text-brand-secondary:hover { color: var(--brand-secondary) !important; }
+      .focus\:ring-brand-primary:focus { --tw-ring-color: var(--brand-primary) !important; }
+      .focus\:border-brand-primary:focus { border-color: var(--brand-primary) !important; }
+      .focus\:ring-brand-secondary:focus { --tw-ring-color: var(--brand-secondary) !important; }
+      
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+
+      @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0"
+      }
+    }
+    </script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-base-200">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
