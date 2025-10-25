@@ -119,8 +119,8 @@ router.post('/linkedin/post', async (req, res) => {
 
     let imageUrn = null;
 
-    // Upload image if provided (from working app)
-    if (image) {
+    // Upload image if provided (data URL or base64 string)
+    if (image && typeof image === 'string' && image.length > 0) {
       // Step 1: Register upload
       const registerResponse = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
         method: "POST",
@@ -151,8 +151,36 @@ router.post('/linkedin/post', async (req, res) => {
       const uploadUrl = registerData.value.uploadMechanism["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"].uploadUrl;
       imageUrn = registerData.value.asset;
 
-      // Step 2: Upload image (simplified - would need proper image handling)
-      // For now, skip image upload to focus on text posts
+      // Step 2: Upload image bytes
+      let mimeType = 'image/png';
+      let base64Data = image;
+      if (image.startsWith('data:')) {
+        const semiIdx = image.indexOf(';base64,');
+        if (semiIdx > 5) {
+          mimeType = image.substring('data:'.length, semiIdx);
+          base64Data = image.substring(semiIdx + ';base64,'.length);
+        }
+      }
+      // If still contains comma-delimited data URL, take the latter part
+      const commaIdx = base64Data.indexOf(',');
+      if (commaIdx !== -1) {
+        base64Data = base64Data.substring(commaIdx + 1);
+      }
+
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": mimeType,
+        },
+        body: imageBuffer,
+      });
+
+      if (!uploadResponse.ok) {
+        console.error("Image upload failed:", await uploadResponse.text());
+        return res.status(500).json({ error: "Failed to upload image" });
+      }
     }
 
     // Create post - EXACT copy from working app

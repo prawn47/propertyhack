@@ -12,7 +12,6 @@ import Loader from './components/Loader';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import OAuthCallback from './components/OAuthCallback';
-import LinkedInSimple from './components/LinkedInSimple';
 import type { UserSettings, DraftPost, PublishedPost, ScheduledPost, User, AuthState } from './types';
 import * as db from './services/dbService';
 import { postToLinkedIn } from './services/linkedInService';
@@ -506,7 +505,6 @@ const App: React.FC = () => {
         </div>
         <div className="space-y-6">
           <SettingsPanel settings={settings} />
-          <LinkedInSimple />
           <GamificationStats />
           <DashboardSection
             title="Scheduled Posts"
