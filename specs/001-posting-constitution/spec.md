@@ -86,6 +86,8 @@ Users adapt drafts for X and complete posting with minimal friction, including c
 - FR-016: Users MUST be able to schedule a LinkedIn post for a future date/time in their selected time zone.
 - FR-017: Users MUST be able to view, edit (reschedule), and cancel upcoming scheduled posts.
 - FR-018: At the scheduled time, the system MUST either (a) publish the scheduled post automatically when permitted, recording the result in history, or (b) present a prominent in-app prompt to complete publishing manually when platform policy requires user action. The system MUST update scheduled status accordingly.
+  
+  NOTE (v1): Scheduled execution will use an in-app prompt at the scheduled time (no auto-publish). Auto-publish may be considered later behind a feature flag where policy and token scope permit.
 - FR-019: Gamification depth in v1 MUST be limited to streaks and a weekly posting target; badges/levels are documented on the roadmap.
 
 ### Assumptions

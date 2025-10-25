@@ -128,6 +128,14 @@
 - [X] T045 LinkedIn permissions: Update OAuth scope to include `w_member_social` for posting
 - [ ] T046 [P] Create smoke checklist `specs/001-posting-constitution/smoke.md` for release validation
 
+### Additional Quality & Release Tasks
+- [ ] T061 Add release smoke checklist file at `specs/001-posting-constitution/smoke.md` and enforce it as a pre-release gate
+- [ ] T062 Accessibility quick audit (keyboard focus, aria-labels, semantic headings, contrast ≥ 4.5:1) and fix high-severity issues
+- [ ] T063 QA auth-expiry: simulate token expiry during edit/publish; verify re-auth preserves draft and resumes safely
+- [ ] T064 Lightweight metrics: log durations (idea/draft gen), publish success/fail, streak updates; doc how to compute SC metrics
+- [ ] T066 Add client timeouts/UX: idea/draft gen warn at 10s with retry/cancel; publish progress + clear error details
+- [ ] T067 Standardize terminology to “Preferred Time Prompt” across spec/plan/tasks/UI
+
 ---
 
 ## Phase 6: Super Admin – Prompt Management (Platform Owner)
@@ -143,6 +151,7 @@
 - [ ] T058 Live preview: select user → render with user settings in UI; call server for preview
 - [ ] T059 Wire `services/geminiService.ts` to consume selected template ID and render server-side
 - [ ] T060 Audit trail (optional): `PromptAudit` model + write entries on create/update/delete
+- [ ] T065 Seed SUPER_ADMIN: promote first user or env `SUPER_ADMIN_EMAIL`; one-off script + doc
 
 **QA**
 - Verify non-admin cannot access routes/UI

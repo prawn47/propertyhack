@@ -14,7 +14,7 @@ Deliver a simple, beautiful LinkedIn posting app with:
 ## Technical Context
 
 **Language/Version**: TypeScript (frontend), JavaScript/Node 18+ (backend)  
-**Primary Dependencies**: React + Vite, Tailwind/DaisyUI (UI), Express, Passport (OAuth), JWT, Prisma ORM  
+**Primary Dependencies**: React + Vite, Tailwind/DaisyUI (UI), Express, cookie-based LinkedIn OAuth (manual), Prisma ORM  
 **Storage**: SQLite (dev) via Prisma; path for Postgres provided in deployment guide  
 **Testing**: NEEDS CLARIFICATION (no test framework configured)  
 **Target Platform**: Web app (frontend + backend)  
@@ -99,6 +99,8 @@ Provide a dedicated Super Admin experience for the platform owner to visually ma
 - Live preview: select a user → render template with their settings
 - Safe rendering pipeline to avoid unbound template execution and to escape/validate content
 - Audit trail (who changed what, when)
+
+Allowed variables (initial allowlist): `{{user.toneOfVoice}}`, `{{user.industry}}`, `{{user.position}}`, `{{user.audience}}`, `{{user.postGoal}}`, `{{user.keywords}}`, `{{post.title}}`, `{{post.text}}`
 
 ### Data Model Notes
 - Add `User.role` or `User.isSuperAdmin`
