@@ -320,14 +320,27 @@ const App: React.FC = () => {
     setDraftPublishingState(draftToPublish.id, true);
 
     try {
+      // Ensure the draft exists server-side and has a server-assigned ID before publishing
+      const isServerAssignedId = draftToPublish.id && !draftToPublish.id.includes('T') && !draftToPublish.id.includes(':');
+      let persistedDraft = draftToPublish;
+      if (!isServerAssignedId) {
+        const savedDraft = await db.saveDraft(draftToPublish);
+        persistedDraft = savedDraft;
+        // Reflect any updated ID/content locally
+        setDrafts(prev => prev.map(d => d.id === draftToPublish.id ? savedDraft : d));
+        if (editingDraft?.id === draftToPublish.id) {
+          setEditingDraft(savedDraft);
+        }
+      }
+
       // First publish to LinkedIn
       await postToLinkedIn({
-        text: `${draftToPublish.title}\n\n${draftToPublish.text}`,
-        base64Image: draftToPublish.imageUrl,
+        text: `${persistedDraft.title}\n\n${persistedDraft.text}`,
+        base64Image: persistedDraft.imageUrl,
       });
 
       // Then move from drafts to published in our database
-      const publishedPost = await db.publishPost(draftToPublish);
+      const publishedPost = await db.publishPost(persistedDraft);
       
       const newPublished = [publishedPost, ...published];
       const newDrafts = drafts.filter(d => d.id !== draftToPublish.id);
