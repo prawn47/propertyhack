@@ -84,3 +84,38 @@ frontend/ (root app)
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
 | None | — | — |
+
+---
+
+## Phase 6: Super Admin – Prompt Management (Platform Owner)
+
+### Goal
+Provide a dedicated Super Admin experience for the platform owner to visually manage system prompts used by LLM features. Support dynamic injection of per-user settings (tone, industry, goals, keywords, etc.) into prompt templates in a safe and auditable way.
+
+### Scope
+- Super Admin role with gated access (server-side RBAC + UI guard)
+- Prompt Template model (name, description, template body, variables, versioning, updatedBy)
+- Variable system with allowed tokens (e.g., {{user.toneOfVoice}}, {{user.industry}}, {{post.title}})
+- Live preview: select a user → render template with their settings
+- Safe rendering pipeline to avoid unbound template execution and to escape/validate content
+- Audit trail (who changed what, when)
+
+### Data Model Notes
+- Add `User.role` or `User.isSuperAdmin`
+- New `PromptTemplate` table with indices on `name` and `updatedAt`
+- Optional `PromptAudit` for change history
+
+### Security & Policy
+- Server-side authorization middleware `requireSuperAdmin`
+- Read-only fallbacks for non-admins; no client-provided template execution
+- Strict variable allowlist; reject unknown tokens
+
+### Integration Points
+- `services/geminiService.ts` to consume rendered prompts
+- Admin UI under Settings → Integrations → Admin (or `/admin/prompts`)
+- Server routes `GET/POST/PUT/DELETE /admin/prompts` (admin-only)
+
+### Success Criteria
+- Super Admin can create/edit/delete prompt templates
+- Live preview shows injected user settings correctly
+- Regular users cannot access admin endpoints or screens

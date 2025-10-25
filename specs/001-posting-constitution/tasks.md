@@ -130,6 +130,25 @@
 
 ---
 
+## Phase 6: Super Admin – Prompt Management (Platform Owner)
+
+**Purpose**: Platform owner can visually manage LLM system prompts with safe dynamic injection of user settings
+
+- [ ] T052 Add `User.role` (enum: USER, ADMIN, SUPER_ADMIN) to `server/prisma/schema.prisma`; migrate
+- [ ] T053 Implement `requireSuperAdmin` middleware in `server/middleware/auth.js`
+- [ ] T054 Create `PromptTemplate` model in Prisma (name, description, template, variables[], version, updatedBy, updatedAt)
+- [ ] T055 Server routes (admin-only): `GET/POST/PUT/DELETE /admin/prompts` in `server/routes/api.js`
+- [ ] T056 Safe renderer util: allowlisted variables (e.g., `user.*`, `post.*`), reject unknown; unit tests
+- [ ] T057 Admin UI: `/admin/prompts` React page with list, create/edit form, and delete
+- [ ] T058 Live preview: select user → render with user settings in UI; call server for preview
+- [ ] T059 Wire `services/geminiService.ts` to consume selected template ID and render server-side
+- [ ] T060 Audit trail (optional): `PromptAudit` model + write entries on create/update/delete
+
+**QA**
+- Verify non-admin cannot access routes/UI
+- Verify template renders with user settings and rejects unknown tokens
+- Verify edits are versioned and attributable
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
