@@ -12,6 +12,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleDemoLogin = () => {
+    setEmail('demo@quord.ai');
+    setPassword('demo123');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -86,6 +91,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
             </div>
           </form>
 
+          {/* Demo Credentials Section */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-blue-900">Demo Account</h3>
+                <p className="text-xs text-blue-700 mt-1">
+                  <strong>Email:</strong> demo@quord.ai<br />
+                  <strong>Password:</strong> demo123
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              >
+                Use Demo
+              </button>
+            </div>
+          </div>
+
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -111,7 +136,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
               </button>
 
               <button
-                onClick={() => window.location.href = '/api/oauth/linkedin'}
+              	onClick={() => window.location.href = '/api/auth/linkedin'}
                 className="w-full inline-flex justify-center py-2 px-4 border border-base-300 rounded-md shadow-sm bg-base-100 text-sm font-medium text-content hover:bg-base-200"
               >
                 <svg className="w-5 h-5" fill="#0077B5" viewBox="0 0 24 24">

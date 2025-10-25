@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import Loader from './Loader';
 
 interface OAuthCallbackProps {
@@ -8,12 +7,12 @@ interface OAuthCallbackProps {
 }
 
 const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthError }) => {
-  const [searchParams] = useSearchParams();
-
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
-    const error = searchParams.get('message');
+    // Parse URL parameters manually since we don't have React Router
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('accessToken');
+    const refreshToken = urlParams.get('refreshToken');
+    const error = urlParams.get('message');
 
     if (error) {
       onAuthError(error);
@@ -25,7 +24,7 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ onAuthSuccess, onAuthErro
     } else {
       onAuthError('Invalid OAuth response');
     }
-  }, [searchParams, onAuthSuccess, onAuthError]);
+  }, [onAuthSuccess, onAuthError]);
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col justify-center items-center p-4">

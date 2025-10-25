@@ -18,10 +18,17 @@ model User {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  // LinkedIn OAuth fields
+  linkedinId          String?   @map("linkedin_id")
+  linkedinAccessToken String?   @map("linkedin_access_token")
+  linkedinTokenExpiry DateTime? @map("linkedin_token_expiry")
+  linkedinConnected   Boolean   @default(false) @map("linkedin_connected")
+
   // Relations
   settings      UserSettings?
   draftPosts    DraftPost[]
   publishedPosts PublishedPost[]
+  scheduledPosts ScheduledPost[]
 
   @@map("users")
 }
@@ -82,4 +89,24 @@ model PublishedPost {
   @@index([userId])
   @@index([createdAt])
   @@map("published_posts")
+}
+
+model ScheduledPost {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  title       String
+  text        String
+  imageUrl    String?  @map("image_url")
+  scheduledFor DateTime @map("scheduled_for")
+  status      String   @default("scheduled") // "scheduled" | "published" | "cancelled" | "failed"
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([scheduledFor])
+  @@index([status])
+  @@map("scheduled_posts")
 }

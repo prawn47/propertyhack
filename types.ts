@@ -5,6 +5,10 @@ export interface User {
   emailVerified: boolean;
   createdAt: string;
   profilePictureUrl?: string;
+  linkedinId?: string;
+  linkedinAccessToken?: string;
+  linkedinTokenExpiry?: string;
+  linkedinConnected: boolean;
 }
 
 export interface UserSettings {
@@ -35,6 +39,18 @@ export interface DraftPost {
 
 export interface PublishedPost extends DraftPost {
   publishedAt: string;
+}
+
+export interface ScheduledPost {
+  id: string;
+  userId: string;
+  title: string;
+  text: string;
+  imageUrl?: string;
+  scheduledFor: string; // ISO date string
+  status: 'scheduled' | 'published' | 'cancelled' | 'failed';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthState {

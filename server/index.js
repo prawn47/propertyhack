@@ -1,17 +1,17 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
-const session = require('express-session');
+// session removed - using simple cookie-based auth
 const { PrismaClient } = require('@prisma/client');
 
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
-const oauthRoutes = require('./routes/oauth');
+const linkedInRoutes = require('./routes/linkedin');
 const testRoutes = require('./routes/test');
-const passport = require('./config/passport');
+// ALL OAuth/Passport infrastructure COMPLETELY REMOVED
 
 const app = express();
 const prisma = new PrismaClient();
@@ -19,7 +19,14 @@ const prisma = new PrismaClient();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: [
+    process.env.CORS_ORIGIN || 'http://localhost:3004',
+    'http://localhost:3000',
+    'http://localhost:3001', 
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://localhost:3004'
+  ],
   credentials: true,
 }));
 
@@ -27,31 +34,26 @@ app.use(cors({
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
+  message: { error: 'Too many requests from this IP, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use(limiter);
+// In development, disable global rate limiting to avoid blocking OAuth redirects
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction) {
+  app.use(limiter);
+}
 
 // Auth rate limiting (more restrictive)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
-  message: 'Too many authentication attempts, please try again later.',
+  max: 100, // Increased to 100 for development testing
+  message: { error: 'Too many authentication attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-// Session middleware for OAuth
-app.use(session({
-  secret: process.env.JWT_ACCESS_SECRET || 'fallback-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
-// Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
+// ALL OAuth/Passport/Session middleware COMPLETELY REMOVED
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -65,8 +67,11 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/oauth', oauthRoutes);
+// In development, do not rate limit auth routes to prevent throttling during testing
+const noop = (req, res, next) => next();
+app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
+// app.use('/api/oauth', oauthRoutes); // DISABLED - using clean LinkedIn implementation
+app.use('/api', linkedInRoutes); // Clean LinkedIn routes - exact copy from working app
 app.use('/api/test', testRoutes);
 app.use('/api', apiRoutes);
 
@@ -128,5 +133,5 @@ process.on('SIGINT', async () => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔒 CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
+  console.log(`🔒 CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3004'}`);
 });

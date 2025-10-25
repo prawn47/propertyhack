@@ -1,7 +1,7 @@
 // Fix: Implemented the PostCreationWizard component which was previously missing.
 import React, { useState, useRef } from 'react';
 import type { UserSettings, DraftPost } from '../types';
-import { generatePostIdeas, generateDraftPost, generatePostImage, enhanceImage } from '../services/geminiService';
+import { generatePostIdeas, generateDraftPost, generatePostImage, enhanceImage, generateConciseForX } from '../services/geminiService';
 import Loader from './Loader';
 import SparklesIcon from './icons/SparklesIcon';
 import WandIcon from './icons/WandIcon';
@@ -13,12 +13,13 @@ interface PostCreationWizardProps {
   settings: UserSettings;
   onAddToDrafts: (draft: DraftPost) => void;
   onPublish: (draft: DraftPost) => void;
+  onSchedule: (draft: DraftPost) => void;
   onClose: () => void;
 }
 
 type WizardStep = 'topic' | 'ideas' | 'draft';
 
-const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAddToDrafts, onPublish, onClose }) => {
+const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAddToDrafts, onPublish, onSchedule, onClose }) => {
   const [step, setStep] = useState<WizardStep>('topic');
   const [topic, setTopic] = useState('');
   const [ideas, setIdeas] = useState<string[]>([]);
@@ -28,6 +29,9 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enhancementPrompt, setEnhancementPrompt] = useState('');
+  const [isPreparingForX, setIsPreparingForX] = useState(false);
+  const [xVersion, setXVersion] = useState('');
+  const [isGeneratingXVersion, setIsGeneratingXVersion] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGenerateIdeas = async () => {
@@ -128,6 +132,44 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
     await onPublish(postToPublish);
     setIsPublishing(false);
     onClose();
+  };
+
+  const handleSchedule = () => {
+    const draftToSchedule: DraftPost = {
+      id: new Date().toISOString(),
+      ...generatedDraft
+    };
+    onSchedule(draftToSchedule);
+    onClose();
+  };
+
+  const handlePrepareForX = async () => {
+    setIsPreparingForX(true);
+    // Auto-generate the initial X version
+    await handleGenerateXVersion();
+  };
+
+  const handleGenerateXVersion = async () => {
+    if (!generatedDraft.title || !generatedDraft.text) return;
+    
+    setIsGeneratingXVersion(true);
+    try {
+      const conciseVersion = await generateConciseForX(
+        generatedDraft.title,
+        generatedDraft.text,
+        settings
+      );
+      if (conciseVersion) {
+        setXVersion(conciseVersion);
+      } else {
+        alert('Failed to generate X version. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating X version:', error);
+      alert('Failed to generate X version. Please try again.');
+    } finally {
+      setIsGeneratingXVersion(false);
+    }
   };
 
   const resetWizard = () => {
@@ -239,6 +281,74 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
             </div>
         </div>
        )}
+
+       {/* X.com Preparation Section */}
+       {isPreparingForX && (
+         <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+           <h4 className="text-lg font-semibold text-purple-800 mb-3">Prepare for X (Twitter)</h4>
+           <p className="text-sm text-purple-600 mb-4">
+             Create a concise version of your post optimized for X's character limit and audience.
+           </p>
+           
+           <div className="space-y-3">
+             <div>
+               <label className="block text-sm font-medium text-purple-700 mb-1">
+                 X Version (Character limit: 280)
+               </label>
+               <textarea
+                 value={xVersion}
+                 onChange={(e) => setXVersion(e.target.value)}
+                 placeholder="A concise version will be generated here..."
+                 className="w-full px-3 py-2 border border-purple-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                 rows={4}
+                 maxLength={280}
+               />
+               <div className="flex justify-between items-center mt-1">
+                 <span className={`text-xs ${xVersion.length > 280 ? 'text-red-500' : xVersion.length > 250 ? 'text-yellow-500' : 'text-purple-500'}`}>
+                   {xVersion.length}/280 characters
+                 </span>
+                 <button
+                   onClick={handleGenerateXVersion}
+                   disabled={isGeneratingXVersion}
+                   className="text-xs px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400 flex items-center gap-1"
+                 >
+                   {isGeneratingXVersion ? (
+                     <>
+                       <Loader className="w-3 h-3" />
+                       Generating...
+                     </>
+                   ) : (
+                     'Generate Concise Version'
+                   )}
+                 </button>
+               </div>
+             </div>
+
+             <div className="flex gap-3 pt-3 border-t border-purple-200">
+               <button
+                 onClick={() => navigator.clipboard.writeText(xVersion)}
+                 disabled={!xVersion}
+                 className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400 text-sm"
+               >
+                 📋 Copy to Clipboard
+               </button>
+               <button
+                 onClick={() => window.open('https://x.com/compose/tweet', '_blank')}
+                 className="flex-1 px-4 py-2 bg-black text-white rounded hover:bg-gray-800 text-sm"
+               >
+                 𝕏 Open X.com
+               </button>
+               <button
+                 onClick={() => setIsPreparingForX(false)}
+                 className="px-4 py-2 border border-purple-300 text-purple-700 rounded hover:bg-purple-50 text-sm"
+               >
+                 Close
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
        {!isLoading && generatedDraft.title && (
            <div className="mt-6 pt-4 border-t border-base-300 flex flex-col sm:flex-row justify-end gap-3">
                <button 
@@ -248,6 +358,22 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
                >
                    <ClipboardListIcon className="w-5 h-5 mr-2" />
                    Add to Drafts
+               </button>
+               <button 
+                onClick={handleSchedule}
+                disabled={isPublishing}
+                className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400"
+               >
+                   <ClipboardListIcon className="w-5 h-5 mr-2" />
+                   Schedule
+               </button>
+               <button 
+                onClick={handlePrepareForX}
+                disabled={isPublishing}
+                className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none disabled:bg-gray-400"
+               >
+                   <span className="text-lg mr-2">𝕏</span>
+                   Prepare for X
                </button>
                <button 
                 onClick={handlePublish}

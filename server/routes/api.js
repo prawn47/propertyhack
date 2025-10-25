@@ -39,6 +39,12 @@ const draftPostValidation = [
   body('text').notEmpty().withMessage('Text is required'),
 ];
 
+const scheduledPostValidation = [
+  body('title').notEmpty().withMessage('Title is required'),
+  body('text').notEmpty().withMessage('Text is required'),
+  body('scheduledFor').isISO8601().withMessage('Scheduled time must be a valid ISO date'),
+];
+
 // Get user settings
 router.get('/user/settings', async (req, res) => {
   try {
@@ -338,6 +344,155 @@ router.post('/posts/publish', async (req, res) => {
   }
 });
 
+// Get user's scheduled posts
+router.get('/posts/scheduled', async (req, res) => {
+  try {
+    const scheduled = await req.prisma.scheduledPost.findMany({
+      where: { userId: req.user.id },
+      orderBy: { scheduledFor: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        text: true,
+        imageUrl: true,
+        scheduledFor: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+
+    res.json(scheduled);
+  } catch (error) {
+    console.error('Get scheduled posts error:', error);
+    res.status(500).json({ error: 'Failed to fetch scheduled posts' });
+  }
+});
+
+// Create new scheduled post
+router.post('/posts/scheduled', scheduledPostValidation, handleValidationErrors, async (req, res) => {
+  try {
+    const { title, text, imageUrl, scheduledFor } = req.body;
+
+    // Validate that scheduled time is in the future
+    const scheduledDate = new Date(scheduledFor);
+    if (scheduledDate <= new Date()) {
+      return res.status(400).json({ error: 'Scheduled time must be in the future' });
+    }
+
+    const scheduledPost = await req.prisma.scheduledPost.create({
+      data: {
+        userId: req.user.id,
+        title,
+        text,
+        imageUrl: imageUrl || null,
+        scheduledFor: scheduledDate,
+        status: 'scheduled',
+      },
+      select: {
+        id: true,
+        title: true,
+        text: true,
+        imageUrl: true,
+        scheduledFor: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+
+    res.status(201).json(scheduledPost);
+  } catch (error) {
+    console.error('Create scheduled post error:', error);
+    res.status(500).json({ error: 'Failed to create scheduled post' });
+  }
+});
+
+// Update scheduled post (reschedule)
+router.patch('/posts/scheduled/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { scheduledFor, title, text, imageUrl } = req.body;
+
+    // Check if scheduled post belongs to user
+    const existingPost = await req.prisma.scheduledPost.findFirst({
+      where: { id, userId: req.user.id }
+    });
+
+    if (!existingPost) {
+      return res.status(404).json({ error: 'Scheduled post not found' });
+    }
+
+    // Only allow updates to scheduled posts
+    if (existingPost.status !== 'scheduled') {
+      return res.status(400).json({ error: 'Can only update scheduled posts' });
+    }
+
+    const updateData = {};
+    if (scheduledFor) {
+      const scheduledDate = new Date(scheduledFor);
+      if (scheduledDate <= new Date()) {
+        return res.status(400).json({ error: 'Scheduled time must be in the future' });
+      }
+      updateData.scheduledFor = scheduledDate;
+    }
+    if (title !== undefined) updateData.title = title;
+    if (text !== undefined) updateData.text = text;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+
+    const updatedPost = await req.prisma.scheduledPost.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        title: true,
+        text: true,
+        imageUrl: true,
+        scheduledFor: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+
+    res.json(updatedPost);
+  } catch (error) {
+    console.error('Update scheduled post error:', error);
+    res.status(500).json({ error: 'Failed to update scheduled post' });
+  }
+});
+
+// Cancel scheduled post
+router.delete('/posts/scheduled/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if scheduled post belongs to user
+    const existingPost = await req.prisma.scheduledPost.findFirst({
+      where: { id, userId: req.user.id }
+    });
+
+    if (!existingPost) {
+      return res.status(404).json({ error: 'Scheduled post not found' });
+    }
+
+    // Only allow cancellation of scheduled posts
+    if (existingPost.status !== 'scheduled') {
+      return res.status(400).json({ error: 'Can only cancel scheduled posts' });
+    }
+
+    await req.prisma.scheduledPost.update({
+      where: { id },
+      data: { status: 'cancelled' }
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Cancel scheduled post error:', error);
+    res.status(500).json({ error: 'Failed to cancel scheduled post' });
+  }
+});
+
 // Get user profile
 router.get('/user/profile', async (req, res) => {
   try {
@@ -348,6 +503,7 @@ router.get('/user/profile', async (req, res) => {
         email: true,
         emailVerified: true,
         createdAt: true,
+        linkedinConnected: true,
         settings: {
           select: {
             profilePictureUrl: true,
@@ -483,6 +639,169 @@ router.get('/content/openai-status', (req, res) => {
     available: isAvailable(),
     message: isAvailable() ? 'OpenAI service is available' : 'OpenAI API key not configured'
   });
+});
+
+// Get user's LinkedIn access token
+router.get('/user/linkedin-token', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const user = await req.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        linkedinAccessToken: true,
+        linkedinTokenExpiry: true,
+        linkedinConnected: true,
+      }
+    });
+
+    if (!user || !user.linkedinConnected || !user.linkedinAccessToken) {
+      return res.status(404).json({ error: 'LinkedIn account not connected' });
+    }
+
+    // Check if token is expired
+    if (user.linkedinTokenExpiry && new Date() > new Date(user.linkedinTokenExpiry)) {
+      return res.status(401).json({ error: 'LinkedIn token expired. Please reconnect your account.' });
+    }
+
+    res.json({
+      linkedinAccessToken: user.linkedinAccessToken,
+      linkedinConnected: user.linkedinConnected,
+    });
+
+  } catch (error) {
+    console.error('Get LinkedIn token error:', error);
+    res.status(500).json({ error: 'Failed to get LinkedIn token' });
+  }
+});
+
+// Disconnect LinkedIn account
+router.post('/user/linkedin-disconnect', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    await req.prisma.user.update({
+      where: { id: userId },
+      data: {
+        linkedinId: null,
+        linkedinAccessToken: null,
+        linkedinTokenExpiry: null,
+        linkedinConnected: false,
+      }
+    });
+
+    res.json({ success: true, message: 'LinkedIn account disconnected successfully' });
+
+  } catch (error) {
+    console.error('Disconnect LinkedIn error:', error);
+    res.status(500).json({ error: 'Failed to disconnect LinkedIn account' });
+  }
+});
+
+// Get user streak and weekly stats
+router.get('/stats/streak', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get all published posts for the user, ordered by creation date
+    const publishedPosts = await req.prisma.publishedPost.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        createdAt: true,
+      }
+    });
+
+    if (publishedPosts.length === 0) {
+      return res.json({
+        currentStreak: 0,
+        longestStreak: 0,
+        weeklyProgress: 0,
+        weeklyTarget: 7, // Default weekly target
+        postsThisWeek: 0,
+        lastPostDate: null,
+      });
+    }
+
+    // Calculate streaks
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+    let lastDate = null;
+
+    // Group posts by date (ignoring time)
+    const postsByDate = new Map();
+    publishedPosts.forEach(post => {
+      const dateKey = new Date(post.createdAt).toDateString();
+      if (!postsByDate.has(dateKey)) {
+        postsByDate.set(dateKey, true);
+      }
+    });
+
+    const sortedDates = Array.from(postsByDate.keys())
+      .map(dateStr => new Date(dateStr))
+      .sort((a, b) => b - a); // Most recent first
+
+    // Calculate current streak
+    for (let i = 0; i < sortedDates.length; i++) {
+      const currentDate = sortedDates[i];
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+      expectedDate.setHours(0, 0, 0, 0);
+
+      if (currentDate.getTime() === expectedDate.getTime()) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+
+    // Calculate longest streak
+    tempStreak = 1;
+    longestStreak = 1;
+    
+    for (let i = 1; i < sortedDates.length; i++) {
+      const currentDate = sortedDates[i];
+      const previousDate = sortedDates[i - 1];
+      
+      const dayDiff = Math.floor((previousDate - currentDate) / (1000 * 60 * 60 * 24));
+      
+      if (dayDiff === 1) {
+        tempStreak++;
+        longestStreak = Math.max(longestStreak, tempStreak);
+      } else {
+        tempStreak = 1;
+      }
+    }
+
+    // Calculate weekly progress
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+    
+    const postsThisWeek = publishedPosts.filter(post => {
+      const postDate = new Date(post.createdAt);
+      return postDate >= startOfWeek;
+    }).length;
+
+    const weeklyTarget = 7; // Could be made configurable per user
+    const weeklyProgress = Math.min(100, Math.round((postsThisWeek / weeklyTarget) * 100));
+
+    res.json({
+      currentStreak,
+      longestStreak,
+      weeklyProgress,
+      weeklyTarget,
+      postsThisWeek,
+      lastPostDate: publishedPosts[0]?.createdAt || null,
+    });
+
+  } catch (error) {
+    console.error('Get streak stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch streak statistics' });
+  }
 });
 
 module.exports = router;

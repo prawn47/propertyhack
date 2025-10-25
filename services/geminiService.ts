@@ -1,8 +1,25 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { UserSettings, DraftPost } from '../types';
 
-// Per guidelines, initialize with API key from environment variables.
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Get Gemini API key from environment
+const getGeminiApiKey = (): string => {
+  // First try Vite environment variable
+  const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (envKey) {
+    return envKey;
+  }
+  
+  // Then try the GEMINI_API_KEY from .env.local
+  const geminiKey = import.meta.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    return geminiKey;
+  }
+  
+  throw new Error("Gemini API key not found. Please add VITE_GEMINI_API_KEY or GEMINI_API_KEY to your .env.local file.");
+};
+
+// Initialize with API key from environment variables.
+const ai = new GoogleGenAI({ apiKey: getGeminiApiKey() });
 
 const createSystemInstruction = (settings: UserSettings): string => {
   return `You are an expert content creator for LinkedIn. Your persona is defined by the following characteristics:
@@ -150,3 +167,60 @@ export const enhanceImage = async (base64ImageData: string, prompt: string): Pro
         return undefined;
     }
 };
+
+export const generateConciseForX = async (
+    originalTitle: string,
+    originalText: string,
+    settings: UserSettings
+): Promise<string | undefined> => {
+    try {
+        const prompt = `Transform this LinkedIn post into a concise X (Twitter) post that fits within 280 characters.
+
+Original LinkedIn Post:
+Title: ${originalTitle}
+Content: ${originalText}
+
+Requirements:
+- Maximum 280 characters total
+- Maintain the core message and value
+- Use a ${settings.tone} tone
+- Make it engaging for X's fast-paced audience
+- Include relevant hashtags if space allows
+- Remove LinkedIn-specific language
+- Keep it punchy and direct
+
+Return only the X version, no explanations or quotes.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: prompt }] }],
+        });
+
+        const xVersion = response.text?.trim();
+        
+        // Ensure it's within character limit
+        if (xVersion && xVersion.length <= 280) {
+            return xVersion;
+        } else if (xVersion) {
+            // If it's too long, ask Gemini to make it shorter
+            const shortenPrompt = `This X post is ${xVersion.length} characters, which exceeds the 280 character limit. Please shorten it while keeping the core message:
+
+"${xVersion}"
+
+Make it exactly 280 characters or less. Return only the shortened version.`;
+
+            const shortenResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: [{ parts: [{ text: shortenPrompt }] }],
+            });
+
+            return shortenResponse.text?.trim();
+        }
+
+        return undefined;
+    } catch (error) {
+        console.error("Error generating concise X version:", error);
+        return undefined;
+    }
+};
+

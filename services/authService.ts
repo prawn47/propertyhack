@@ -238,6 +238,11 @@ class AuthService {
 
     return await response.json();
   }
+
+  // Public method for OAuth token handling
+  public setTokens(accessToken: string, refreshToken: string): void {
+    this.saveTokensToStorage(accessToken, refreshToken);
+  }
 }
 
 // Create and export a singleton instance
