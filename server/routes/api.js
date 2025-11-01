@@ -63,6 +63,10 @@ router.get('/user/settings', async (req, res) => {
         preferredTime: true,
         profilePictureUrl: true,
         englishVariant: true,
+        newsCategories: true,
+        newsLanguages: true,
+        newsSources: true,
+        newsCountries: true,
         updatedAt: true,
       }
     });
@@ -71,10 +75,14 @@ router.get('/user/settings', async (req, res) => {
       return res.status(404).json({ error: 'User settings not found' });
     }
 
-    // Parse contentExamples JSON string back to array
+    // Parse JSON strings back to arrays
     const settingsWithParsedExamples = {
       ...settings,
-      contentExamples: JSON.parse(settings.contentExamples || '[]')
+      contentExamples: JSON.parse(settings.contentExamples || '[]'),
+      newsCategories: JSON.parse(settings.newsCategories || '[]'),
+      newsLanguages: JSON.parse(settings.newsLanguages || '["eng"]'),
+      newsSources: JSON.parse(settings.newsSources || '[]'),
+      newsCountries: JSON.parse(settings.newsCountries || '[]'),
     };
 
     res.json(settingsWithParsedExamples);
@@ -99,6 +107,10 @@ router.put('/user/settings', userSettingsValidation, handleValidationErrors, asy
       preferredTime,
       profilePictureUrl,
       englishVariant,
+      newsCategories,
+      newsLanguages,
+      newsSources,
+      newsCountries,
     } = req.body;
 
     const updatedSettings = await req.prisma.userSettings.update({
@@ -115,6 +127,10 @@ router.put('/user/settings', userSettingsValidation, handleValidationErrors, asy
         preferredTime,
         profilePictureUrl,
         englishVariant,
+        newsCategories: JSON.stringify(newsCategories || []),
+        newsLanguages: JSON.stringify(newsLanguages || ['eng']),
+        newsSources: JSON.stringify(newsSources || []),
+        newsCountries: JSON.stringify(newsCountries || []),
       },
       select: {
         id: true,
@@ -129,14 +145,22 @@ router.put('/user/settings', userSettingsValidation, handleValidationErrors, asy
         preferredTime: true,
         profilePictureUrl: true,
         englishVariant: true,
+        newsCategories: true,
+        newsLanguages: true,
+        newsSources: true,
+        newsCountries: true,
         updatedAt: true,
       }
     });
 
-    // Parse contentExamples JSON string back to array
+    // Parse JSON strings back to arrays
     const settingsWithParsedExamples = {
       ...updatedSettings,
-      contentExamples: JSON.parse(updatedSettings.contentExamples || '[]')
+      contentExamples: JSON.parse(updatedSettings.contentExamples || '[]'),
+      newsCategories: JSON.parse(updatedSettings.newsCategories || '[]'),
+      newsLanguages: JSON.parse(updatedSettings.newsLanguages || '["eng"]'),
+      newsSources: JSON.parse(updatedSettings.newsSources || '[]'),
+      newsCountries: JSON.parse(updatedSettings.newsCountries || '[]'),
     };
 
     res.json(settingsWithParsedExamples);

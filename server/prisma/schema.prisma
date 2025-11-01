@@ -49,6 +49,13 @@ model UserSettings {
   preferredTime     String   @map("preferred_time")
   profilePictureUrl String?  @map("profile_picture_url")
   englishVariant    String   @map("english_variant")
+  
+  // News preferences
+  newsCategories    String   @default("[]") @map("news_categories") // JSON array of category URIs
+  newsLanguages     String   @default("[\"eng\"]") @map("news_languages") // JSON array of language codes
+  newsSources       String   @default("[]") @map("news_sources") // JSON array of source URIs
+  newsCountries     String   @default("[]") @map("news_countries") // JSON array of country codes
+  
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

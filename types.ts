@@ -25,6 +25,11 @@ export interface UserSettings {
   preferredTime: string;
   profilePictureUrl?: string;
   englishVariant: 'American' | 'British' | 'Australian' | string;
+  // News preferences
+  newsCategories?: string[];
+  newsLanguages?: string[];
+  newsSources?: string[];
+  newsCountries?: string[];
   updatedAt?: string;
 }
 

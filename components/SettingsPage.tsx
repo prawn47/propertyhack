@@ -32,6 +32,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, user, onChange, o
     onChange({ ...settings, [e.target.name]: e.target.value });
   };
 
+  const handleMultiSelectChange = (field: string, value: string) => {
+    const currentValues = settings[field as keyof UserSettings] as string[] || [];
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    onChange({ ...settings, [field]: newValues });
+  };
+
   const handleExampleChange = (index: number, value: string) => {
     const newExamples = [...settings.contentExamples];
     newExamples[index] = value;
@@ -140,6 +148,89 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, user, onChange, o
                         <label htmlFor="preferredTime" className="block text-sm font-medium text-content-secondary">Preferred Daily Prompt Time</label>
                         <input type="time" name="preferredTime" id="preferredTime" value={settings.preferredTime} onChange={handleInputChange} className="mt-1 block w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
                     </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend className="text-lg font-semibold text-content border-b border-base-300 pb-2 mb-4">News Preferences</legend>
+                    <p className="text-sm text-content-secondary mb-4">Customize your daily news feed to match your interests.</p>
+                    
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-content-secondary mb-2">Languages</label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {[
+                                    { code: 'eng', label: 'English' },
+                                    { code: 'spa', label: 'Spanish' },
+                                    { code: 'fra', label: 'French' },
+                                    { code: 'deu', label: 'German' },
+                                    { code: 'ita', label: 'Italian' },
+                                    { code: 'por', label: 'Portuguese' },
+                                    { code: 'zho', label: 'Chinese' },
+                                    { code: 'jpn', label: 'Japanese' },
+                                ].map(lang => (
+                                    <label key={lang.code} className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={(settings.newsLanguages || ['eng']).includes(lang.code)}
+                                            onChange={() => handleMultiSelectChange('newsLanguages', lang.code)}
+                                            className="rounded border-base-300 text-brand-primary focus:ring-brand-primary"
+                                        />
+                                        <span className="text-sm text-content">{lang.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-content-secondary mb-2">Categories</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {[
+                                    { uri: 'dmoz/Business', label: 'Business' },
+                                    { uri: 'dmoz/Computers', label: 'Technology' },
+                                    { uri: 'dmoz/Science', label: 'Science' },
+                                    { uri: 'dmoz/Health', label: 'Health' },
+                                    { uri: 'news/Finance', label: 'Finance' },
+                                    { uri: 'news/Politics', label: 'Politics' },
+                                ].map(cat => (
+                                    <label key={cat.uri} className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={(settings.newsCategories || []).includes(cat.uri)}
+                                            onChange={() => handleMultiSelectChange('newsCategories', cat.uri)}
+                                            className="rounded border-base-300 text-brand-primary focus:ring-brand-primary"
+                                        />
+                                        <span className="text-sm text-content">{cat.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-content-secondary mb-2">Countries</label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {[
+                                    { code: 'usa', label: 'United States' },
+                                    { code: 'gbr', label: 'United Kingdom' },
+                                    { code: 'can', label: 'Canada' },
+                                    { code: 'aus', label: 'Australia' },
+                                    { code: 'deu', label: 'Germany' },
+                                    { code: 'fra', label: 'France' },
+                                    { code: 'chn', label: 'China' },
+                                    { code: 'jpn', label: 'Japan' },
+                                ].map(country => (
+                                    <label key={country.code} className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={(settings.newsCountries || []).includes(country.code)}
+                                            onChange={() => handleMultiSelectChange('newsCountries', country.code)}
+                                            className="rounded border-base-300 text-brand-primary focus:ring-brand-primary"
+                                        />
+                                        <span className="text-sm text-content">{country.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </fieldset>
 

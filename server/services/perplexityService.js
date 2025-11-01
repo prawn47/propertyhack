@@ -1,10 +1,10 @@
 /**
- * Perplexity AI service for fetching curated news articles
+ * NewsAPI.ai service for fetching curated news articles
  * based on user interests and settings
  */
 
-const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
-const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
+const NEWSAPI_API_KEY = process.env.NEWSAPI_API_KEY;
+const NEWSAPI_BASE_URL = 'https://newsapi.ai/api/v1';
 
 /**
  * Fetch curated news articles for a user based on their settings
@@ -12,129 +12,141 @@ const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
  * @returns {Promise<Array>} Array of news articles
  */
 async function fetchCuratedNews(userSettings) {
-  if (!PERPLEXITY_API_KEY) {
-    console.error('PERPLEXITY_API_KEY not configured');
-    throw new Error('Perplexity API key not configured');
+  if (!NEWSAPI_API_KEY) {
+    console.error('NEWSAPI_API_KEY not configured');
+    throw new Error('NewsAPI.ai API key not configured');
   }
 
-  const { industry, keywords, position, audience, postGoal } = userSettings;
+  const { industry, keywords } = userSettings;
+  
+  // Parse JSON strings from database
+  const newsCategories = userSettings.newsCategories ? 
+    (typeof userSettings.newsCategories === 'string' ? JSON.parse(userSettings.newsCategories) : userSettings.newsCategories) : [];
+  const newsLanguages = userSettings.newsLanguages ? 
+    (typeof userSettings.newsLanguages === 'string' ? JSON.parse(userSettings.newsLanguages) : userSettings.newsLanguages) : ['eng'];
+  const newsSources = userSettings.newsSources ? 
+    (typeof userSettings.newsSources === 'string' ? JSON.parse(userSettings.newsSources) : userSettings.newsSources) : [];
 
-  // Build search query based on user settings
-  const searchQuery = buildSearchQuery(industry, keywords, position, audience, postGoal);
+  // Build query based on user settings
+  const query = buildNewsAPIQuery(industry, keywords, newsCategories);
 
   try {
-    const response = await fetch(PERPLEXITY_API_URL, {
+    const requestBody = {
+      apiKey: NEWSAPI_API_KEY,
+      query: query,
+      resultType: 'articles',
+      articlesSortBy: 'date',
+      articlesCount: 7,
+      includeArticleImage: true,
+      includeArticleBody: true,
+      articleBodyLen: 300,
+    };
+
+    // Add language filter if specified
+    if (newsLanguages && newsLanguages.length > 0) {
+      requestBody.query.$query.lang = newsLanguages;
+    }
+
+    // Add source filter if specified
+    if (newsSources && newsSources.length > 0) {
+      requestBody.query.$query.sourceUri = { $in: newsSources };
+    }
+
+    const response = await fetch(`${NEWSAPI_BASE_URL}/article/getArticles`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a news curator. Return ONLY a valid JSON array of news articles. Each article must have: title, summary (2-3 sentences), url, source, publishedAt (ISO date or null), category. No markdown, no explanation, just the JSON array.'
-          },
-          {
-            role: 'user',
-            content: searchQuery
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 2000,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Perplexity API error:', response.status, errorText);
-      throw new Error(`Perplexity API error: ${response.status}`);
+      console.error('NewsAPI.ai error:', response.status, errorText);
+      throw new Error(`NewsAPI.ai error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.error('No content in Perplexity response:', data);
+    
+    if (!data.articles || !data.articles.results) {
+      console.error('No articles in NewsAPI.ai response:', data);
       return [];
     }
 
-    // Parse the JSON response
-    const articles = parseArticlesFromResponse(content);
+    // Parse and normalize articles
+    const articles = data.articles.results.map(article => ({
+      title: article.title || 'Untitled',
+      summary: article.body ? article.body.substring(0, 300) + '...' : '',
+      content: article.body || null,
+      url: article.url || '#',
+      source: article.source?.title || 'Unknown',
+      publishedAt: article.dateTime || null,
+      category: extractCategory(article, newsCategories),
+      relevanceScore: article.relevance || 0.8,
+    })).filter(article => article.title && article.summary);
+
     return articles;
 
   } catch (error) {
-    console.error('Error fetching news from Perplexity:', error);
+    console.error('Error fetching news from NewsAPI.ai:', error);
     throw error;
   }
 }
 
 /**
- * Build search query based on user settings
+ * Build NewsAPI.ai query based on user settings
  */
-function buildSearchQuery(industry, keywords, position, audience, postGoal) {
+function buildNewsAPIQuery(industry, keywords, categories) {
   const keywordList = keywords ? keywords.split(',').map(k => k.trim()).filter(Boolean) : [];
   
-  let query = `Find 5-7 recent news articles (from the last 7 days) relevant to:\n`;
-  query += `- Industry: ${industry}\n`;
-  query += `- Position/Role: ${position}\n`;
-  if (keywordList.length > 0) {
-    query += `- Keywords: ${keywordList.join(', ')}\n`;
+  // Build query with keywords and industry
+  const queryTerms = [];
+  
+  if (industry) {
+    queryTerms.push({ keyword: industry, keywordLoc: 'title,body' });
   }
-  query += `- Target audience: ${audience}\n`;
-  query += `- Content goal: ${postGoal}\n\n`;
-  query += `Focus on:\n`;
-  query += `1. News that would be valuable to comment on for LinkedIn posts\n`;
-  query += `2. Industry trends, innovations, and insights\n`;
-  query += `3. Articles that spark professional discussion\n`;
-  query += `4. Recent developments (last 7 days preferred)\n\n`;
-  query += `Return as JSON array with fields: title, summary, url, source, publishedAt, category`;
+  
+  if (keywordList.length > 0) {
+    keywordList.forEach(kw => {
+      queryTerms.push({ keyword: kw, keywordLoc: 'title,body' });
+    });
+  }
 
-  return query;
+  // Add category filter if specified
+  if (categories && categories.length > 0) {
+    queryTerms.push({ categoryUri: { $in: categories } });
+  }
+
+  // Date filter - last 7 days
+  const dateEnd = new Date();
+  const dateStart = new Date();
+  dateStart.setDate(dateStart.getDate() - 7);
+
+  return {
+    $query: {
+      $and: queryTerms.length > 0 ? queryTerms : [{ keyword: 'business', keywordLoc: 'title,body' }],
+    },
+    $filter: {
+      forceMaxDataTimeWindow: '7',
+      dateStart: dateStart.toISOString().split('T')[0],
+      dateEnd: dateEnd.toISOString().split('T')[0],
+    }
+  };
 }
 
 /**
- * Parse articles from Perplexity response
+ * Extract category from article
  */
-function parseArticlesFromResponse(content) {
-  try {
-    // Try to extract JSON from the response
-    // Sometimes the response might have markdown code blocks
-    let jsonStr = content.trim();
-    
-    // Remove markdown code blocks if present
-    if (jsonStr.startsWith('```json')) {
-      jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
-    } else if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
-    }
-
-    const articles = JSON.parse(jsonStr);
-    
-    if (!Array.isArray(articles)) {
-      console.error('Parsed response is not an array:', articles);
-      return [];
-    }
-
-    // Validate and normalize articles
-    return articles.map(article => ({
-      title: article.title || 'Untitled',
-      summary: article.summary || '',
-      content: article.content || null,
-      url: article.url || '#',
-      source: article.source || 'Unknown',
-      publishedAt: article.publishedAt || null,
-      category: article.category || industry,
-      relevanceScore: article.relevanceScore || 0.8,
-    })).filter(article => article.title && article.summary);
-
-  } catch (error) {
-    console.error('Error parsing articles from response:', error);
-    console.error('Response content:', content);
-    return [];
+function extractCategory(article, preferredCategories) {
+  if (article.categories && article.categories.length > 0) {
+    return article.categories[0].label || 'Business';
   }
+  if (preferredCategories && preferredCategories.length > 0) {
+    return preferredCategories[0];
+  }
+  return 'Business';
 }
+
 
 module.exports = {
   fetchCuratedNews,
