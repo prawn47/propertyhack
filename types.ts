@@ -70,3 +70,18 @@ export interface PromptTemplate {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface NewsArticle {
+  id: string;
+  userId: string;
+  title: string;
+  summary: string;
+  content?: string;
+  url: string;
+  source: string;
+  publishedAt?: string;
+  fetchedAt: string;
+  category?: string;
+  relevanceScore?: number;
+  isRead: boolean;
+}

@@ -59,6 +59,7 @@ quord_g0/
 │   ├── DashboardSection.tsx      # Main posts management view
 │   ├── PostCreationWizard.tsx    # Multi-step post creation
 │   ├── DraftEditor.tsx           # Edit drafts
+│   ├── NewsCarousel.tsx          # Curated news articles carousel
 │   ├── SettingsPage.tsx          # User settings management
 │   ├── LoginPage.tsx / RegisterPage.tsx
 │   └── OAuthCallback.tsx         # LinkedIn OAuth handler
@@ -74,7 +75,10 @@ quord_g0/
 │   │   ├── auth.js          # Registration, login, JWT refresh
 │   │   ├── api.js           # User settings, posts CRUD
 │   │   ├── linkedin.js      # LinkedIn OAuth flow + posting
+│   │   ├── news.js          # News curation API
 │   │   └── test.js
+│   ├── services/
+│   │   └── perplexityService.js # Perplexity AI news fetching
 │   ├── prisma/
 │   │   ├── schema.prisma    # Database schema
 │   │   └── migrations/
@@ -108,10 +112,19 @@ quord_g0/
 - **Scheduling**: Draft → `POST /api/scheduled-posts` → stored with `scheduledFor` timestamp → background worker publishes when due
 
 #### Background Scheduler (server/index.js)
+**Scheduled Posts Worker:**
 - Runs every 60 seconds
 - Queries `ScheduledPost` table for `status=scheduled` and `scheduledFor <= now`
 - Posts to LinkedIn using stored `linkedin_access_token`
 - Updates status to `published` or `failed`
+
+**News Curation Worker:**
+- Runs every 10 minutes
+- Checks each user's timezone for 6 AM local time
+- Fetches 5-7 curated articles via Perplexity AI
+- Based on user settings (industry, keywords, position, audience)
+- Stores up to 50 most recent articles per user
+- Prevents duplicate fetches (23-hour cooldown)
 
 ### Database Models (Prisma)
 - **User**: Authentication + LinkedIn OAuth fields
@@ -119,6 +132,7 @@ quord_g0/
 - **DraftPost**: Unpublished content
 - **PublishedPost**: Posts that have been published to LinkedIn
 - **ScheduledPost**: Posts scheduled for future publishing (includes status tracking)
+- **NewsArticle**: Curated news articles for each user (title, summary, url, source, etc.)
 
 ### Environment Variables
 **Frontend** (`.env` or `.env.local`):
@@ -130,6 +144,7 @@ quord_g0/
 - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
 - `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`
 - `GEMINI_API_KEY`, `OPENAI_API_KEY`
+- `PERPLEXITY_API_KEY` - For news curation (get from https://www.perplexity.ai/settings/api)
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL` - Email service
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
 - `LINKEDIN_CLIENT_ID`, `QUORD_LINKEDIN_CLIENT_SECRET`, `QUORD_LINKEDIN_REDIRECT_URI`

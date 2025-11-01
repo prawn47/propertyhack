@@ -13,6 +13,43 @@
         --brand-secondary: #159A75; /* Darker Teal */
         --brand-accent: #24D9A7; /* Light Teal */
       }
+
+      /* Light Mode Colors */
+      html.light {
+        --bg-base-100: #ffffff;
+        --bg-base-200: #f7f9fb;
+        --bg-base-300: #e5e7eb;
+        --content: #1f2937;
+        --content-secondary: #6b7280;
+        --border: #e5e7eb;
+        --hover-bg: #f3f4f6;
+      }
+
+      /* Dark Mode Colors - Professional Palette */
+      html.dark {
+        --bg-base-100: #1a1d25;     /* Dark cards/containers */
+        --bg-base-200: #13161d;     /* Dark background */
+        --bg-base-300: #232734;     /* Lighter dark elements */
+        --content: #e5e7eb;         /* Primary text */
+        --content-secondary: #9ca3af; /* Secondary text */
+        --border: #2d3340;          /* Borders */
+        --hover-bg: #252935;        /* Hover states */
+        
+        /* Enhanced brand colors for dark mode */
+        --brand-primary: #1fd9a8;   /* Brighter teal for dark bg */
+        --brand-secondary: #1ab890;
+        --brand-accent: #26e5b3;
+      }
+
+      /* Apply theme colors */
+      .bg-base-100 { background-color: var(--bg-base-100) !important; }
+      .bg-base-200 { background-color: var(--bg-base-200) !important; }
+      .bg-base-300 { background-color: var(--bg-base-300) !important; }
+      .text-content { color: var(--content) !important; }
+      .text-content-secondary { color: var(--content-secondary) !important; }
+      .border-base-300 { border-color: var(--border) !important; }
+      .hover\:bg-base-200:hover { background-color: var(--hover-bg) !important; }
+      
       .bg-brand-primary { background-color: var(--brand-primary) !important; }
       .bg-brand-secondary { background-color: var(--brand-secondary) !important; }
       .bg-brand-accent { background-color: var(--brand-accent) !important; }
@@ -24,6 +61,31 @@
       .focus\:ring-brand-primary:focus { --tw-ring-color: var(--brand-primary) !important; }
       .focus\:border-brand-primary:focus { border-color: var(--brand-primary) !important; }
       .focus\:ring-brand-secondary:focus { --tw-ring-color: var(--brand-secondary) !important; }
+
+      /* Dark mode specific overrides */
+      html.dark body {
+        background-color: var(--bg-base-200);
+        color: var(--content);
+      }
+
+      html.dark input,
+      html.dark textarea,
+      html.dark select {
+        background-color: var(--bg-base-100);
+        color: var(--content);
+        border-color: var(--border);
+      }
+
+      html.dark input:focus,
+      html.dark textarea:focus,
+      html.dark select:focus {
+        background-color: var(--bg-base-300);
+      }
+
+      /* Smooth transition */
+      * {
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      }
       
       @keyframes fade-in {
         from { opacity: 0; }
@@ -36,6 +98,22 @@
         to { opacity: 1; transform: translateY(0); }
       }
       .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+
+      /* Scrollbar styling for dark mode */
+      html.dark ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      html.dark ::-webkit-scrollbar-track {
+        background: var(--bg-base-200);
+      }
+      html.dark ::-webkit-scrollbar-thumb {
+        background: var(--bg-base-300);
+        border-radius: 4px;
+      }
+      html.dark ::-webkit-scrollbar-thumb:hover {
+        background: #3a3f4f;
+      }
     </style>
     <script type="importmap">
     {

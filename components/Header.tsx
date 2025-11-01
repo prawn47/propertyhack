@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import GamificationStats from './GamificationStats';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface HeaderProps {
     profilePictureUrl?: string;
@@ -14,6 +16,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, currentPage = 'home', currentView = 'dashboard', onNavigate, onPageChange, onBackToDashboard, onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -37,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <img src="/assets/quord-logo.svg" alt="Quord" className="h-8 w-8" />
               <h1 className="text-xl font-bold text-content">QUORD</h1>
             </div>
@@ -96,7 +99,24 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
               </button>
             )}
           </div>
-          <div className="relative" ref={dropdownRef}>
+          <div className="flex items-center space-x-4">
+            {currentView === 'dashboard' && <GamificationStats />}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-content-secondary hover:text-content hover:bg-base-200 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              )}
+            </button>
+            <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="p-1 rounded-full text-content-secondary hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary"
@@ -151,6 +171,7 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
                 </button>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

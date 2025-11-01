@@ -30,6 +30,7 @@ model User {
   draftPosts    DraftPost[]
   publishedPosts PublishedPost[]
   scheduledPosts ScheduledPost[]
+  newsArticles  NewsArticle[]
 
   @@map("users")
 }
@@ -123,4 +124,27 @@ model PromptTemplate {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("prompt_templates")
+}
+
+model NewsArticle {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  title       String
+  summary     String
+  content     String?  // Full article text if available
+  url         String
+  source      String   // Publication name
+  publishedAt DateTime? @map("published_at") // Article publish date
+  fetchedAt   DateTime @default(now()) @map("fetched_at") // When we fetched it
+  category    String?  // e.g., "technology", "business", "finance"
+  relevanceScore Float? @map("relevance_score") // 0-1 score of relevance to user
+  isRead      Boolean  @default(false) @map("is_read")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([fetchedAt])
+  @@index([isRead])
+  @@map("news_articles")
 }

@@ -1,21 +1,23 @@
 import React, { useState, useRef } from 'react';
 import { generatePostIdeas, generateDraftPost, generatePostImage, enhanceImage, generateConciseForX } from '../services/geminiService';
-import type { UserSettings, DraftPost } from '../types';
+import type { UserSettings, DraftPost, NewsArticle } from '../types';
 import Loader from './Loader';
 import SparklesIcon from './icons/SparklesIcon';
 import WandIcon from './icons/WandIcon';
 import UploadIcon from './icons/UploadIcon';
+import NewsCarousel from './NewsCarousel';
 
 interface HomePageProps {
   settings: UserSettings;
   onAddDraft: (draft: DraftPost) => Promise<void>;
   onPublish: (draft: DraftPost) => Promise<void>;
   onSchedule: (draft: DraftPost, scheduledFor?: string) => Promise<void>;
+  onNavigateToSettings: () => void;
 }
 
 type WizardStep = 'topic' | 'ideas' | 'draft';
 
-const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, onSchedule }) => {
+const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, onSchedule, onNavigateToSettings }) => {
   const [step, setStep] = useState<WizardStep>('topic');
   const [topic, setTopic] = useState('');
   const [ideas, setIdeas] = useState<string[]>([]);
@@ -26,6 +28,7 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
   const [error, setError] = useState<string | null>(null);
   const [enhancementPrompt, setEnhancementPrompt] = useState('');
   const [isScheduling, setIsScheduling] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [scheduledForInput, setScheduledForInput] = useState<string>(() => {
     const d = new Date(Date.now() + 60 * 60 * 1000);
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -37,6 +40,13 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Generate dynamic placeholder based on user settings
+  const placeholderText = () => {
+    const position = settings.position || 'professional';
+    const industry = settings.industry || 'your industry';
+    return `e.g., The future of AI in ${industry}...`;
+  };
 
   const handleGenerateIdeas = async () => {
     if (!topic) return;
@@ -59,13 +69,24 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
     setGeneratedDraft({ title: '', text: '', imageUrl: undefined });
     setStep('draft');
     try {
-      const draftContent = await generateDraftPost(idea, settings);
+      // Include article context if selected
+      let enhancedIdea = idea;
+      if (selectedArticle) {
+        enhancedIdea = `${idea}\n\nContext: Commenting on article "${selectedArticle.title}" from ${selectedArticle.source}: ${selectedArticle.summary}\nArticle URL: ${selectedArticle.url}`;
+      }
+      const draftContent = await generateDraftPost(enhancedIdea, settings);
       setGeneratedDraft(draftContent);
     } catch (err) {
       setError('Failed to generate draft. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCommentOnArticle = (article: NewsArticle) => {
+    setSelectedArticle(article);
+    setTopic(`Write a professional commentary on this article: ${article.title}`);
+    setStep('topic');
   };
 
   const handleDraftChange = (field: 'title' | 'text', value: string) => {
@@ -131,9 +152,29 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
       id: new Date().toISOString(),
       ...generatedDraft
     };
-    await onPublish(postToPublish);
-    setIsPublishing(false);
-    resetWizard();
+    
+    try {
+      await onPublish(postToPublish);
+      setIsPublishing(false);
+      resetWizard();
+    } catch (error) {
+      setIsPublishing(false);
+      
+      // Check if it's an authentication error (draft already saved in App.tsx)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Not authenticated') || errorMessage.includes('401') || errorMessage.includes('LinkedIn')) {
+        const shouldConnect = confirm(
+          'Your LinkedIn account is not connected. Your post has been saved to Drafts.\n\n' +
+          'Would you like to connect your LinkedIn account now?'
+        );
+        
+        if (shouldConnect) {
+          onNavigateToSettings();
+        }
+      }
+      
+      resetWizard();
+    }
   };
 
   const handleSchedule = () => {
@@ -158,20 +199,33 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
     setGeneratedDraft({ title: '', text: '', imageUrl: undefined });
     setError(null);
     setIsScheduling(false);
+    setSelectedArticle(null);
   };
 
   const renderStepContent = () => {
     if (step === 'topic') {
       return (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
-            <h2 className="text-2xl font-bold text-content mb-2">What's on your mind?</h2>
-            <p className="text-content-secondary">Enter a topic, a question, or a simple idea, and the AI will generate post concepts for you.</p>
+            <h2 className="text-xl font-bold text-content mb-1">💭 What's on your mind?</h2>
+            <p className="text-sm text-content-secondary">Enter a topic or idea to generate post concepts</p>
           </div>
+          {selectedArticle && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-xs font-semibold text-blue-700 mb-1">📰 Commenting on article:</p>
+              <p className="text-sm text-blue-900 font-medium">{selectedArticle.title}</p>
+              <button
+                onClick={() => setSelectedArticle(null)}
+                className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+              >
+                ✕ Clear article
+              </button>
+            </div>
+          )}
           <textarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g., The future of AI in product management..."
+            placeholder={placeholderText()}
             className="w-full px-4 py-3 bg-base-100 border border-base-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent resize-none"
             rows={6}
           />
@@ -392,10 +446,16 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-base-100 p-8 rounded-lg shadow-md">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* What's On Your Mind - Compact */}
+      <div className="bg-base-100 p-6 rounded-lg shadow-md">
         {renderStepContent()}
       </div>
+
+      {/* News Carousel - Only show on topic step */}
+      {step === 'topic' && (
+        <NewsCarousel onCommentOnArticle={handleCommentOnArticle} />
+      )}
     </div>
   );
 };

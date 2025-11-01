@@ -12,6 +12,8 @@ const apiRoutes = require('./routes/api');
 const linkedInRoutes = require('./routes/linkedin');
 const testRoutes = require('./routes/test');
 const promptRoutes = require('./routes/prompts');
+const newsRoutes = require('./routes/news');
+const { fetchCuratedNews } = require('./services/perplexityService');
 // ALL OAuth/Passport infrastructure COMPLETELY REMOVED
 
 const app = express();
@@ -75,6 +77,7 @@ app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
 app.use('/api', linkedInRoutes); // Clean LinkedIn routes - exact copy from working app
 app.use('/api/test', testRoutes);
 app.use('/api/prompts', promptRoutes); // Super admin prompt management
+app.use('/api/news', newsRoutes); // News curation routes
 app.use('/api', apiRoutes);
 
 // Health check endpoint
@@ -209,6 +212,98 @@ async function postToLinkedInWithToken({ accessToken, text, imageUrl }) {
 }
 
 let scheduledWorkerInterval = null;
+let newsWorkerInterval = null;
+const userNewsLastFetch = new Map(); // Track last fetch time per user
+
+/**
+ * Fetch news for all active users at their 6 AM local time
+ */
+async function processNewsForUsers() {
+  try {
+    // Get all users with settings
+    const users = await prisma.user.findMany({
+      where: { settings: { isNot: null } },
+      include: { settings: true },
+    });
+
+    if (users.length === 0) return;
+
+    const now = new Date();
+    
+    for (const user of users) {
+      try {
+        if (!user.settings) continue;
+
+        // Parse user's timezone (e.g., "America/New_York")
+        const userTimezone = user.settings.timeZone || 'UTC';
+        
+        // Get current time in user's timezone
+        const userNow = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+        const userHour = userNow.getHours();
+        
+        // Check if it's 6 AM in user's timezone (within the current hour)
+        if (userHour !== 6) continue;
+
+        // Check if we already fetched news for this user today
+        const lastFetch = userNewsLastFetch.get(user.id);
+        if (lastFetch) {
+          const hoursSinceLastFetch = (now - lastFetch) / (1000 * 60 * 60);
+          if (hoursSinceLastFetch < 23) {
+            // Already fetched within last 23 hours, skip
+            continue;
+          }
+        }
+
+        console.log(`[news-scheduler] Fetching news for user ${user.id} at their 6 AM (${userTimezone})`);
+
+        // Fetch and save news articles
+        const articles = await fetchCuratedNews(user.settings);
+        
+        if (articles.length > 0) {
+          // Delete old articles (keep last 50)
+          const existingCount = await prisma.newsArticle.count({ where: { userId: user.id } });
+          if (existingCount > 50) {
+            const toDelete = await prisma.newsArticle.findMany({
+              where: { userId: user.id },
+              orderBy: { fetchedAt: 'desc' },
+              skip: 50,
+              select: { id: true },
+            });
+            await prisma.newsArticle.deleteMany({
+              where: { id: { in: toDelete.map(a => a.id) } },
+            });
+          }
+
+          // Save new articles
+          await Promise.all(
+            articles.map(article =>
+              prisma.newsArticle.create({
+                data: {
+                  userId: user.id,
+                  title: article.title,
+                  summary: article.summary,
+                  content: article.content,
+                  url: article.url,
+                  source: article.source,
+                  publishedAt: article.publishedAt ? new Date(article.publishedAt) : null,
+                  category: article.category,
+                  relevanceScore: article.relevanceScore,
+                },
+              })
+            )
+          );
+
+          console.log(`[news-scheduler] Saved ${articles.length} articles for user ${user.id}`);
+          userNewsLastFetch.set(user.id, now);
+        }
+      } catch (userErr) {
+        console.error(`[news-scheduler] Failed to fetch news for user ${user.id}:`, userErr.message);
+      }
+    }
+  } catch (error) {
+    console.error('[news-scheduler] Unexpected error:', error);
+  }
+}
 
 async function processDueScheduledPosts() {
   try {
@@ -298,6 +393,7 @@ async function processDueScheduledPosts() {
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
   if (scheduledWorkerInterval) clearInterval(scheduledWorkerInterval);
+  if (newsWorkerInterval) clearInterval(newsWorkerInterval);
   await prisma.$disconnect();
   process.exit(0);
 });
@@ -305,6 +401,7 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully');
   if (scheduledWorkerInterval) clearInterval(scheduledWorkerInterval);
+  if (newsWorkerInterval) clearInterval(newsWorkerInterval);
   await prisma.$disconnect();
   process.exit(0);
 });
@@ -313,8 +410,17 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔒 CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3004'}`);
+  
   if (!scheduledWorkerInterval) {
     scheduledWorkerInterval = setInterval(processDueScheduledPosts, 60 * 1000);
     console.log('⏱️  Scheduled posts worker started (interval 60s)');
+  }
+  
+  if (!newsWorkerInterval) {
+    // Check every 10 minutes for news to fetch
+    newsWorkerInterval = setInterval(processNewsForUsers, 10 * 60 * 1000);
+    console.log('📰 News curation worker started (interval 10m)');
+    // Run once on startup after a short delay
+    setTimeout(processNewsForUsers, 5000);
   }
 });

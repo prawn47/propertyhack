@@ -50,40 +50,12 @@ const GamificationStats: React.FC = () => {
   if (!stats) return null;
 
   return (
-    <div className="bg-base-100 border-b border-base-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12">
-          {/* Current Streak */}
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">🔥</span>
-            <div>
-              <p className="text-xs text-content-secondary">Current Streak</p>
-              <p className="text-lg font-bold text-orange-500">{stats.currentStreak} days</p>
-            </div>
-          </div>
-
-          {/* Weekly Progress */}
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">📊</span>
-            <div>
-              <p className="text-xs text-content-secondary">Weekly Progress</p>
-              <div className="flex items-center space-x-2">
-                <p className="text-lg font-bold text-blue-500">{stats.weeklyProgress}%</p>
-                <span className="text-xs text-content-secondary">({stats.postsThisWeek}/{stats.weeklyTarget})</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Best Streak */}
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">🏆</span>
-            <div>
-              <p className="text-xs text-content-secondary">Best Streak</p>
-              <p className="text-lg font-bold text-content">{stats.longestStreak} days</p>
-            </div>
-          </div>
-        </div>
+    <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-full">
+      <div className="flex items-center justify-center w-6 h-6 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full">
+        <span className="text-sm">🔥</span>
       </div>
+      <span className="text-sm font-bold text-emerald-700">{stats.currentStreak}</span>
+      <span className="text-xs text-emerald-600">{stats.currentStreak === 1 ? 'day' : 'days'}</span>
     </div>
   );
 };
