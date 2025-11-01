@@ -31,11 +31,14 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
   }
 
   return (
-    <header className="bg-base-100 shadow-sm">
+    <header className="bg-base-100 shadow-sm border-b border-base-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <h1 className="text-xl font-bold text-content">QUORD.ai</h1>
+            <div className="flex items-center space-x-3">
+              <img src="/assets/quord-logo.svg" alt="Quord" className="h-8 w-8" />
+              <h1 className="text-xl font-bold text-content">QUORD</h1>
+            </div>
             {onPageChange && (
               <nav className="hidden md:flex space-x-1">
                 <button

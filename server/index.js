@@ -217,13 +217,13 @@ async function processDueScheduledPosts() {
       where: { status: 'scheduled', scheduledFor: { lte: now } },
     });
     
-    console.log('[scheduler] Checking for due posts at', now);
-    console.log('[scheduler] Found', duePosts.length, 'due posts');
+    // Only log when there are due posts to avoid console spam
+    if (duePosts.length === 0) return;
+    
+    console.log('[scheduler] Found', duePosts.length, 'due posts at', now.toISOString());
     duePosts.forEach(p => {
       console.log('  - Due post:', p.id, p.title, 'scheduled for', p.scheduledFor);
     });
-
-    if (duePosts.length === 0) return;
 
     for (const post of duePosts) {
       try {
