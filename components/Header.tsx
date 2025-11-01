@@ -4,12 +4,14 @@ interface HeaderProps {
     profilePictureUrl?: string;
     isSuperAdmin?: boolean;
     currentPage?: 'home' | 'drafts' | 'scheduled' | 'published';
+    currentView?: 'dashboard' | 'settings' | 'profile' | 'prompts';
     onNavigate: (view: 'profile' | 'settings' | 'prompts') => void;
     onPageChange?: (page: 'home' | 'drafts' | 'scheduled' | 'published') => void;
+    onBackToDashboard?: () => void;
     onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, currentPage = 'home', onNavigate, onPageChange, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, currentPage = 'home', currentView = 'dashboard', onNavigate, onPageChange, onBackToDashboard, onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
               <img src="/assets/quord-logo.svg" alt="Quord" className="h-8 w-8" />
               <h1 className="text-xl font-bold text-content">QUORD</h1>
             </div>
-            {onPageChange && (
+            {currentView === 'dashboard' && onPageChange ? (
               <nav className="hidden md:flex space-x-1">
                 <button
                   onClick={() => onPageChange('home')}
@@ -82,6 +84,16 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
                   Published
                 </button>
               </nav>
+            ) : onBackToDashboard && (
+              <button
+                onClick={onBackToDashboard}
+                className="flex items-center space-x-2 text-sm text-content-secondary hover:text-content transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                <span>Back to Dashboard</span>
+              </button>
             )}
           </div>
           <div className="relative" ref={dropdownRef}>

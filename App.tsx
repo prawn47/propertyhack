@@ -668,8 +668,10 @@ const App: React.FC = () => {
         profilePictureUrl={authState.user?.profilePictureUrl || settings?.profilePictureUrl}
         isSuperAdmin={authState.user?.superAdmin}
         currentPage={currentPage}
+        currentView={view}
         onNavigate={handleNavigate}
         onPageChange={setCurrentPage}
+        onBackToDashboard={handleBackToDashboard}
         onLogout={handleLogout} 
       />
       {renderContent()}
