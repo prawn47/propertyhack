@@ -4,6 +4,7 @@ import UploadIcon from './icons/UploadIcon';
 import PostIcon from './icons/PostIcon';
 import Loader from './Loader';
 import { enhanceImage, generateConciseForX } from '../services/geminiService';
+import { createScheduledPost } from '../services/schedulingService';
 
 interface DraftEditorProps {
   draft: DraftPost;
@@ -11,9 +12,10 @@ interface DraftEditorProps {
   onPublish: (draft: DraftPost) => void;
   onUpdate: (updatedDraft: DraftPost) => void;
   onClose: () => void;
+  onSchedule?: () => void; // Callback to refresh scheduled posts list
 }
 
-const DraftEditor: React.FC<DraftEditorProps> = ({ draft, settings, onPublish, onUpdate, onClose }) => {
+const DraftEditor: React.FC<DraftEditorProps> = ({ draft, settings, onPublish, onUpdate, onClose, onSchedule }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editPrompt, setEditPrompt] = useState('');
   const [isEditingImage, setIsEditingImage] = useState(false);
@@ -21,6 +23,9 @@ const DraftEditor: React.FC<DraftEditorProps> = ({ draft, settings, onPublish, o
   const [isPreparingForX, setIsPreparingForX] = useState(false);
   const [xVersion, setXVersion] = useState('');
   const [isGeneratingXVersion, setIsGeneratingXVersion] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDateTime, setScheduleDateTime] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({ ...draft, title: e.target.value });
@@ -100,6 +105,46 @@ const DraftEditor: React.FC<DraftEditorProps> = ({ draft, settings, onPublish, o
     }
   };
 
+  const handleSchedulePost = async () => {
+    if (!scheduleDateTime) {
+      alert('Please select a date and time for scheduling.');
+      return;
+    }
+
+    const scheduledDate = new Date(scheduleDateTime);
+    const now = new Date();
+    
+    if (scheduledDate <= now) {
+      alert('Scheduled time must be in the future.');
+      return;
+    }
+
+    setIsScheduling(true);
+    try {
+      await createScheduledPost(
+        draft.title,
+        draft.text,
+        draft.imageUrl,
+        scheduledDate.toISOString()
+      );
+      alert('Post scheduled successfully!');
+      setShowScheduleModal(false);
+      if (onSchedule) {
+        onSchedule();
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error scheduling post:', error);
+      alert(`Failed to schedule post: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    onUpdate({ ...draft, imageUrl: undefined });
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
         <div className="bg-base-100 p-6 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
@@ -175,6 +220,12 @@ const DraftEditor: React.FC<DraftEditorProps> = ({ draft, settings, onPublish, o
                           ✨ Edit with AI
                         </>
                       )}
+                    </button>
+                    <button 
+                      onClick={handleRemoveImage} 
+                      className="flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200 transition-colors"
+                    >
+                      🗑️ Remove
                     </button>
                   </div>
                   {showEditPrompt && (
@@ -284,10 +335,17 @@ const DraftEditor: React.FC<DraftEditorProps> = ({ draft, settings, onPublish, o
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowScheduleModal(true)}
+                disabled={draft.isPublishing || isScheduling}
+                className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+              >
+                📅 Schedule Post
+              </button>
               <button
                 onClick={() => onPublish(draft)}
-                disabled={draft.isPublishing}
+                disabled={draft.isPublishing || isScheduling}
                 className="flex items-center justify-center w-48 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400"
               >
                 {draft.isPublishing ? (
@@ -303,6 +361,52 @@ const DraftEditor: React.FC<DraftEditorProps> = ({ draft, settings, onPublish, o
                 )}
               </button>
             </div>
+
+            {/* Schedule Modal */}
+            {showScheduleModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+                  <h3 className="text-lg font-semibold mb-4">Schedule Post</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Date and Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={scheduleDateTime}
+                        onChange={(e) => setScheduleDateTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        min={new Date().toISOString().slice(0, 16)}
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleSchedulePost}
+                        disabled={isScheduling || !scheduleDateTime}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center"
+                      >
+                        {isScheduling ? (
+                          <>
+                            <Loader className="w-4 h-4 mr-2" />
+                            Scheduling...
+                          </>
+                        ) : (
+                          'Schedule'
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setShowScheduleModal(false)}
+                        disabled={isScheduling}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
     </div>

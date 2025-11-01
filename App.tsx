@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import DraftEditor from './components/DraftEditor';
-import GamificationStats from './components/GamificationStats';
 import HomePage from './components/HomePage';
 import DraftsPage from './components/DraftsPage';
 import ScheduledPage from './components/ScheduledPage';
@@ -388,17 +387,12 @@ const App: React.FC = () => {
 
     } catch (error) {
       console.error("Failed to publish to LinkedIn:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Check if it's an authentication error
-      if (errorMessage.includes('Not authenticated') || errorMessage.includes('401') || errorMessage.includes('Failed to get user info')) {
-        alert(`Authentication error: Please reconnect your LinkedIn account in Settings. Your post has been saved as a draft.`);
-      } else {
-        alert(`Failed to publish post: ${errorMessage}. Your post has been saved as a draft.`);
-      }
       
       // Reset loading state on failure - draft remains in drafts list
       setDraftPublishingState(draftToPublish.id, false);
+      
+      // Re-throw the error so HomePage can handle it
+      throw error;
     }
   };
 
@@ -525,6 +519,15 @@ const App: React.FC = () => {
     setEditingScheduledId(null);
   };
 
+  const handleRefreshScheduled = async () => {
+    try {
+      const scheduledPosts = await getScheduledPosts();
+      setScheduled(scheduledPosts);
+    } catch (error) {
+      console.error('Failed to refresh scheduled posts:', error);
+    }
+  };
+
   if (authState.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-base-200">
@@ -596,6 +599,7 @@ const App: React.FC = () => {
             onAddDraft={handleAddDraft}
             onPublish={handlePublish}
             onSchedule={handleSchedule}
+            onNavigateToSettings={() => setView('settings')}
           />
         );
     }
@@ -644,7 +648,6 @@ const App: React.FC = () => {
       default:
         return (
           <>
-            <GamificationStats />
             <main className="p-4 sm:p-6 lg:p-8">
               {renderPage()}
             </main>
@@ -655,6 +658,7 @@ const App: React.FC = () => {
                   onUpdate={handleUpdateDraft}
                   onPublish={handlePublish}
                   onClose={handleCloseEditor}
+                  onSchedule={handleRefreshScheduled}
               />
             )}
           </>
