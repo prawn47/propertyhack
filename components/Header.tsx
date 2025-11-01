@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface HeaderProps {
     profilePictureUrl?: string;
-    onNavigate: (view: 'profile' | 'settings') => void;
+    isSuperAdmin?: boolean;
+    onNavigate: (view: 'profile' | 'settings' | 'prompts') => void;
     onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ profilePictureUrl, onNavigate, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, onNavigate, onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, onNavigate, onLogout
     };
   }, []);
 
-  const handleNavigation = (view: 'profile' | 'settings') => {
+  const handleNavigation = (view: 'profile' | 'settings' | 'prompts') => {
     onNavigate(view);
     setIsDropdownOpen(false);
   }
@@ -70,6 +71,15 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, onNavigate, onLogout
                 >
                   Settings
                 </button>
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => handleNavigation('prompts')}
+                    className="w-full text-left block px-4 py-2 text-sm text-content hover:bg-base-200"
+                    role="menuitem"
+                  >
+                    Prompt Management
+                  </button>
+                )}
                 <div className="border-t border-base-200 my-1"></div>
                 <button
                   onClick={onLogout}

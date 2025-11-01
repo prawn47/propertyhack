@@ -19,6 +19,7 @@ const authenticateToken = async (req, res, next) => {
         id: true,
         email: true,
         emailVerified: true,
+        superAdmin: true,
         createdAt: true,
       }
     });
@@ -80,6 +81,19 @@ const authenticateRefreshToken = async (req, res, next) => {
   }
 };
 
+// Middleware to verify user is super admin
+const requireSuperAdmin = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  if (!req.user.superAdmin) {
+    return res.status(403).json({ error: 'Super admin access required' });
+  }
+  
+  next();
+};
+
 // Helper function to generate tokens
 const generateTokens = (userId) => {
   const accessToken = jwt.sign(
@@ -100,5 +114,6 @@ const generateTokens = (userId) => {
 module.exports = {
   authenticateToken,
   authenticateRefreshToken,
+  requireSuperAdmin,
   generateTokens,
 };

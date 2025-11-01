@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const linkedInRoutes = require('./routes/linkedin');
 const testRoutes = require('./routes/test');
+const promptRoutes = require('./routes/prompts');
 // ALL OAuth/Passport infrastructure COMPLETELY REMOVED
 
 const app = express();
@@ -73,6 +74,7 @@ app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
 // app.use('/api/oauth', oauthRoutes); // DISABLED - using clean LinkedIn implementation
 app.use('/api', linkedInRoutes); // Clean LinkedIn routes - exact copy from working app
 app.use('/api/test', testRoutes);
+app.use('/api/prompts', promptRoutes); // Super admin prompt management
 app.use('/api', apiRoutes);
 
 // Health check endpoint

@@ -17,6 +17,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
     setPassword('demo123');
   };
 
+  const handleSuperAdminLogin = () => {
+    setEmail('super@quord.ai');
+    setPassword('12345');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -91,23 +96,46 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToRegister }) =>
             </div>
           </form>
 
-          {/* Demo Credentials Section */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-blue-900">Demo Account</h3>
-                <p className="text-xs text-blue-700 mt-1">
-                  <strong>Email:</strong> demo@quord.ai<br />
-                  <strong>Password:</strong> demo123
-                </p>
+          {/* Quick Login Section */}
+          <div className="mt-6 space-y-3">
+            {/* Demo Account */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-blue-900">Demo Account</h3>
+                  <p className="text-xs text-blue-700 mt-1">
+                    <strong>Email:</strong> demo@quord.ai<br />
+                    <strong>Password:</strong> demo123
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                >
+                  Use Demo
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-              >
-                Use Demo
-              </button>
+            </div>
+
+            {/* Super Admin Account */}
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-purple-900">Super Admin</h3>
+                  <p className="text-xs text-purple-700 mt-1">
+                    <strong>Email:</strong> super@quord.ai<br />
+                    <strong>Password:</strong> 12345
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSuperAdminLogin}
+                  className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 border border-purple-300 rounded-md hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
+                >
+                  Use Admin
+                </button>
+              </div>
             </div>
           </div>
 

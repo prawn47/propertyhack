@@ -12,6 +12,7 @@ import Loader from './components/Loader';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import OAuthCallback from './components/OAuthCallback';
+import { PromptManagementPage } from './components/PromptManagementPage';
 import type { UserSettings, DraftPost, PublishedPost, ScheduledPost, User, AuthState } from './types';
 import * as db from './services/dbService';
 import { postToLinkedIn } from './services/linkedInService';
@@ -25,7 +26,7 @@ const App: React.FC = () => {
     isLoading: true,
   });
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
-  const [view, setView] = useState<'dashboard' | 'settings' | 'profile'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'settings' | 'profile' | 'prompts'>('dashboard');
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [drafts, setDrafts] = useState<DraftPost[]>([]);
   const [published, setPublished] = useState<PublishedPost[]>([]);
@@ -258,7 +259,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleNavigate = (newView: 'profile' | 'settings') => {
+  const handleNavigate = (newView: 'profile' | 'settings' | 'prompts') => {
     setEditingDraft(null);
     setView(newView);
   };
@@ -622,6 +623,16 @@ const App: React.FC = () => {
   
   const renderContent = () => {
     switch(view) {
+      case 'prompts':
+        // Only allow super admins to access
+        if (!authState.user?.superAdmin) {
+          return (
+            <div className="flex items-center justify-center min-h-screen bg-base-200">
+              <p className="text-content">Access denied. Super admin privileges required.</p>
+            </div>
+          );
+        }
+        return <PromptManagementPage />;
       case 'settings':
         console.log('Rendering settings page, settings:', settings);
         if (!settings) {
@@ -673,7 +684,8 @@ const App: React.FC = () => {
   return (
     <div className="bg-base-200 min-h-screen text-content font-sans">
       <Header 
-        profilePictureUrl={authState.user?.profilePictureUrl || settings?.profilePictureUrl} 
+        profilePictureUrl={authState.user?.profilePictureUrl || settings?.profilePictureUrl}
+        isSuperAdmin={authState.user?.superAdmin}
         onNavigate={handleNavigate} 
         onLogout={handleLogout} 
       />

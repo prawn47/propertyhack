@@ -86,7 +86,49 @@ const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: str
   }
 };
 
-const createSystemInstruction = (settings: UserSettings): string => {
+// Replace template variables with actual values from settings
+const interpolateTemplate = (template: string, settings: UserSettings): string => {
+  let result = template;
+  
+  // Map of variable names to actual values
+  const variables: Record<string, string> = {
+    toneOfVoice: settings.toneOfVoice,
+    industry: settings.industry,
+    position: settings.position,
+    englishVariant: settings.englishVariant,
+    audience: settings.audience,
+    postGoal: settings.postGoal,
+    keywords: settings.keywords,
+    contentExample1: settings.contentExamples[0] || '',
+    contentExample2: settings.contentExamples[1] || '',
+  };
+  
+  // Replace all {{variableName}} with actual values
+  Object.entries(variables).forEach(([key, value]) => {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    result = result.replace(regex, value);
+  });
+  
+  return result;
+};
+
+// Fetch prompt template from backend and apply settings
+const getSystemInstruction = async (templateName: string, settings: UserSettings): Promise<string> => {
+  try {
+    const response = await fetch(`/api/prompts/active/${templateName}`);
+    if (response.ok) {
+      const data = await response.json();
+      return interpolateTemplate(data.template.template, settings);
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch prompt template '${templateName}', using default`, error);
+  }
+  
+  // Fallback to hardcoded default
+  return createDefaultSystemInstruction(settings);
+};
+
+const createDefaultSystemInstruction = (settings: UserSettings): string => {
   return `You are an expert content creator for LinkedIn. Your persona is defined by the following characteristics:
 - Tone of Voice: ${settings.toneOfVoice}
 - Industry: ${settings.industry}
@@ -108,7 +150,7 @@ Do not use emojis unless specifically asked. Be concise and professional. Struct
 export const generatePostIdeas = async (topic: string, settings: UserSettings): Promise<string[]> => {
   try {
     const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-    const systemInstruction = createSystemInstruction(settings);
+    const systemInstruction = await getSystemInstruction('idea_generation', settings);
     const userPrompt = `Generate 5 distinct LinkedIn post ideas based on the topic: "${topic}".
     Each idea should be a short, compelling title or a one-sentence concept.
     Return the ideas as a JSON array of strings.`;
@@ -147,7 +189,7 @@ export const generatePostIdeas = async (topic: string, settings: UserSettings): 
 export const generateDraftPost = async (idea: string, settings: UserSettings): Promise<Omit<DraftPost, 'id'>> => {
     try {
       const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-      const systemInstruction = createSystemInstruction(settings);
+      const systemInstruction = await getSystemInstruction('post_generation', settings);
       const userPrompt = `Generate a full LinkedIn post based on the following idea: "${idea}".
   
       The post should include a compelling headline and a body of text suitable for a LinkedIn audience. The tone, style, and keywords should align with the persona I provided.
@@ -198,10 +240,26 @@ export const generateDraftPost = async (idea: string, settings: UserSettings): P
     }
 };
 
-export const generatePostImage = async (postText: string): Promise<string | undefined> => {
+export const generatePostImage = async (postText: string, settings?: UserSettings): Promise<string | undefined> => {
     try {
         const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-        const imagePrompt = `Create a visually appealing and professional image that complements the following LinkedIn post. The image should be abstract or conceptual, suitable for a professional tech audience. Avoid text in the image. The style should be modern and clean. Post content: "${postText.substring(0, 500)}..."`;
+        
+        // Try to get custom image prompt template if settings provided
+        let imagePrompt = `Create a visually appealing and professional image that complements the following LinkedIn post. The image should be abstract or conceptual, suitable for a professional tech audience. Avoid text in the image. The style should be modern and clean. Post content: "${postText.substring(0, 500)}..."`;
+        
+        if (settings) {
+          try {
+            const response = await fetch('/api/prompts/active/image_generation');
+            if (response.ok) {
+              const data = await response.json();
+              const template = data.template.template;
+              // Replace {{postText}} placeholder
+              imagePrompt = template.replace(/\{\{postText\}\}/g, postText.substring(0, 500));
+            }
+          } catch (error) {
+            console.warn('Failed to fetch image generation template, using default', error);
+          }
+        }
 
         const response = await withTimeout(
           getAiClient().models.generateImages({

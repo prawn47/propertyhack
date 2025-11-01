@@ -70,6 +70,7 @@ router.post('/register', registerValidation, handleValidationErrors, async (req,
         id: true,
         email: true,
         emailVerified: true,
+        superAdmin: true,
         createdAt: true,
       }
     });
@@ -142,6 +143,7 @@ router.post('/login', loginValidation, handleValidationErrors, async (req, res) 
         email: true,
         passwordHash: true,
         emailVerified: true,
+        superAdmin: true,
         createdAt: true,
       }
     });

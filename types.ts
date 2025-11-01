@@ -3,6 +3,7 @@ export interface User {
   id: string;
   email: string;
   emailVerified: boolean;
+  superAdmin: boolean;
   createdAt: string;
   profilePictureUrl?: string;
   linkedinId?: string;
@@ -57,4 +58,15 @@ export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   isLoading: boolean;
+}
+
+export interface PromptTemplate {
+  id: string;
+  name: string;
+  description: string;
+  template: string;
+  variables: string[]; // Maps to UserSettings field names
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
