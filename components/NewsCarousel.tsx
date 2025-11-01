@@ -54,7 +54,11 @@ const NewsCarousel: React.FC<NewsCarouselProps> = ({ onCommentOnArticle }) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Refresh response:', data);
+        console.log('Articles array:', data.articles);
         setArticles(data.articles || []);
+      } else {
+        console.error('Refresh failed:', response.status, await response.text());
       }
     } catch (error) {
       console.error('Error refreshing news:', error);
@@ -135,35 +139,34 @@ const NewsCarousel: React.FC<NewsCarouselProps> = ({ onCommentOnArticle }) => {
         </button>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <div className="space-y-4">
         {articles.map((article) => (
           <div
             key={article.id}
-            className={`flex-shrink-0 w-80 bg-white border rounded-lg p-4 snap-start ${
-              article.isRead ? 'opacity-60' : ''
-            }`}
+            className="rounded-lg p-4 transition-colors bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">
+              <span className="text-xs font-semibold px-2 py-1 rounded
+                text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40">
                 {article.source}
               </span>
               {article.publishedAt && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-600 dark:text-gray-400">
                   {new Date(article.publishedAt).toLocaleDateString()}
                 </span>
               )}
             </div>
 
-            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+            <h3 className="font-semibold mb-2 text-lg text-gray-900 dark:text-white">
               {article.title}
             </h3>
 
-            <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+            <p className="text-sm mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">
               {article.summary}
             </p>
 
             {article.category && (
-              <span className="inline-block text-xs text-gray-500 mb-3">
+              <span className="inline-block text-xs mb-3 text-gray-600 dark:text-gray-400">
                 #{article.category}
               </span>
             )}
@@ -183,21 +186,15 @@ const NewsCarousel: React.FC<NewsCarouselProps> = ({ onCommentOnArticle }) => {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => handleMarkAsRead(article.id)}
-                className="px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50"
+                className="px-3 py-2 border-2 text-sm font-medium rounded transition-colors
+                  border-gray-300 dark:border-gray-600
+                  text-gray-900 dark:text-white
+                  hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 🔗
               </a>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-center gap-2 mt-2">
-        {articles.map((_, index) => (
-          <div
-            key={index}
-            className="w-2 h-2 rounded-full bg-gray-300"
-          />
         ))}
       </div>
     </div>
