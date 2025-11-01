@@ -17,6 +17,7 @@ export const postToLinkedIn = async (payload: PostPayload): Promise<void> => {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include', // CRITICAL: Include cookies for authentication
             body: JSON.stringify({
                 text: payload.text,
                 image: payload.base64Image, // Match working app field name

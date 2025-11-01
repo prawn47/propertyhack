@@ -13,7 +13,7 @@ interface PostCreationWizardProps {
   settings: UserSettings;
   onAddToDrafts: (draft: DraftPost) => void;
   onPublish: (draft: DraftPost) => void;
-  onSchedule: (draft: DraftPost) => void;
+  onSchedule: (draft: DraftPost, scheduledFor?: string) => void;
   onClose: () => void;
 }
 
@@ -32,6 +32,17 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
   const [isPreparingForX, setIsPreparingForX] = useState(false);
   const [xVersion, setXVersion] = useState('');
   const [isGeneratingXVersion, setIsGeneratingXVersion] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [scheduledForInput, setScheduledForInput] = useState<string>(() => {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`; // for input type=datetime-local
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGenerateIdeas = async () => {
@@ -135,11 +146,19 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
   };
 
   const handleSchedule = () => {
+    // Open scheduling controls instead of immediate schedule
+    setIsScheduling(true);
+  };
+
+  const handleConfirmSchedule = () => {
     const draftToSchedule: DraftPost = {
       id: new Date().toISOString(),
       ...generatedDraft
     };
-    onSchedule(draftToSchedule);
+    // Convert datetime-local value to ISO string in local timezone
+    const selected = new Date(scheduledForInput);
+    const iso = isNaN(selected.getTime()) ? undefined : selected.toISOString();
+    onSchedule(draftToSchedule, iso);
     onClose();
   };
 
@@ -359,8 +378,8 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
                    <ClipboardListIcon className="w-5 h-5 mr-2" />
                    Add to Drafts
                </button>
-               <button 
-                onClick={handleSchedule}
+              <button 
+               onClick={handleSchedule}
                 disabled={isPublishing}
                 className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400"
                >
@@ -394,6 +413,34 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
                </button>
            </div>
        )}
+      {isScheduling && (
+        <div className="mt-4 p-4 border border-base-300 rounded-lg bg-base-100">
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <label className="text-sm text-content-secondary" htmlFor="scheduleAt">Schedule for</label>
+            <input
+              id="scheduleAt"
+              type="datetime-local"
+              value={scheduledForInput}
+              onChange={(e) => setScheduledForInput(e.target.value)}
+              className="px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+            />
+            <div className="flex gap-2 ml-auto">
+              <button
+                onClick={handleConfirmSchedule}
+                className="px-4 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setIsScheduling(false)}
+                className="px-4 py-2 text-sm rounded-md border border-base-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
        <div className="mt-4 flex justify-between items-center">
             <button onClick={() => setStep('ideas')} className="text-sm font-semibold text-brand-primary hover:text-brand-secondary disabled:text-gray-400" disabled={isLoading}>
                 &larr; Back to Ideas

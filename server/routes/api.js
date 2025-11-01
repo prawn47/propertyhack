@@ -362,6 +362,11 @@ router.get('/posts/scheduled', async (req, res) => {
       }
     });
 
+    console.log('[api] GET /posts/scheduled found', scheduled.length, 'posts for user', req.user.id);
+    scheduled.forEach(p => {
+      console.log('  -', p.id, p.status, 'scheduled for', p.scheduledFor, 'now:', new Date());
+    });
+
     res.json(scheduled);
   } catch (error) {
     console.error('Get scheduled posts error:', error);
@@ -379,6 +384,8 @@ router.post('/posts/scheduled', scheduledPostValidation, handleValidationErrors,
     if (scheduledDate <= new Date()) {
       return res.status(400).json({ error: 'Scheduled time must be in the future' });
     }
+
+    console.log('[api] Creating scheduled post:', title, 'for', scheduledDate, 'user:', req.user.id);
 
     const scheduledPost = await req.prisma.scheduledPost.create({
       data: {
@@ -400,6 +407,15 @@ router.post('/posts/scheduled', scheduledPostValidation, handleValidationErrors,
         updatedAt: true,
       }
     });
+
+    console.log('[api] Scheduled post created with ID:', scheduledPost.id);
+
+    // Enforce 30-day max window for cookie-based posting reliability
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 30);
+    if (scheduledDate > maxDate) {
+      console.warn('[schedule] Scheduled date exceeds 30 days; worker may not have a valid token then');
+    }
 
     res.status(201).json(scheduledPost);
   } catch (error) {
@@ -423,18 +439,20 @@ router.patch('/posts/scheduled/:id', async (req, res) => {
       return res.status(404).json({ error: 'Scheduled post not found' });
     }
 
-    // Only allow updates to scheduled posts
-    if (existingPost.status !== 'scheduled') {
-      return res.status(400).json({ error: 'Can only update scheduled posts' });
-    }
+  // Allow rescheduling for 'scheduled' or 'failed' or 'cancelled' (re-queues it)
+  if (!['scheduled', 'failed', 'cancelled'].includes(existingPost.status)) {
+    return res.status(400).json({ error: 'Can only update scheduled/failed/cancelled posts' });
+  }
 
-    const updateData = {};
+  const updateData = {};
     if (scheduledFor) {
       const scheduledDate = new Date(scheduledFor);
       if (scheduledDate <= new Date()) {
         return res.status(400).json({ error: 'Scheduled time must be in the future' });
       }
-      updateData.scheduledFor = scheduledDate;
+    updateData.scheduledFor = scheduledDate;
+    // Re-queue if previously failed/cancelled
+    updateData.status = 'scheduled';
     }
     if (title !== undefined) updateData.title = title;
     if (text !== undefined) updateData.text = text;
@@ -481,12 +499,36 @@ router.delete('/posts/scheduled/:id', async (req, res) => {
       return res.status(400).json({ error: 'Can only cancel scheduled posts' });
     }
 
-    await req.prisma.scheduledPost.update({
-      where: { id },
-      data: { status: 'cancelled' }
+    // Within a transaction: mark cancelled and create a draft copy
+    const result = await req.prisma.$transaction(async (tx) => {
+      await tx.scheduledPost.update({
+        where: { id },
+        data: { status: 'cancelled' }
+      });
+
+      const draft = await tx.draftPost.create({
+        data: {
+          userId: req.user.id,
+          title: existingPost.title,
+          text: existingPost.text,
+          imageUrl: existingPost.imageUrl || null,
+          isPublishing: false,
+        },
+        select: {
+          id: true,
+          title: true,
+          text: true,
+          imageUrl: true,
+          isPublishing: true,
+          createdAt: true,
+          updatedAt: true,
+        }
+      });
+
+      return draft;
     });
 
-    res.status(204).send();
+    res.status(200).json({ draft: result });
   } catch (error) {
     console.error('Cancel scheduled post error:', error);
     res.status(500).json({ error: 'Failed to cancel scheduled post' });
@@ -672,6 +714,33 @@ router.get('/user/linkedin-token', async (req, res) => {
   } catch (error) {
     console.error('Get LinkedIn token error:', error);
     res.status(500).json({ error: 'Failed to get LinkedIn token' });
+  }
+});
+
+// Persist LinkedIn cookie token to the authenticated user's DB record
+router.post('/user/linkedin-sync', async (req, res) => {
+  try {
+    const accessToken = req.cookies && req.cookies.linkedin_access_token;
+    if (!accessToken) {
+      return res.status(400).json({ error: 'LinkedIn cookie token not found' });
+    }
+
+    const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days to align with cookie
+
+    const updated = await req.prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        linkedinAccessToken: accessToken,
+        linkedinTokenExpiry: expiry,
+        linkedinConnected: true,
+      },
+      select: { id: true, linkedinConnected: true, linkedinTokenExpiry: true },
+    });
+
+    res.json({ success: true, user: updated });
+  } catch (error) {
+    console.error('LinkedIn sync error:', error);
+    res.status(500).json({ error: 'Failed to sync LinkedIn token' });
   }
 });
 

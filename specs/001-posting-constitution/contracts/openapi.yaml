@@ -83,3 +83,5 @@ paths:
       summary: Get user profile
       responses:
         '200': { description: OK }
+
+

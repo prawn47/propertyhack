@@ -5,7 +5,7 @@ import PostIcon from './icons/PostIcon';
 interface DashboardSectionProps {
   title: string;
   posts: (PublishedPost | DraftPost | ScheduledPost)[];
-  onSelectPost?: (post: DraftPost) => void;
+  onSelectPost?: (post: DraftPost | ScheduledPost) => void;
   onDeletePost?: (post: DraftPost) => void;
   onReschedulePost?: (post: ScheduledPost) => void;
   onCancelPost?: (post: ScheduledPost) => void;
@@ -20,7 +20,7 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, posts, onSel
           {posts.map(post => {
             const isDraft = !('publishedAt' in post) && !('scheduledFor' in post);
             const isScheduled = 'scheduledFor' in post;
-            const canSelect = onSelectPost && isDraft;
+            const canSelect = onSelectPost && (isDraft || isScheduled);
 
             const postContent = (
               <>
@@ -91,7 +91,7 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, posts, onSel
               return (
                 <button
                   key={post.id}
-                  onClick={() => onSelectPost(post as DraftPost)}
+                  onClick={() => onSelectPost(post as any)}
                   className="w-full flex items-start space-x-4 p-4 border border-base-300 rounded-lg text-left hover:bg-base-200 hover:border-brand-primary transition-all duration-200"
                 >
                   {postContent}

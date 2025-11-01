@@ -115,21 +115,21 @@
 
 **Purpose**: Aesthetic, accessibility, and documentation improvements
 
-- [ ] T035 Implement scheduled execution path: at time, attempt auto-publish or show in-app prompt (FR-018)
+- [X] T035 Implement scheduled execution path: at time, attempt auto-publish or show in-app prompt (FR-018)
 - [ ] T036 Auth smoke QA: login, token redirect, and refresh behavior across `components/OAuthCallback.tsx` and `services/authService.ts`
 - [ ] T037 Settings update QA: update `SettingsPanel.tsx` values (tone, preferredTime) and verify persistence
 - [ ] T038 Policy guardrail: review copy in X flow to avoid implying automation; add label/tooltips in `PostCreationWizard.tsx`
-- [ ] T039 [P] Update `specs/001-posting-constitution/quickstart.md` with scheduling and X steps
+- [X] T039 [P] Update `specs/001-posting-constitution/quickstart.md` with scheduling and X steps
 - [ ] T040 UI polish pass (spacing/typography) in `components/*`
 - [ ] T041 Accessibility sweep (focus states/ARIA) in `components/*`
 - [X] T042 LinkedIn OAuth integration: Update scope for posting permissions, store access tokens in database
 - [X] T043 LinkedIn connection UI: Add connection status display and management in Settings
 - [X] T044 LinkedIn token storage: Store and manage LinkedIn access tokens with expiry
 - [X] T045 LinkedIn permissions: Update OAuth scope to include `w_member_social` for posting
-- [ ] T046 [P] Create smoke checklist `specs/001-posting-constitution/smoke.md` for release validation
+- [X] T046 [P] Create smoke checklist `specs/001-posting-constitution/smoke.md` for release validation
 
 ### Additional Quality & Release Tasks
-- [ ] T061 Add release smoke checklist file at `specs/001-posting-constitution/smoke.md` and enforce it as a pre-release gate
+- [X] T061 Add release smoke checklist file at `specs/001-posting-constitution/smoke.md` and enforce it as a pre-release gate
 - [ ] T062 Accessibility quick audit (keyboard focus, aria-labels, semantic headings, contrast ≥ 4.5:1) and fix high-severity issues
 - [ ] T063 QA auth-expiry: simulate token expiry during edit/publish; verify re-auth preserves draft and resumes safely
 - [ ] T064 Lightweight metrics: log durations (idea/draft gen), publish success/fail, streak updates; doc how to compute SC metrics

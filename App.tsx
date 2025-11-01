@@ -31,8 +31,11 @@ const App: React.FC = () => {
   const [published, setPublished] = useState<PublishedPost[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
   const [editingDraft, setEditingDraft] = useState<DraftPost | null>(null);
+  const [editingScheduledId, setEditingScheduledId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showContentGenerator, setShowContentGenerator] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<ScheduledPost | null>(null);
+  const [rescheduleAt, setRescheduleAt] = useState<string>("");
 
   useEffect(() => {
     // Check for persisted authentication on initial load
@@ -292,15 +295,41 @@ const App: React.FC = () => {
   
   const handleSelectDraft = (draftToEdit: DraftPost) => {
     setEditingDraft(draftToEdit);
+    setEditingScheduledId(null);
+  };
+
+  const handleSelectScheduled = (post: ScheduledPost) => {
+    const draftLike: DraftPost = {
+      id: post.id,
+      title: post.title,
+      text: post.text,
+      imageUrl: post.imageUrl,
+      isPublishing: false,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+    };
+    setEditingDraft(draftLike);
+    setEditingScheduledId(post.id);
   };
 
   const handleUpdateDraft = async (updatedDraft: DraftPost) => {
     try {
-      const savedDraft = await db.saveDraft(updatedDraft);
-      const newDrafts = drafts.map(d => d.id === updatedDraft.id ? savedDraft : d);
-      setDrafts(newDrafts);
-      if (editingDraft?.id === updatedDraft.id) {
-        setEditingDraft(savedDraft);
+      if (editingScheduledId) {
+        const updated = await updateScheduledPost(editingScheduledId, {
+          title: updatedDraft.title,
+          text: updatedDraft.text,
+          imageUrl: updatedDraft.imageUrl,
+        });
+        const newScheduled = scheduled.map(p => p.id === editingScheduledId ? updated : p);
+        setScheduled(newScheduled);
+        setEditingDraft(prev => prev ? { ...prev, title: updated.title, text: updated.text, imageUrl: updated.imageUrl || undefined } : prev);
+      } else {
+        const savedDraft = await db.saveDraft(updatedDraft);
+        const newDrafts = drafts.map(d => d.id === updatedDraft.id ? savedDraft : d);
+        setDrafts(newDrafts);
+        if (editingDraft?.id === updatedDraft.id) {
+          setEditingDraft(savedDraft);
+        }
       }
     } catch (error) {
       console.error('Failed to update draft:', error);
@@ -317,6 +346,10 @@ const App: React.FC = () => {
       }
     };
     
+    if (editingScheduledId) {
+      alert('This is a scheduled post. To publish now, cancel scheduling first or wait for the scheduled time.');
+      return;
+    }
     setDraftPublishingState(draftToPublish.id, true);
 
     try {
@@ -333,17 +366,17 @@ const App: React.FC = () => {
         }
       }
 
-      // First publish to LinkedIn
+      // First publish to LinkedIn - this can fail due to auth issues
       await postToLinkedIn({
         text: `${persistedDraft.title}\n\n${persistedDraft.text}`,
         base64Image: persistedDraft.imageUrl,
       });
 
-      // Then move from drafts to published in our database
+      // Only move from drafts to published in our database if LinkedIn post succeeded
       const publishedPost = await db.publishPost(persistedDraft);
       
       const newPublished = [publishedPost, ...published];
-      const newDrafts = drafts.filter(d => d.id !== draftToPublish.id);
+      const newDrafts = drafts.filter(d => d.id !== persistedDraft.id);
 
       setPublished(newPublished);
       setDrafts(newDrafts);
@@ -353,18 +386,37 @@ const App: React.FC = () => {
 
     } catch (error) {
       console.error("Failed to publish to LinkedIn:", error);
-      alert(`Failed to publish post: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // Reset loading state on failure
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Check if it's an authentication error
+      if (errorMessage.includes('Not authenticated') || errorMessage.includes('401') || errorMessage.includes('Failed to get user info')) {
+        alert(`Authentication error: Please reconnect your LinkedIn account in Settings. Your post has been saved as a draft.`);
+      } else {
+        alert(`Failed to publish post: ${errorMessage}. Your post has been saved as a draft.`);
+      }
+      
+      // Reset loading state on failure - draft remains in drafts list
       setDraftPublishingState(draftToPublish.id, false);
     }
   };
 
-  const handleSchedule = async (draftToSchedule: DraftPost) => {
-    // For now, we'll schedule for 1 hour from now as a placeholder
-    // In a real implementation, this would open a date/time picker
-    const scheduledFor = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const handleSchedule = async (draftToSchedule: DraftPost, scheduledForOptional?: string) => {
+    // Accept an explicit schedule time from the picker; default to +1h if missing
+    const scheduledFor = scheduledForOptional || new Date(Date.now() + 60 * 60 * 1000).toISOString();
     
     try {
+      // 1) Ensure LinkedIn cookie token is synced to DB so the worker can use it
+      try {
+        await authService.makeAuthenticatedRequest(`/api/user/linkedin-sync`, {
+          method: 'POST',
+          // Include cookies for linkedin_access_token
+          credentials: 'include',
+        });
+      } catch (e) {
+        console.warn('LinkedIn token sync failed (continuing):', e);
+      }
+
+      // 2) Create scheduled post
       const scheduledPost = await createScheduledPost(
         draftToSchedule.title,
         draftToSchedule.text,
@@ -382,20 +434,45 @@ const App: React.FC = () => {
     }
   };
 
-  const handleReschedulePost = async (post: ScheduledPost) => {
-    // For now, reschedule for 1 hour later as a placeholder
-    const newScheduledFor = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    
+  const handleReschedulePost = (post: ScheduledPost) => {
+    setRescheduleTarget(post);
+    const d = new Date(post.scheduledFor);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    setRescheduleAt(`${yyyy}-${mm}-${dd}T${hh}:${mi}`);
+  };
+
+  const confirmReschedule = async () => {
+    if (!rescheduleTarget) return;
     try {
-      const updatedPost = await updateScheduledPost(post.id, { scheduledFor: newScheduledFor });
-      const newScheduled = scheduled.map(p => p.id === post.id ? updatedPost : p);
+      // Sync LinkedIn cookie token to DB to ensure worker can post after reschedule
+      try {
+        await authService.makeAuthenticatedRequest(`/api/user/linkedin-sync`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+      } catch (e) {
+        console.warn('LinkedIn token sync failed (continuing):', e);
+      }
+
+      const iso = new Date(rescheduleAt).toISOString();
+      const updatedPost = await updateScheduledPost(rescheduleTarget.id, { scheduledFor: iso });
+      const newScheduled = scheduled.map(p => p.id === rescheduleTarget.id ? updatedPost : p);
       setScheduled(newScheduled);
-      
-      alert(`Post rescheduled for ${new Date(newScheduledFor).toLocaleString()}!`);
+      setRescheduleTarget(null);
+      alert(`Post rescheduled for ${new Date(iso).toLocaleString()}!`);
     } catch (error) {
-      console.error("Failed to reschedule post:", error);
+      console.error('Failed to reschedule post:', error);
       alert(`Failed to reschedule post: ${error.message}`);
     }
+  };
+
+  const cancelReschedule = () => {
+    setRescheduleTarget(null);
   };
 
   const handleCancelPost = async (post: ScheduledPost) => {
@@ -404,11 +481,21 @@ const App: React.FC = () => {
     }
     
     try {
-      await cancelScheduledPost(post.id);
+      const response = await authService.makeAuthenticatedRequest(`/api/posts/scheduled/${post.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await response.json().catch(() => ({}));
+
       const newScheduled = scheduled.filter(p => p.id !== post.id);
       setScheduled(newScheduled);
-      
-      alert(`Scheduled post "${post.title}" has been cancelled.`);
+
+      if (data && data.draft) {
+        setDrafts(prev => [data.draft, ...prev]);
+        alert(`Scheduled post "${post.title}" has been cancelled and moved back to Drafts.`);
+      } else {
+        alert(`Scheduled post "${post.title}" has been cancelled.`);
+      }
     } catch (error) {
       console.error("Failed to cancel scheduled post:", error);
       alert(`Failed to cancel post: ${error.message}`);
@@ -441,6 +528,7 @@ const App: React.FC = () => {
 
   const handleCloseEditor = () => {
     setEditingDraft(null);
+    setEditingScheduledId(null);
   };
 
   if (authState.isLoading) {
@@ -522,6 +610,7 @@ const App: React.FC = () => {
           <DashboardSection
             title="Scheduled Posts"
             posts={scheduled}
+            onSelectPost={handleSelectScheduled}
             onReschedulePost={handleReschedulePost}
             onCancelPost={handleCancelPost}
           />
@@ -589,6 +678,26 @@ const App: React.FC = () => {
         onLogout={handleLogout} 
       />
       {renderContent()}
+      {rescheduleTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 p-6 rounded-xl shadow-2xl w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-3">Reschedule Post</h3>
+            <p className="text-sm text-content-secondary mb-3 line-clamp-2">{rescheduleTarget.title}</p>
+            <label htmlFor="reschedAt" className="text-sm text-content-secondary">New date & time</label>
+            <input
+              id="reschedAt"
+              type="datetime-local"
+              value={rescheduleAt}
+              onChange={(e) => setRescheduleAt(e.target.value)}
+              className="mt-1 w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={cancelReschedule} className="px-4 py-2 text-sm rounded-md border border-base-300">Cancel</button>
+              <button onClick={confirmReschedule} className="px-4 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700">Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

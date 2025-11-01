@@ -75,6 +75,7 @@ router.get('/auth/linkedin/callback', async (req, res) => {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
+    const expiresIn = tokenData.expires_in || 5184000; // Default 60 days
 
     // Set cookie with access token - EXACT copy from working app
     res.cookie("linkedin_access_token", accessToken, {
@@ -83,6 +84,46 @@ router.get('/auth/linkedin/callback', async (req, res) => {
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
+
+    // Get LinkedIn user info to link account
+    const userInfoResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (userInfoResponse.ok) {
+      const userInfo = await userInfoResponse.json();
+      const linkedInUserId = userInfo.sub;
+
+      // Find user by LinkedIn ID or email
+      let user = await req.prisma.user.findFirst({
+        where: { linkedinId: linkedInUserId },
+      });
+
+      if (!user && userInfo.email) {
+        user = await req.prisma.user.findUnique({
+          where: { email: userInfo.email },
+        });
+      }
+
+      // Store token in database for scheduled posts
+      if (user) {
+        const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
+        await req.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            linkedinId: linkedInUserId,
+            linkedinAccessToken: accessToken,
+            linkedinTokenExpiry: tokenExpiry,
+            linkedinConnected: true,
+          },
+        });
+        console.log('[OAuth] LinkedIn token synced to database for user', user.id);
+      } else {
+        console.warn('[OAuth] LinkedIn user info retrieved but no matching user found in database');
+      }
+    } else {
+      console.warn('[OAuth] Failed to get LinkedIn user info for database sync');
+    }
 
     // Redirect back to frontend settings with success flag
     return res.redirect(`${getFrontendUrl()}/?view=settings&connected=true`);

@@ -75,3 +75,5 @@ Branch: 001-posting-constitution
 ## State Transitions
 - DraftPost → PublishedPost (on publish now) or DraftPost → ScheduledPost (on schedule).
 - ScheduledPost: scheduled → published (on success), scheduled → failed (on error), scheduled → cancelled (on user action).
+
+
