@@ -50,12 +50,24 @@ const GamificationStats: React.FC = () => {
   if (!stats) return null;
 
   return (
-    <div className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-full">
-      <div className="flex items-center justify-center w-6 h-6 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full">
+    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border transition-colors
+      bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200
+      dark:from-emerald-900/30 dark:to-teal-900/30 dark:border-emerald-700/50">
+      <div className="flex items-center justify-center w-6 h-6 rounded-full transition-colors
+        bg-gradient-to-br from-emerald-400 to-teal-500
+        dark:from-emerald-500 dark:to-teal-600">
         <span className="text-sm">🔥</span>
       </div>
-      <span className="text-sm font-bold text-emerald-700">{stats.currentStreak}</span>
-      <span className="text-xs text-emerald-600">{stats.currentStreak === 1 ? 'day' : 'days'}</span>
+      <span className="text-sm font-bold transition-colors
+        text-emerald-700
+        dark:text-emerald-300">
+        {stats.currentStreak}
+      </span>
+      <span className="text-xs transition-colors
+        text-emerald-600
+        dark:text-emerald-400">
+        {stats.currentStreak === 1 ? 'day' : 'days'}
+      </span>
     </div>
   );
 };
