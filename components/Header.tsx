@@ -3,11 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 interface HeaderProps {
     profilePictureUrl?: string;
     isSuperAdmin?: boolean;
+    currentPage?: 'home' | 'drafts' | 'scheduled' | 'published';
     onNavigate: (view: 'profile' | 'settings' | 'prompts') => void;
+    onPageChange?: (page: 'home' | 'drafts' | 'scheduled' | 'published') => void;
     onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, onNavigate, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, currentPage = 'home', onNavigate, onPageChange, onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -32,8 +34,52 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, onNavi
     <header className="bg-base-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex-shrink-0">
-             <h1 className="text-xl font-bold text-content">QUORD.ai</h1>
+          <div className="flex items-center space-x-8">
+            <h1 className="text-xl font-bold text-content">QUORD.ai</h1>
+            {onPageChange && (
+              <nav className="hidden md:flex space-x-1">
+                <button
+                  onClick={() => onPageChange('home')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    currentPage === 'home'
+                      ? 'bg-brand-primary text-white'
+                      : 'text-content-secondary hover:text-content hover:bg-base-200'
+                  }`}
+                >
+                  Home
+                </button>
+                <button
+                  onClick={() => onPageChange('drafts')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    currentPage === 'drafts'
+                      ? 'bg-brand-primary text-white'
+                      : 'text-content-secondary hover:text-content hover:bg-base-200'
+                  }`}
+                >
+                  Drafts
+                </button>
+                <button
+                  onClick={() => onPageChange('scheduled')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    currentPage === 'scheduled'
+                      ? 'bg-brand-primary text-white'
+                      : 'text-content-secondary hover:text-content hover:bg-base-200'
+                  }`}
+                >
+                  Scheduled
+                </button>
+                <button
+                  onClick={() => onPageChange('published')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    currentPage === 'published'
+                      ? 'bg-brand-primary text-white'
+                      : 'text-content-secondary hover:text-content hover:bg-base-200'
+                  }`}
+                >
+                  Published
+                </button>
+              </nav>
+            )}
           </div>
           <div className="relative" ref={dropdownRef}>
             <button

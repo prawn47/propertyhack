@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
-import SettingsPanel from './components/SettingsPanel';
-import ContentGenerator from './components/ContentGenerator';
 import DraftEditor from './components/DraftEditor';
-import DashboardSection from './components/DashboardSection';
 import GamificationStats from './components/GamificationStats';
-import PreferredTimePrompt from './components/PreferredTimePrompt';
+import HomePage from './components/HomePage';
+import DraftsPage from './components/DraftsPage';
+import ScheduledPage from './components/ScheduledPage';
+import PublishedPage from './components/PublishedPage';
 import SettingsPage from './components/SettingsPage';
 import ProfilePage from './components/ProfilePage';
 import Loader from './components/Loader';
@@ -27,6 +27,7 @@ const App: React.FC = () => {
   });
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [view, setView] = useState<'dashboard' | 'settings' | 'profile' | 'prompts'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'home' | 'drafts' | 'scheduled' | 'published'>('home');
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [drafts, setDrafts] = useState<DraftPost[]>([]);
   const [published, setPublished] = useState<PublishedPost[]>([]);
@@ -34,7 +35,6 @@ const App: React.FC = () => {
   const [editingDraft, setEditingDraft] = useState<DraftPost | null>(null);
   const [editingScheduledId, setEditingScheduledId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [showContentGenerator, setShowContentGenerator] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState<ScheduledPost | null>(null);
   const [rescheduleAt, setRescheduleAt] = useState<string>("");
 
@@ -267,6 +267,7 @@ const App: React.FC = () => {
   const handleBackToDashboard = () => {
     setEditingDraft(null);
     setView('dashboard');
+    setCurrentPage('home');
   };
 
   const handleSaveSettings = async (newSettings: UserSettings) => {
@@ -519,14 +520,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleOpenContentGenerator = () => {
-    setShowContentGenerator(true);
-  };
-
-  const handleContentGeneratorOpened = () => {
-    setShowContentGenerator(false);
-  };
-
   const handleCloseEditor = () => {
     setEditingDraft(null);
     setEditingScheduledId(null);
@@ -574,51 +567,38 @@ const App: React.FC = () => {
     );
   }
 
-  const renderDashboard = () => {
-    if (!settings) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-base-200">
-          <Loader className="h-10 w-10 text-brand-primary" />
-        </div>
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <PreferredTimePrompt 
-            settings={settings} 
-            onCreatePost={handleOpenContentGenerator}
+  const renderPage = () => {
+    switch(currentPage) {
+      case 'drafts':
+        return (
+          <DraftsPage
+            drafts={drafts}
+            onSelectDraft={handleSelectDraft}
+            onDeleteDraft={handleDeleteDraft}
           />
-          <ContentGenerator 
-              settings={settings} 
-              onNewDraft={handleAddDraft} 
-              onPublish={handlePublish}
-              onSchedule={handleSchedule}
-              forceOpen={showContentGenerator}
-              onForceOpenHandled={handleContentGeneratorOpened}
-          />
-          <DashboardSection 
-              title="Recent Drafts" 
-              posts={drafts} 
-              onSelectPost={handleSelectDraft}
-              onDeletePost={handleDeleteDraft}
-          />
-        </div>
-        <div className="space-y-6">
-          <SettingsPanel settings={settings} />
-          <GamificationStats />
-          <DashboardSection
-            title="Scheduled Posts"
-            posts={scheduled}
-            onSelectPost={handleSelectScheduled}
+        );
+      case 'scheduled':
+        return (
+          <ScheduledPage
+            scheduled={scheduled}
+            onSelectScheduled={handleSelectScheduled}
             onReschedulePost={handleReschedulePost}
             onCancelPost={handleCancelPost}
           />
-          <DashboardSection title="Published Posts" posts={published} />
-        </div>
-      </div>
-    );
+        );
+      case 'published':
+        return <PublishedPage published={published} />;
+      case 'home':
+      default:
+        return (
+          <HomePage
+            settings={settings!}
+            onAddDraft={handleAddDraft}
+            onPublish={handlePublish}
+            onSchedule={handleSchedule}
+          />
+        );
+    }
   };
   
   const renderContent = () => {
@@ -664,8 +644,9 @@ const App: React.FC = () => {
       default:
         return (
           <>
+            <GamificationStats />
             <main className="p-4 sm:p-6 lg:p-8">
-              {renderDashboard()}
+              {renderPage()}
             </main>
             {editingDraft && (
                <DraftEditor 
@@ -686,7 +667,9 @@ const App: React.FC = () => {
       <Header 
         profilePictureUrl={authState.user?.profilePictureUrl || settings?.profilePictureUrl}
         isSuperAdmin={authState.user?.superAdmin}
-        onNavigate={handleNavigate} 
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onPageChange={setCurrentPage}
         onLogout={handleLogout} 
       />
       {renderContent()}

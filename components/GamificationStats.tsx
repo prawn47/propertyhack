@@ -27,9 +27,11 @@ const GamificationStats: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-base-100 p-6 rounded-lg shadow-md">
-        <div className="flex items-center justify-center h-24">
-          <Loader className="h-6 w-6 text-brand-primary" />
+      <div className="bg-base-100 border-b border-base-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-center">
+            <Loader className="h-5 w-5 text-brand-primary" />
+          </div>
         </div>
       </div>
     );
@@ -37,9 +39,10 @@ const GamificationStats: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-base-100 p-6 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-2 text-content">Your Progress</h2>
-        <p className="text-sm text-red-500">{error}</p>
+      <div className="bg-base-100 border-b border-base-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <p className="text-sm text-red-500 text-center">{error}</p>
+        </div>
       </div>
     );
   }
@@ -47,72 +50,38 @@ const GamificationStats: React.FC = () => {
   if (!stats) return null;
 
   return (
-    <div className="bg-base-100 p-6 rounded-lg shadow-md">
-      <h2 className="text-lg font-semibold mb-4 text-content">Your Progress</h2>
-      
-      <div className="space-y-4">
-        {/* Current Streak */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+    <div className="bg-base-100 border-b border-base-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12">
+          {/* Current Streak */}
+          <div className="flex items-center space-x-3">
             <span className="text-2xl">🔥</span>
             <div>
-              <p className="font-medium text-content">Current Streak</p>
-              <p className="text-xs text-content-secondary">Days in a row</p>
+              <p className="text-xs text-content-secondary">Current Streak</p>
+              <p className="text-lg font-bold text-orange-500">{stats.currentStreak} days</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-orange-500">{stats.currentStreak}</p>
-            <p className="text-xs text-content-secondary">
-              Best: {stats.longestStreak}
-            </p>
-          </div>
-        </div>
 
-        {/* Weekly Progress */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="text-xl">📊</span>
-              <div>
-                <p className="font-medium text-content">Weekly Progress</p>
-                <p className="text-xs text-content-secondary">
-                  {stats.postsThisWeek} of {stats.weeklyTarget} posts
-                </p>
+          {/* Weekly Progress */}
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">📊</span>
+            <div>
+              <p className="text-xs text-content-secondary">Weekly Progress</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-lg font-bold text-blue-500">{stats.weeklyProgress}%</p>
+                <span className="text-xs text-content-secondary">({stats.postsThisWeek}/{stats.weeklyTarget})</span>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-lg font-bold text-blue-500">{stats.weeklyProgress}%</p>
+          </div>
+
+          {/* Best Streak */}
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">🏆</span>
+            <div>
+              <p className="text-xs text-content-secondary">Best Streak</p>
+              <p className="text-lg font-bold text-content">{stats.longestStreak} days</p>
             </div>
           </div>
-          
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${stats.weeklyProgress}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Encouragement Message */}
-        <div className="pt-2 border-t border-base-300">
-          {stats.currentStreak === 0 ? (
-            <p className="text-sm text-content-secondary">
-              🌟 Start your posting streak today!
-            </p>
-          ) : stats.currentStreak === 1 ? (
-            <p className="text-sm text-content-secondary">
-              🎉 Great start! Keep it going tomorrow.
-            </p>
-          ) : stats.currentStreak < 7 ? (
-            <p className="text-sm text-content-secondary">
-              💪 You're building momentum! Keep it up.
-            </p>
-          ) : (
-            <p className="text-sm text-content-secondary">
-              🏆 Amazing streak! You're on fire!
-            </p>
-          )}
         </div>
       </div>
     </div>
