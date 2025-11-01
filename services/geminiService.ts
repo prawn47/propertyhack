@@ -1,8 +1,90 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { UserSettings, DraftPost } from '../types';
 
-// Per guidelines, initialize with API key from environment variables.
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Get Gemini API key from environment (browser-safe)
+const getGeminiApiKey = (): string => {
+  // 1) Preferred: Vite-exposed variable
+  const viteKey = (import.meta as any)?.env?.VITE_GEMINI_API_KEY as string | undefined;
+  if (viteKey && viteKey.length > 0) {
+    console.debug('[gemini] using VITE_GEMINI_API_KEY (len:', viteKey.length, ')');
+    return viteKey;
+  }
+
+  // 2) Also allow non-prefixed via import.meta.env if present
+  const rawKey = (import.meta as any)?.env?.GEMINI_API_KEY as string | undefined;
+  if (rawKey && rawKey.length > 0) {
+    console.debug('[gemini] using import.meta.env.GEMINI_API_KEY (len:', rawKey.length, ')');
+    return rawKey;
+  }
+
+  // 3) Build-time define from vite.config.ts (string-literal replaced by Vite)
+  // The following expressions are intentionally direct so Vite can replace them.
+  // @ts-ignore
+  const definedGemini = process.env.GEMINI_API_KEY;
+  // @ts-ignore
+  const definedApi = process.env.API_KEY;
+  const defined = (definedGemini as string | undefined) || (definedApi as string | undefined);
+  if (defined && defined.length > 0) {
+    console.debug('[gemini] using define process.env (len:', defined.length, ')');
+    return defined;
+  }
+
+  // 4) Developer override for quick local debugging
+  try {
+    const lsKey = localStorage.getItem('GEMINI_API_KEY');
+    if (lsKey) {
+      console.debug('[gemini] using localStorage GEMINI_API_KEY (len:', lsKey.length, ')');
+      return lsKey;
+    }
+  } catch {}
+
+  throw new Error('Gemini API key not found. Provide VITE_GEMINI_API_KEY or define process.env.GEMINI_API_KEY; then hard-reload.');
+};
+
+// Resolve preferred content-generation model with env override
+const getPreferredGenModel = (): string => {
+  const env = (import.meta as any)?.env || {};
+  const viteModel = env.VITE_GEMINI_MODEL as string | undefined;
+  // @ts-ignore (string literal replaced by Vite define, if present)
+  const defineModel = (typeof process !== 'undefined') ? (process.env && process.env.GEMINI_MODEL) : undefined;
+  return viteModel || (defineModel as string | undefined) || 'gemini-2.5-pro';
+};
+
+// Lazily initialize the client so missing key doesn't break initial app load
+let aiClient: GoogleGenAI | null = null;
+const getAiClient = (): GoogleGenAI => {
+  if (!aiClient) {
+    const apiKey = getGeminiApiKey();
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+};
+
+// Robust JSON parser that tolerates extra text and extracts the first JSON object
+const parseJsonWithFallback = (text: string): any => {
+  try { return JSON.parse(text); } catch {/* continue */}
+  const match = text.match(/\{[\s\S]*\}/);
+  if (match) {
+    try { return JSON.parse(match[0]); } catch {/* ignore */}
+  }
+  throw new Error('Invalid JSON from model');
+};
+
+// Utility: race a promise with a timeout
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  let timeoutHandle: any;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutHandle);
+    return result as T;
+  } catch (err) {
+    clearTimeout(timeoutHandle);
+    throw err;
+  }
+};
 
 const createSystemInstruction = (settings: UserSettings): string => {
   return `You are an expert content creator for LinkedIn. Your persona is defined by the following characteristics:
@@ -25,12 +107,14 @@ Do not use emojis unless specifically asked. Be concise and professional. Struct
 
 export const generatePostIdeas = async (topic: string, settings: UserSettings): Promise<string[]> => {
   try {
+    const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     const systemInstruction = createSystemInstruction(settings);
     const userPrompt = `Generate 5 distinct LinkedIn post ideas based on the topic: "${topic}".
     Each idea should be a short, compelling title or a one-sentence concept.
     Return the ideas as a JSON array of strings.`;
 
-    const response = await ai.models.generateContent({
+    const response = await withTimeout(
+      getAiClient().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -44,10 +128,15 @@ export const generatePostIdeas = async (topic: string, settings: UserSettings): 
           }
         }
       }
-    });
+      }),
+      10000,
+      'Idea generation'
+    );
 
     const jsonText = response.text.trim();
     const ideas = JSON.parse(jsonText);
+    const endedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    console.log(`[metrics] ideaGenerationMs=${(endedAt - startedAt).toFixed(0)}`);
     return ideas.slice(0, 5);
   } catch (error) {
     console.error("Error generating post ideas:", error);
@@ -57,37 +146,51 @@ export const generatePostIdeas = async (topic: string, settings: UserSettings): 
 
 export const generateDraftPost = async (idea: string, settings: UserSettings): Promise<Omit<DraftPost, 'id'>> => {
     try {
+      const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
       const systemInstruction = createSystemInstruction(settings);
       const userPrompt = `Generate a full LinkedIn post based on the following idea: "${idea}".
   
       The post should include a compelling headline and a body of text suitable for a LinkedIn audience. The tone, style, and keywords should align with the persona I provided.
       The output should be a JSON object with two keys: "title" (a string for the headline) and "text" (a string for the post body).`;
   
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: userPrompt,
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: {
-                type: Type.STRING,
-                description: 'The compelling headline for the LinkedIn post.',
-              },
-              text: {
-                type: Type.STRING,
-                description: 'The full body content of the LinkedIn post, formatted for readability.',
+      const preferredModel = getPreferredGenModel();
+
+      const infer = async (model: string, timeoutMs: number) => {
+        const response = await withTimeout(
+          getAiClient().models.generateContent({
+            model,
+            contents: userPrompt,
+            config: {
+              systemInstruction,
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING, description: 'The compelling headline for the LinkedIn post.' },
+                  text: { type: Type.STRING, description: 'The full body content of the LinkedIn post, formatted for readability.' },
+                },
+                required: ['title', 'text'],
               },
             },
-            required: ["title", "text"],
-          },
-        },
-      });
-  
-      const jsonText = response.text.trim();
-      const draft = JSON.parse(jsonText);
+          }),
+          timeoutMs,
+          `Draft generation (${model})`
+        );
+        const raw = (response as any)?.text?.trim?.() ?? '';
+        return parseJsonWithFallback(raw);
+      };
+
+      let draft: { title: string; text: string };
+      try {
+        // Try the best model first
+        draft = await infer(preferredModel, 15000);
+      } catch (primaryErr) {
+        console.warn(`[gemini] Primary model failed (${preferredModel}), falling back to gemini-2.5-flash`, primaryErr);
+        // Fallback to fast/robust model
+        draft = await infer('gemini-2.5-flash', 20000);
+      }
+      const endedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      console.log(`[metrics] draftGenerationMs=${(endedAt - startedAt).toFixed(0)}`);
       return draft;
     } catch (error) {
       console.error("Error generating draft post:", error);
@@ -97,9 +200,11 @@ export const generateDraftPost = async (idea: string, settings: UserSettings): P
 
 export const generatePostImage = async (postText: string): Promise<string | undefined> => {
     try {
+        const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const imagePrompt = `Create a visually appealing and professional image that complements the following LinkedIn post. The image should be abstract or conceptual, suitable for a professional tech audience. Avoid text in the image. The style should be modern and clean. Post content: "${postText.substring(0, 500)}..."`;
 
-        const response = await ai.models.generateImages({
+        const response = await withTimeout(
+          getAiClient().models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: imagePrompt,
             config: {
@@ -107,10 +212,15 @@ export const generatePostImage = async (postText: string): Promise<string | unde
               aspectRatio: '16:9',
               outputMimeType: 'image/jpeg',
             },
-        });
+          }),
+          15000,
+          'Image generation'
+        );
         
         if (response.generatedImages && response.generatedImages.length > 0) {
             const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+            const endedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+            console.log(`[metrics] imageGenerationMs=${(endedAt - startedAt).toFixed(0)}`);
             return `data:image/jpeg;base64,${base64ImageBytes}`;
         }
         return undefined;
@@ -125,7 +235,7 @@ export const enhanceImage = async (base64ImageData: string, prompt: string): Pro
         const mimeType = base64ImageData.split(';')[0].split(':')[1];
         const data = base64ImageData.split(',')[1];
 
-        const response = await ai.models.generateContent({
+        const response = await getAiClient().models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: {
                 parts: [
@@ -150,3 +260,60 @@ export const enhanceImage = async (base64ImageData: string, prompt: string): Pro
         return undefined;
     }
 };
+
+export const generateConciseForX = async (
+    originalTitle: string,
+    originalText: string,
+    settings: UserSettings
+): Promise<string | undefined> => {
+    try {
+        const prompt = `Transform this LinkedIn post into a concise X (Twitter) post that fits within 280 characters.
+
+Original LinkedIn Post:
+Title: ${originalTitle}
+Content: ${originalText}
+
+Requirements:
+- Maximum 280 characters total
+- Maintain the core message and value
+- Use a ${settings.tone} tone
+- Make it engaging for X's fast-paced audience
+- Include relevant hashtags if space allows
+- Remove LinkedIn-specific language
+- Keep it punchy and direct
+
+Return only the X version, no explanations or quotes.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: prompt }] }],
+        });
+
+        const xVersion = response.text?.trim();
+        
+        // Ensure it's within character limit
+        if (xVersion && xVersion.length <= 280) {
+            return xVersion;
+        } else if (xVersion) {
+            // If it's too long, ask Gemini to make it shorter
+            const shortenPrompt = `This X post is ${xVersion.length} characters, which exceeds the 280 character limit. Please shorten it while keeping the core message:
+
+"${xVersion}"
+
+Make it exactly 280 characters or less. Return only the shortened version.`;
+
+            const shortenResponse = await getAiClient().models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: [{ parts: [{ text: shortenPrompt }] }],
+            });
+
+            return shortenResponse.text?.trim();
+        }
+
+        return undefined;
+    } catch (error) {
+        console.error("Error generating concise X version:", error);
+        return undefined;
+    }
+};
+

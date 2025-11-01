@@ -8,10 +8,28 @@ interface ContentGeneratorProps {
   settings: UserSettings;
   onNewDraft: (draft: DraftPost) => void;
   onPublish: (draft: DraftPost) => void;
+  onSchedule: (draft: DraftPost) => void;
+  forceOpen?: boolean;
+  onForceOpenHandled?: () => void;
 }
 
-const ContentGenerator: React.FC<ContentGeneratorProps> = ({ settings, onNewDraft, onPublish }) => {
+const ContentGenerator: React.FC<ContentGeneratorProps> = ({ 
+  settings, 
+  onNewDraft, 
+  onPublish, 
+  onSchedule, 
+  forceOpen = false,
+  onForceOpenHandled
+}) => {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+
+  // Handle external force open
+  React.useEffect(() => {
+    if (forceOpen && !isWizardOpen) {
+      setIsWizardOpen(true);
+      onForceOpenHandled?.();
+    }
+  }, [forceOpen, isWizardOpen, onForceOpenHandled]);
 
   return (
     <>
@@ -35,6 +53,7 @@ const ContentGenerator: React.FC<ContentGeneratorProps> = ({ settings, onNewDraf
           settings={settings}
           onAddToDrafts={onNewDraft}
           onPublish={onPublish}
+          onSchedule={onSchedule}
           onClose={() => setIsWizardOpen(false)}
         />
       )}

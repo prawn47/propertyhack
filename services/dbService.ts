@@ -72,7 +72,11 @@ export const saveUserSettings = async (settings: UserSettings): Promise<void> =>
  */
 export const saveDraft = async (draft: DraftPost): Promise<DraftPost> => {
     try {
-        const isUpdate = draft.id && draft.id !== new Date().toISOString(); // Simple check for existing ID
+        // Check if this is an update by looking for a server-assigned ID (CUID format)
+        // Client-generated IDs are ISO strings, server-assigned IDs are CUIDs (shorter, alphanumeric)
+        const isServerAssignedId = draft.id && !draft.id.includes('T') && !draft.id.includes(':');
+        const isUpdate = isServerAssignedId;
+        
         const url = isUpdate 
             ? `${API_BASE_URL}/posts/drafts/${draft.id}`
             : `${API_BASE_URL}/posts/drafts`;

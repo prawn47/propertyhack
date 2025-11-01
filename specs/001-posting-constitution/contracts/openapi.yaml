@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: Posting App API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /auth/login:
+    post:
+      summary: Login with credentials
+      responses:
+        '200': { description: OK }
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      responses:
+        '200': { description: OK }
+  /content/ideas:
+    post:
+      summary: Generate post ideas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+      responses:
+        '200': { description: OK }
+  /content/draft:
+    post:
+      summary: Generate a full draft from an idea
+      responses:
+        '200': { description: OK }
+  /posts/publish:
+    post:
+      summary: Publish a draft to LinkedIn now
+      responses:
+        '200': { description: OK }
+  /posts/scheduled:
+    get:
+      summary: List scheduled posts
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create a scheduled post
+      responses:
+        '201': { description: Created }
+  /posts/scheduled/{id}:
+    patch:
+      summary: Update a scheduled post (reschedule)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Cancel a scheduled post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204': { description: No Content }
+  /settings:
+    get:
+      summary: Get user settings
+      responses:
+        '200': { description: OK }
+    patch:
+      summary: Update user settings
+      responses:
+        '200': { description: OK }
+  /profile:
+    get:
+      summary: Get user profile
+      responses:
+        '200': { description: OK }
+
+
