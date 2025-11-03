@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth');
 const { generateEnhancedPost, generatePostVariations, optimizePost, isAvailable } = require('../services/openaiService');
+const stripeService = require('../services/stripeService');
 
 const router = express.Router();
 
@@ -323,6 +324,34 @@ router.post('/posts/publish', async (req, res) => {
       return res.status(400).json({ error: 'Draft ID is required' });
     }
 
+    // Check free tier limits
+    const user = await req.prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        subscriptionTier: true,
+        subscriptionStatus: true,
+        trialEndsAt: true,
+        monthlyPostCount: true,
+        lastPostCountReset: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user has exceeded free tier limits
+    if (stripeService.hasExceededFreeLimit(user)) {
+      const remainingPosts = stripeService.getRemainingPosts(user);
+      return res.status(403).json({
+        error: 'Free tier limit exceeded',
+        message: `You have reached your free tier limit of ${stripeService.FREE_TIER_LIMITS.monthlyPosts} posts per month. Upgrade to Pro for unlimited posts.`,
+        remainingPosts,
+        tier: user.subscriptionTier,
+        upgradeUrl: '/subscription/checkout',
+      });
+    }
+
     // Check if draft belongs to user
     const draft = await req.prisma.draftPost.findFirst({
       where: { id: draftId, userId: req.user.id }
@@ -357,6 +386,9 @@ router.post('/posts/publish', async (req, res) => {
       await prisma.draftPost.delete({
         where: { id: draftId }
       });
+
+      // Increment post count for free tier users
+      await stripeService.incrementPostCount(req.user.id, prisma);
 
       return publishedPost;
     });

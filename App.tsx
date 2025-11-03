@@ -11,6 +11,9 @@ import Loader from './components/Loader';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import OAuthCallback from './components/OAuthCallback';
+import LandingPage from './components/LandingPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import { PromptManagementPage } from './components/PromptManagementPage';
 import type { UserSettings, DraftPost, PublishedPost, ScheduledPost, User, AuthState } from './types';
 import * as db from './services/dbService';
@@ -24,7 +27,9 @@ const App: React.FC = () => {
     user: null,
     isLoading: true,
   });
+  const [showLanding, setShowLanding] = useState(true);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [legalView, setLegalView] = useState<'privacy' | 'terms' | null>(null);
   const [view, setView] = useState<'dashboard' | 'settings' | 'profile' | 'prompts'>('dashboard');
   const [currentPage, setCurrentPage] = useState<'home' | 'drafts' | 'scheduled' | 'published'>('home');
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -49,6 +54,7 @@ const App: React.FC = () => {
             user: userProfile,
             isLoading: false,
           });
+          setShowLanding(false); // Skip landing if already authenticated
         } else {
           setAuthState({
             isAuthenticated: false,
@@ -537,6 +543,33 @@ const App: React.FC = () => {
   }
   
   if (!authState.isAuthenticated) {
+    // Show legal pages
+    if (legalView === 'privacy') {
+      return <PrivacyPolicy onBack={() => setLegalView(null)} />;
+    }
+    if (legalView === 'terms') {
+      return <TermsOfService onBack={() => setLegalView(null)} />;
+    }
+    
+    // Show landing page first
+    if (showLanding) {
+      return (
+        <LandingPage
+          onGetStarted={() => {
+            setShowLanding(false);
+            setAuthView('register');
+          }}
+          onLogin={() => {
+            setShowLanding(false);
+            setAuthView('login');
+          }}
+          onPrivacy={() => setLegalView('privacy')}
+          onTerms={() => setLegalView('terms')}
+        />
+      );
+    }
+    
+    // Show auth forms
     if (authView === 'register') {
       return (
         <RegisterPage 

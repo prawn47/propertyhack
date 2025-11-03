@@ -25,12 +25,25 @@ model User {
   linkedinTokenExpiry DateTime? @map("linkedin_token_expiry")
   linkedinConnected   Boolean   @default(false) @map("linkedin_connected")
 
+  // Subscription fields
+  subscriptionTier    String    @default("free") @map("subscription_tier") // "free", "pro", "enterprise"
+  stripeCustomerId    String?   @map("stripe_customer_id")
+  stripeSubscriptionId String?  @map("stripe_subscription_id")
+  subscriptionStatus  String    @default("trial") @map("subscription_status") // "trial", "active", "cancelled", "expired"
+  trialEndsAt         DateTime? @map("trial_ends_at")
+  subscriptionEndsAt  DateTime? @map("subscription_ends_at")
+  
+  // Usage tracking (for free tier limits)
+  monthlyPostCount    Int       @default(0) @map("monthly_post_count")
+  lastPostCountReset  DateTime  @default(now()) @map("last_post_count_reset")
+
   // Relations
   settings      UserSettings?
   draftPosts    DraftPost[]
   publishedPosts PublishedPost[]
   scheduledPosts ScheduledPost[]
   newsArticles  NewsArticle[]
+  emailResponses EmailResponse[]
 
   @@map("users")
 }
@@ -55,6 +68,13 @@ model UserSettings {
   newsLanguages     String   @default("[\"eng\"]") @map("news_languages") // JSON array of language codes
   newsSources       String   @default("[]") @map("news_sources") // JSON array of source URIs
   newsCountries     String   @default("[]") @map("news_countries") // JSON array of country codes
+  
+  // Email prompt workflow
+  emailPromptEnabled   Boolean   @default(false) @map("email_prompt_enabled")
+  emailPromptCadence   String    @default("weekly") @map("email_prompt_cadence") // "daily", "twice_weekly", "weekly"
+  emailPromptTime      String    @default("09:00") @map("email_prompt_time") // HH:mm format
+  emailPromptDays      String    @default("[1]") @map("email_prompt_days") // JSON array: [1,4] for Mon/Thu
+  lastEmailPromptSent  DateTime? @map("last_email_prompt_sent")
   
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
@@ -154,4 +174,24 @@ model NewsArticle {
   @@index([fetchedAt])
   @@index([isRead])
   @@map("news_articles")
+}
+
+model EmailResponse {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  promptEmailId   String    @map("prompt_email_id") // Resend email ID for tracking
+  replyContent    String    @map("reply_content") // User's email reply text
+  draftPostId     String?   @map("draft_post_id") // Associated draft post created
+  followUpEmailId String?   @map("follow_up_email_id") // Resend email ID for follow-up
+  status          String    @default("pending") // "pending", "draft_created", "completed"
+  receivedAt      DateTime  @default(now()) @map("received_at")
+  processedAt     DateTime? @map("processed_at")
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([receivedAt])
+  @@index([status])
+  @@map("email_responses")
 }

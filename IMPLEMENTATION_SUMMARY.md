@@ -1,229 +1,133 @@
-# Super Admin Prompt Management - Implementation Summary
+# Stripe Payment & Rate Limiting Implementation Summary
 
 ## ✅ Completed Implementation
 
-A complete super admin system for managing AI prompt templates has been built and deployed.
+### 1. Database Schema
+Added subscription tracking to User model:
+- Subscription tier (free/pro/enterprise)
+- Stripe customer/subscription IDs
+- Usage tracking (monthly post count, reset dates)
+- Trial and subscription expiration dates
 
-## What Was Delivered
+### 2. Stripe Integration
+**Backend Service** (`server/services/stripeService.js`):
+- Checkout session creation ($49/month Pro tier)
+- Customer portal management
+- Webhook event handling
+- Rate limit enforcement (10 posts/month for free tier)
 
-### 1. Database Changes
-- ✅ Added `superAdmin` boolean field to User model
-- ✅ Created `PromptTemplate` model with full schema
-- ✅ Migration applied successfully
-- ✅ Default templates seeded (post_generation, idea_generation, image_generation)
+**API Routes** (`server/routes/subscription.js`):
+- `GET /status` - Check subscription & remaining posts
+- `POST /checkout` - Create payment session
+- `POST /portal` - Manage subscription
+- `POST /webhook` - Stripe event receiver
 
-### 2. Backend API
-**New Files:**
-- `server/routes/prompts.js` - Full CRUD API for prompt templates
-- `server/seed-prompts.js` - Seeds default templates
-- `server/make-super-admin.js` - Promotes users to super admin
+### 3. Rate Limiting
+**Free Tier Limits**:
+- 10 posts per 30-day period
+- 30-day trial from signup
+- Automatic counter reset
 
-**Modified Files:**
-- `server/middleware/auth.js` - Added `requireSuperAdmin` middleware
-- `server/index.js` - Registered `/api/prompts` routes
+**Enforcement** (in `POST /api/posts/publish`):
+- Checks limits before allowing publish
+- Returns 403 with upgrade prompt when exceeded
+- Increments counter on successful publish
+- Pro users have unlimited posts
 
-**Endpoints:**
-- `GET /api/prompts/active/:name` - Public (fetch active template)
-- `GET /api/prompts` - Super admin only
-- `GET /api/prompts/:id` - Super admin only
-- `POST /api/prompts` - Super admin only
-- `PUT /api/prompts/:id` - Super admin only
-- `DELETE /api/prompts/:id` - Super admin only
+### 4. Pricing
+- **Free**: 10 posts/month, 30-day trial
+- **Pro**: $49/month, unlimited everything
+- **Enterprise**: Custom, "Contact Sales"
 
-### 3. Frontend UI
-**New Files:**
-- `components/PromptManagementPage.tsx` - Full template management UI
-- `services/promptService.ts` - API client for templates
+### 5. Marketing Pages
+- Full landing page with features, pricing, testimonials
+- Privacy Policy page
+- Terms of Service page
 
-**Modified Files:**
-- `types.ts` - Added PromptTemplate and User.superAdmin types
-- `App.tsx` - Added 'prompts' view with access control
-- `components/Header.tsx` - Added Prompt Management menu item for super admins
-- `services/geminiService.ts` - Integrated template system with variable interpolation
+## 🔧 Configuration Needed
 
-### 4. Template System
-**Features:**
-- Variable interpolation: `{{variableName}}` replaced with user settings
-- Active template selection by name
-- Fallback to hardcoded defaults if template unavailable
-- Full CRUD operations for templates
-
-**Supported Variables:**
-- toneOfVoice, industry, position, englishVariant
-- audience, postGoal, keywords
-- contentExample1, contentExample2
-- postText (for image generation)
-
-### 5. Documentation
-- `SUPER_ADMIN.md` - Complete technical documentation
-- `SUPER_ADMIN_QUICKSTART.md` - Quick start guide
-- `IMPLEMENTATION_SUMMARY.md` - This file
-
-## How to Use
-
-### Step 1: Promote Your User to Super Admin
+**Backend** (`server/.env`):
 ```bash
-cd server
-node make-super-admin.js your.email@example.com
+STRIPE_SECRET_KEY=sk_test_...        # Secret key (private)
+STRIPE_PRO_PRICE_ID=price_...        # Pro tier price ID
+STRIPE_WEBHOOK_SECRET=whsec_...      # Webhook signing secret
 ```
 
-### Step 2: Access Prompt Management
-1. Visit http://localhost:3004
-2. Log in with your super admin account
-3. Click profile icon → "Prompt Management"
-
-### Step 3: Manage Templates
-- View all templates
-- Create new templates with `{{variable}}` placeholders
-- Edit existing templates
-- Toggle active/inactive status
-- Delete unused templates
-
-## System Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                   Frontend (React)                   │
-│                                                       │
-│  ┌─────────────────────────────────────────────┐   │
-│  │     PromptManagementPage (Super Admin)      │   │
-│  │  - Create/Edit/Delete Templates             │   │
-│  │  - Manage Variables                         │   │
-│  │  - Toggle Active Status                     │   │
-│  └─────────────────────────────────────────────┘   │
-│                        ↓                             │
-│  ┌─────────────────────────────────────────────┐   │
-│  │         geminiService.ts                    │   │
-│  │  - Fetches active templates                 │   │
-│  │  - Interpolates {{variables}}               │   │
-│  │  - Falls back to defaults                   │   │
-│  └─────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
-                         ↓ HTTP
-┌─────────────────────────────────────────────────────┐
-│                Backend (Express + Prisma)            │
-│                                                       │
-│  ┌─────────────────────────────────────────────┐   │
-│  │     /api/prompts/* (Super Admin Only)       │   │
-│  │  - requireSuperAdmin middleware             │   │
-│  │  - Full CRUD operations                     │   │
-│  └─────────────────────────────────────────────┘   │
-│                        ↓                             │
-│  ┌─────────────────────────────────────────────┐   │
-│  │     /api/prompts/active/:name (Public)      │   │
-│  │  - Returns active template by name          │   │
-│  │  - Used by AI generation                    │   │
-│  └─────────────────────────────────────────────┘   │
-│                        ↓                             │
-│  ┌─────────────────────────────────────────────┐   │
-│  │          SQLite Database (Prisma)           │   │
-│  │  - PromptTemplate table                     │   │
-│  │  - User.superAdmin field                    │   │
-│  └─────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
+**Frontend** (`.env` in project root):
+```bash
+VITE_STRIPE_PUBLIC_KEY=pk_test_...   # Publishable key (public)
 ```
 
-## Template Flow
+**See `STRIPE_SETUP.md` for complete setup guide**
 
-1. User initiates post generation
-2. `geminiService` calls `getSystemInstruction('post_generation', settings)`
-3. Fetches active template from `/api/prompts/active/post_generation`
-4. Replaces `{{variables}}` with actual user setting values
-5. Uses interpolated prompt as AI system instruction
-6. If fetch fails, falls back to hardcoded default
+## 🧪 Testing
 
-## Security Model
+### Free Tier Rate Limit
+1. Register new user
+2. Publish 10 posts
+3. 11th post returns 403 error with upgrade message
 
-- **Super Admin Access**: Only users with `superAdmin: true` can manage templates
-- **Backend Authorization**: `requireSuperAdmin` middleware enforces access
-- **Frontend Protection**: UI conditionally renders based on user role
-- **Public Read**: Active templates are publicly readable (needed for AI generation)
-- **User Isolation**: Regular users benefit from templates without seeing/editing them
+### Payment Flow
+1. Hit rate limit → see upgrade prompt
+2. Call `/api/subscription/checkout` → Stripe URL
+3. Complete payment (test card: 4242 4242 4242 4242)
+4. Webhook updates database to Pro
+5. Unlimited posts enabled
 
-## Database Schema
+### Subscription Management  
+1. Pro user calls `/api/subscription/portal`
+2. Opens Stripe portal to cancel/update payment
+3. Webhooks keep database in sync
 
-### User Table (Modified)
-```sql
-superAdmin BOOLEAN DEFAULT FALSE
-```
+## 📁 Files Created/Modified
 
-### PromptTemplate Table (New)
-```sql
-id              TEXT PRIMARY KEY
-name            TEXT UNIQUE
-description     TEXT
-template        TEXT (contains {{variable}} placeholders)
-variables       TEXT (JSON array of variable names)
-isActive        BOOLEAN DEFAULT TRUE
-createdAt       DATETIME
-updatedAt       DATETIME
-```
+**Created:**
+- `server/services/stripeService.js`
+- `server/routes/subscription.js`
+- `components/LandingPage.tsx`
+- `components/PrivacyPolicy.tsx`
+- `components/TermsOfService.tsx`
+- `STRIPE_SETUP.md`
 
-## Default Templates Created
+**Modified:**
+- `server/prisma/schema.prisma` - Added subscription fields
+- `server/index.js` - Registered subscription routes
+- `server/routes/api.js` - Added rate limiting
+- `App.tsx` - Integrated landing & legal pages
+- `package.json` (server) - Added Stripe dependency
 
-### 1. post_generation
-Main LinkedIn post content generation with full user persona integration.
+## 🚀 App Running
 
-### 2. idea_generation  
-Brainstorming post ideas based on topic and user profile.
+**[http://localhost:3004](http://localhost:3004)** - Frontend with landing page  
+**[http://localhost:3001](http://localhost:3001)** - Backend API
 
-### 3. image_generation
-Generating images based on post content.
+## 📋 Next Steps
 
-## Testing Performed
+**Setup (Required):**
+1. Create Stripe account
+2. Create Pro product at $49/month
+3. Copy API keys to `server/.env`
+4. Set up webhook endpoint
+5. Test with test cards
 
-✅ Database migration applied
-✅ Default templates seeded
-✅ Backend API accessible
-✅ Frontend and backend running on correct ports
-✅ Routes registered correctly
+**Frontend (TODO):**
+- [ ] Display remaining posts in dashboard
+- [ ] Show "Upgrade" button when limit approaching
+- [ ] Add "Manage Subscription" in settings
+- [ ] Handle Stripe redirect URLs
+- [ ] Show subscription status/renewal date
 
-## Next Steps for Super Admin
+**Production:**
+- [ ] Switch to live Stripe keys
+- [ ] Configure production webhooks
+- [ ] Enable fraud prevention
+- [ ] Set up receipt emails
+- [ ] Monitor conversions
 
-1. **Log in** to http://localhost:3004
-2. **Promote yourself**: `node server/make-super-admin.js your@email.com`
-3. **Access Prompt Management** from profile menu
-4. **Customize templates** to match your brand voice
-5. **Test generation** - create a post and verify custom prompts are used
+## 🔐 Security
 
-## Files Modified/Created
-
-### Created (8 files)
-1. `server/routes/prompts.js`
-2. `server/seed-prompts.js`
-3. `server/make-super-admin.js`
-4. `components/PromptManagementPage.tsx`
-5. `services/promptService.ts`
-6. `SUPER_ADMIN.md`
-7. `SUPER_ADMIN_QUICKSTART.md`
-8. `IMPLEMENTATION_SUMMARY.md`
-
-### Modified (6 files)
-1. `server/prisma/schema.prisma`
-2. `server/middleware/auth.js`
-3. `server/index.js`
-4. `types.ts`
-5. `App.tsx`
-6. `components/Header.tsx`
-7. `services/geminiService.ts`
-
-## Current Status
-
-🟢 **OPERATIONAL**
-
-- Backend: http://localhost:3001
-- Frontend: http://localhost:3004
-- Database: SQLite with migrations applied
-- Templates: 3 default templates seeded and active
-
-## Support
-
-For questions or issues:
-1. Check `SUPER_ADMIN.md` for detailed documentation
-2. Check `SUPER_ADMIN_QUICKSTART.md` for quick reference
-3. Review browser console and backend logs
-4. Verify user has `superAdmin: true` in database
-
----
-
-**Implementation completed successfully!** 🎉
+✅ Webhook signature verification  
+✅ Server-side limit enforcement  
+✅ JWT authentication on all endpoints  
+✅ No sensitive data in frontend  
+✅ Secure payment via Stripe Checkout

@@ -13,6 +13,7 @@ const linkedInRoutes = require('./routes/linkedin');
 const testRoutes = require('./routes/test');
 const promptRoutes = require('./routes/prompts');
 const newsRoutes = require('./routes/news');
+const subscriptionRoutes = require('./routes/subscription');
 const { fetchCuratedNews } = require('./services/perplexityService');
 // ALL OAuth/Passport infrastructure COMPLETELY REMOVED
 
@@ -78,6 +79,7 @@ app.use('/api', linkedInRoutes); // Clean LinkedIn routes - exact copy from work
 app.use('/api/test', testRoutes);
 app.use('/api/prompts', promptRoutes); // Super admin prompt management
 app.use('/api/news', newsRoutes); // News curation routes
+app.use('/api/subscription', subscriptionRoutes); // Stripe subscription management
 app.use('/api', apiRoutes);
 
 // Health check endpoint

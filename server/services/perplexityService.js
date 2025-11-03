@@ -52,13 +52,21 @@ async function fetchCuratedNews(userSettings) {
       requestBody.query.$query.sourceUri = { $in: newsSources };
     }
 
+    console.log('[NewsAPI] Fetching with query:', JSON.stringify(requestBody.query, null, 2));
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const response = await fetch(`${NEWSAPI_BASE_URL}/article/getArticles`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -99,39 +107,32 @@ async function fetchCuratedNews(userSettings) {
 function buildNewsAPIQuery(industry, keywords, categories) {
   const keywordList = keywords ? keywords.split(',').map(k => k.trim()).filter(Boolean) : [];
   
-  // Build query with keywords and industry
-  const queryTerms = [];
+  // Build simple OR query with keywords
+  const keywordConditions = [];
   
   if (industry) {
-    queryTerms.push({ keyword: industry, keywordLoc: 'title,body' });
+    keywordConditions.push({ keyword: industry, keywordLoc: 'title,body' });
   }
   
   if (keywordList.length > 0) {
     keywordList.forEach(kw => {
-      queryTerms.push({ keyword: kw, keywordLoc: 'title,body' });
+      keywordConditions.push({ keyword: kw, keywordLoc: 'title,body' });
     });
   }
 
-  // Add category filter if specified
-  if (categories && categories.length > 0) {
-    queryTerms.push({ categoryUri: { $in: categories } });
+  // If no keywords, use a default
+  if (keywordConditions.length === 0) {
+    keywordConditions.push({ keyword: 'business OR technology', keywordLoc: 'title,body' });
   }
 
-  // Date filter - last 7 days
-  const dateEnd = new Date();
-  const dateStart = new Date();
-  dateStart.setDate(dateStart.getDate() - 7);
-
-  return {
+  // Use OR instead of AND for more results
+  const query = {
     $query: {
-      $and: queryTerms.length > 0 ? queryTerms : [{ keyword: 'business', keywordLoc: 'title,body' }],
-    },
-    $filter: {
-      forceMaxDataTimeWindow: '7',
-      dateStart: dateStart.toISOString().split('T')[0],
-      dateEnd: dateEnd.toISOString().split('T')[0],
+      $or: keywordConditions
     }
   };
+
+  return query;
 }
 
 /**

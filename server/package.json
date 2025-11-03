@@ -31,7 +31,8 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-linkedin-oauth2": "^2.0.0",
     "prisma": "^6.18.0",
-    "resend": "^6.2.2"
+    "resend": "^6.4.0",
+    "stripe": "^19.2.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
