@@ -13,7 +13,10 @@ const linkedInRoutes = require('./routes/linkedin');
 const promptRoutes = require('./routes/prompts');
 const newsRoutes = require('./routes/news');
 const subscriptionRoutes = require('./routes/subscription');
-const { fetchCuratedNews } = require('./services/perplexityService');
+const { scheduledPostsQueue } = require('./queues/scheduledPostsQueue');
+const { newsCurationQueue } = require('./queues/newsCurationQueue');
+const { scheduledPostsWorker } = require('./workers/scheduledPostsWorker');
+const { newsCurationWorker } = require('./workers/newsCurationWorker');
 // ALL OAuth/Passport infrastructure COMPLETELY REMOVED
 
 const app = express();
@@ -122,105 +125,44 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-// Simple scheduled execution worker for due ScheduledPosts
-async function postToLinkedInWithToken({ accessToken, text, imageUrl }) {
-  // Get LinkedIn user id
-  const userInfoResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!userInfoResponse.ok) {
-    throw new Error(`Failed to fetch LinkedIn user info: ${await userInfoResponse.text()}`);
-  }
-  const userInfo = await userInfoResponse.json();
-  const linkedInUserId = userInfo.sub;
-
-  let imageUrn = null;
-  if (imageUrl) {
-    // Register upload
-    const registerResponse = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        registerUploadRequest: {
-          recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
-          owner: `urn:li:person:${linkedInUserId}`,
-          serviceRelationships: [
-            { relationshipType: 'OWNER', identifier: 'urn:li:userGeneratedContent' },
-          ],
-        },
-      }),
+/**
+ * Check for due scheduled posts and add them to the queue
+ */
+async function checkAndQueueScheduledPosts() {
+  try {
+    const now = new Date();
+    const duePosts = await prisma.scheduledPost.findMany({
+      where: { status: 'scheduled', scheduledFor: { lte: now } },
     });
-    if (!registerResponse.ok) {
-      throw new Error(`Failed to register image upload: ${await registerResponse.text()}`);
+    
+    if (duePosts.length === 0) {
+      console.log('[scheduler] No due posts found at', now.toISOString());
+      return;
     }
-    const registerData = await registerResponse.json();
-    const uploadUrl = registerData.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
-    imageUrn = registerData.value.asset;
-
-    // Fetch image bytes and upload
-    const imgResp = await fetch(imageUrl);
-    if (!imgResp.ok) {
-      throw new Error(`Failed to fetch image URL: ${await imgResp.text()}`);
+    
+    console.log(`[scheduler] Found ${duePosts.length} due posts - adding to BullMQ queue`);
+    
+    for (const post of duePosts) {
+      await scheduledPostsQueue.add('publish-post', 
+        { postId: post.id },
+        { 
+          jobId: `post-${post.id}`,
+          removeOnComplete: true,
+          removeOnFail: false,
+        }
+      );
+      console.log(`[scheduler] ✓ Queued post ${post.id} (${post.title}) for worker processing`);
     }
-    const contentType = imgResp.headers.get('content-type') || 'image/png';
-    const imgBuffer = Buffer.from(await imgResp.arrayBuffer());
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': contentType,
-      },
-      body: imgBuffer,
-    });
-    if (!uploadResponse.ok) {
-      throw new Error(`Image upload failed: ${await uploadResponse.text()}`);
-    }
-  }
-
-  const postBody = {
-    author: `urn:li:person:${linkedInUserId}`,
-    lifecycleState: 'PUBLISHED',
-    specificContent: {
-      'com.linkedin.ugc.ShareContent': {
-        shareCommentary: { text },
-        shareMediaCategory: imageUrn ? 'IMAGE' : 'NONE',
-      },
-    },
-    visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
-  };
-  if (imageUrn) {
-    postBody.specificContent['com.linkedin.ugc.ShareContent'].media = [
-      { status: 'READY', media: imageUrn },
-    ];
-  }
-
-  const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'X-Restli-Protocol-Version': '2.0.0',
-    },
-    body: JSON.stringify(postBody),
-  });
-  if (!postResponse.ok) {
-    throw new Error(`LinkedIn post failed: ${await postResponse.text()}`);
+  } catch (error) {
+    console.error('[scheduler] Error checking scheduled posts:', error);
   }
 }
 
-let scheduledWorkerInterval = null;
-let newsWorkerInterval = null;
-const userNewsLastFetch = new Map(); // Track last fetch time per user
-
 /**
- * Fetch news for all active users at their 6 AM local time
+ * Check all users and queue news curation jobs for those at their 6 AM local time
  */
-async function processNewsForUsers() {
+async function checkAndQueueNewsCuration() {
   try {
-    // Get all users with settings
     const users = await prisma.user.findMany({
       where: { settings: { isNot: null } },
       include: { settings: true },
@@ -231,196 +173,80 @@ async function processNewsForUsers() {
     const now = new Date();
     
     for (const user of users) {
-      try {
-        if (!user.settings) continue;
+      if (!user.settings) continue;
 
-        // Parse user's timezone (e.g., "America/New_York")
-        const userTimezone = user.settings.timeZone || 'UTC';
-        
-        // Get current time in user's timezone
-        const userNow = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
-        const userHour = userNow.getHours();
-        
-        // Check if it's 6 AM in user's timezone (within the current hour)
-        if (userHour !== 6) continue;
+      const userTimezone = user.settings.timeZone || 'UTC';
+      const userNow = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+      const userHour = userNow.getHours();
+      
+      // Check if it's 6 AM in user's timezone
+      if (userHour !== 6) continue;
 
-        // Check if we already fetched news for this user today
-        const lastFetch = userNewsLastFetch.get(user.id);
-        if (lastFetch) {
-          const hoursSinceLastFetch = (now - lastFetch) / (1000 * 60 * 60);
-          if (hoursSinceLastFetch < 23) {
-            // Already fetched within last 23 hours, skip
-            continue;
-          }
+      console.log(`[news-scheduler] Queueing news curation for user ${user.id} at their 6 AM (${userTimezone})`);
+      
+      await newsCurationQueue.add('fetch-news',
+        { userId: user.id },
+        {
+          jobId: `news-${user.id}-${now.toISOString().split('T')[0]}`,
+          removeOnComplete: true,
+          removeOnFail: false,
         }
-
-        console.log(`[news-scheduler] Fetching news for user ${user.id} at their 6 AM (${userTimezone})`);
-
-        // Fetch and save news articles
-        const articles = await fetchCuratedNews(user.settings);
-        
-        if (articles.length > 0) {
-          // Delete old articles (keep last 50)
-          const existingCount = await prisma.newsArticle.count({ where: { userId: user.id } });
-          if (existingCount > 50) {
-            const toDelete = await prisma.newsArticle.findMany({
-              where: { userId: user.id },
-              orderBy: { fetchedAt: 'desc' },
-              skip: 50,
-              select: { id: true },
-            });
-            await prisma.newsArticle.deleteMany({
-              where: { id: { in: toDelete.map(a => a.id) } },
-            });
-          }
-
-          // Save new articles
-          await Promise.all(
-            articles.map(article =>
-              prisma.newsArticle.create({
-                data: {
-                  userId: user.id,
-                  title: article.title,
-                  summary: article.summary,
-                  content: article.content,
-                  url: article.url,
-                  source: article.source,
-                  publishedAt: article.publishedAt ? new Date(article.publishedAt) : null,
-                  category: article.category,
-                  relevanceScore: article.relevanceScore,
-                },
-              })
-            )
-          );
-
-          console.log(`[news-scheduler] Saved ${articles.length} articles for user ${user.id}`);
-          userNewsLastFetch.set(user.id, now);
-        }
-      } catch (userErr) {
-        console.error(`[news-scheduler] Failed to fetch news for user ${user.id}:`, userErr.message);
-      }
+      );
     }
   } catch (error) {
-    console.error('[news-scheduler] Unexpected error:', error);
+    console.error('[news-scheduler] Error checking news curation:', error);
   }
 }
 
-async function processDueScheduledPosts() {
-  try {
-    const now = new Date();
-    const duePosts = await prisma.scheduledPost.findMany({
-      where: { status: 'scheduled', scheduledFor: { lte: now } },
-    });
-    
-    // Only log when there are due posts to avoid console spam
-    if (duePosts.length === 0) return;
-    
-    console.log('[scheduler] Found', duePosts.length, 'due posts at', now.toISOString());
-    duePosts.forEach(p => {
-      console.log('  - Due post:', p.id, p.title, 'scheduled for', p.scheduledFor);
-    });
-
-    for (const post of duePosts) {
-      try {
-        const user = await prisma.user.findUnique({
-          where: { id: post.userId },
-          select: {
-            linkedinAccessToken: true,
-            linkedinTokenExpiry: true,
-            linkedinConnected: true,
-          },
-        });
-
-        console.log('[scheduler] Processing post', post.id, 'for user', post.userId);
-        console.log('[scheduler] User has token:', !!user?.linkedinAccessToken, 'connected:', user?.linkedinConnected);
-
-        if (!user || !user.linkedinConnected || !user.linkedinAccessToken) {
-          console.log('[scheduler] Skipping post', post.id, '- no valid user token');
-          continue;
-        }
-        if (user.linkedinTokenExpiry && new Date() > new Date(user.linkedinTokenExpiry)) {
-          console.log('[scheduler] Skipping post', post.id, '- token expired');
-          continue;
-        }
-
-        console.log('[scheduler] Attempting to post to LinkedIn for post', post.id);
-        try {
-          await postToLinkedInWithToken({
-            accessToken: user.linkedinAccessToken,
-            text: post.text,
-            imageUrl: post.imageUrl || undefined,
-          });
-
-          console.log('[scheduler] Successfully posted to LinkedIn, updating DB for post', post.id);
-          await prisma.$transaction(async (tx) => {
-            await tx.publishedPost.create({
-              data: {
-                userId: post.userId,
-                title: post.title,
-                text: post.text,
-                imageUrl: post.imageUrl,
-                publishedAt: new Date().toLocaleString(),
-              },
-            });
-            await tx.scheduledPost.delete({
-              where: { id: post.id },
-            });
-          });
-          console.log('[scheduler] Post', post.id, 'published and removed from schedule');
-        } catch (postErr) {
-          console.error('[scheduler] LinkedIn post failed for', post.id, postErr.message);
-          // leave as scheduled so user can reschedule; do not mark failed here
-          continue;
-        }
-      } catch (err) {
-        console.error('[scheduler] Failed to publish scheduled post', post.id, err.message);
-        try {
-          await prisma.scheduledPost.update({
-            where: { id: post.id },
-            data: { status: 'failed' },
-          });
-        } catch (innerErr) {
-          console.error('[scheduler] Failed to mark post as failed', post.id, innerErr.message);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('[scheduler] Unexpected error', error);
-  }
-}
+let schedulerCheckInterval = null;
+let newsCheckInterval = null;
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
-  if (scheduledWorkerInterval) clearInterval(scheduledWorkerInterval);
-  if (newsWorkerInterval) clearInterval(newsWorkerInterval);
+  if (schedulerCheckInterval) clearInterval(schedulerCheckInterval);
+  if (newsCheckInterval) clearInterval(newsCheckInterval);
+  await scheduledPostsWorker.close();
+  await newsCurationWorker.close();
+  await scheduledPostsQueue.close();
+  await newsCurationQueue.close();
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully');
-  if (scheduledWorkerInterval) clearInterval(scheduledWorkerInterval);
-  if (newsWorkerInterval) clearInterval(newsWorkerInterval);
+  if (schedulerCheckInterval) clearInterval(schedulerCheckInterval);
+  if (newsCheckInterval) clearInterval(newsCheckInterval);
+  await scheduledPostsWorker.close();
+  await newsCurationWorker.close();
+  await scheduledPostsQueue.close();
+  await newsCurationQueue.close();
   await prisma.$disconnect();
   process.exit(0);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔒 CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3004'}`);
+  console.log('📦 BullMQ workers initialized');
+  console.log('   - Scheduled posts worker: processing queue "scheduled-posts"');
+  console.log('   - News curation worker: processing queue "news-curation"');
   
-  if (!scheduledWorkerInterval) {
-    scheduledWorkerInterval = setInterval(processDueScheduledPosts, 60 * 1000);
-    console.log('⏱️  Scheduled posts worker started (interval 60s)');
+  // Start checking for due posts every 60 seconds
+  if (!schedulerCheckInterval) {
+    schedulerCheckInterval = setInterval(checkAndQueueScheduledPosts, 60 * 1000);
+    console.log('⏱️  Scheduled posts checker started (interval 60s)');
+    // Check immediately on startup
+    checkAndQueueScheduledPosts();
   }
   
-  if (!newsWorkerInterval) {
-    // Check every 10 minutes for news to fetch
-    newsWorkerInterval = setInterval(processNewsForUsers, 10 * 60 * 1000);
-    console.log('📰 News curation worker started (interval 10m)');
-    // Run once on startup after a short delay
-    setTimeout(processNewsForUsers, 5000);
+  // Start checking for news curation every 10 minutes
+  if (!newsCheckInterval) {
+    newsCheckInterval = setInterval(checkAndQueueNewsCuration, 10 * 60 * 1000);
+    console.log('📰 News curation checker started (interval 10m)');
+    // Check after 5 seconds on startup
+    setTimeout(checkAndQueueNewsCuration, 5000);
   }
 });

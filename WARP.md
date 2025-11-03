@@ -48,6 +48,7 @@ npm start
 - **Frontend**: React 19 + TypeScript + Vite
 - **Backend**: Express + Node.js (JavaScript)
 - **Database**: SQLite (dev) via Prisma ORM, PostgreSQL-ready for production
+- **Job Queue**: BullMQ with Redis (for scheduled posts and background jobs)
 - **Auth**: JWT tokens (access + refresh) stored in localStorage
 - **AI**: Google Gemini API (client-side generation), OpenAI (server-side)
 - **OAuth**: LinkedIn OAuth2 (via `passport-linkedin-oauth2`)
@@ -79,11 +80,18 @@ quord_g0/
 │   │   └── test.js
 │   ├── services/
 │   │   └── perplexityService.js # Perplexity AI news fetching
+│   ├── queues/              # BullMQ queue definitions
+│   │   ├── connection.js    # Redis connection config
+│   │   ├── scheduledPostsQueue.js
+│   │   └── newsCurationQueue.js
+│   ├── workers/             # BullMQ job processors
+│   │   ├── scheduledPostsWorker.js
+│   │   └── newsCurationWorker.js
 │   ├── prisma/
 │   │   ├── schema.prisma    # Database schema
 │   │   └── migrations/
 │   ├── middleware/          # Auth middleware
-│   └── index.js             # Express server + background scheduler
+│   └── index.js             # Express server + job queue schedulers
 ├── App.tsx              # Root component, routing, auth state
 ├── types.ts             # Shared TypeScript types
 └── vite.config.ts       # Dev server (port 3004) + API proxy
@@ -111,20 +119,33 @@ quord_g0/
 - **Publishing**: Draft → `POST /api/posts/publish` → moves to PublishedPost table → calls LinkedIn API
 - **Scheduling**: Draft → `POST /api/scheduled-posts` → stored with `scheduledFor` timestamp → background worker publishes when due
 
-#### Background Scheduler (server/index.js)
-**Scheduled Posts Worker:**
-- Runs every 60 seconds
-- Queries `ScheduledPost` table for `status=scheduled` and `scheduledFor <= now`
-- Posts to LinkedIn using stored `linkedin_access_token`
-- Updates status to `published` or `failed`
+#### Background Job Queue (BullMQ + Redis)
+**Architecture:**
+- Uses BullMQ for reliable job processing with Redis as the backing store
+- Queues: `scheduled-posts`, `news-curation`
+- Workers process jobs with automatic retry, failure tracking, and rate limiting
 
-**News Curation Worker:**
-- Runs every 10 minutes
-- Checks each user's timezone for 6 AM local time
-- Fetches 5-7 curated articles via Perplexity AI
-- Based on user settings (industry, keywords, position, audience)
+**Scheduled Posts Worker** (`workers/scheduledPostsWorker.js`):
+- Processes jobs from `scheduled-posts` queue
+- Publishes posts to LinkedIn via API
+- Concurrency: 5 jobs, rate limit: 10 jobs/second
+- Automatic retry on failure (3 attempts with exponential backoff)
+- Updates database: moves to `PublishedPost` or marks as `failed`
+
+**Scheduled Posts Checker** (runs every 60s in `server/index.js`):
+- Queries database for due posts (`status=scheduled` and `scheduledFor <= now`)
+- Adds jobs to `scheduled-posts` queue for processing
+
+**News Curation Worker** (`workers/newsCurationWorker.js`):
+- Processes jobs from `news-curation` queue
+- Fetches curated articles via Perplexity AI
+- Concurrency: 3 jobs, rate limit: 5 jobs/60 seconds
 - Stores up to 50 most recent articles per user
 - Prevents duplicate fetches (23-hour cooldown)
+
+**News Curation Checker** (runs every 10m in `server/index.js`):
+- Checks all users for 6 AM local time
+- Adds jobs to `news-curation` queue for eligible users
 
 ### Database Models (Prisma)
 - **User**: Authentication + LinkedIn OAuth fields
@@ -141,6 +162,7 @@ quord_g0/
 
 **Backend** (`server/.env`):
 - `DATABASE_URL` - SQLite path or PostgreSQL connection string
+- `REDIS_URL` - Redis connection string for BullMQ (default: `redis://localhost:6379`)
 - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
 - `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`
 - `GEMINI_API_KEY`, `OPENAI_API_KEY`
@@ -164,9 +186,12 @@ quord_g0/
 
 #### Testing Scheduled Posts
 See `TEST_STATUS.md` for detailed testing procedures. Key points:
-- Backend logs show: `[scheduler] Found X due posts`, `[scheduler] Processing post <id>`
+- **Requires Redis running**: `brew install redis && brew services start redis` (macOS)
+- Backend logs show: `[scheduler] Found X due posts`, `[scheduler] Queued post X for publishing`
+- Worker logs show: `[scheduled-posts-worker] Processing post X`, `[scheduled-posts-worker] Successfully published post X`
 - Schedule posts 2 minutes in future to test worker quickly
 - Check user has valid LinkedIn token: `linkedinConnected = true`, token not expired
+- View queue status: Use BullMQ dashboard or Redis CLI (`redis-cli` → `KEYS *`)
 
 ### Common Tasks
 
