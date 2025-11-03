@@ -10,7 +10,6 @@ const { PrismaClient } = require('@prisma/client');
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const linkedInRoutes = require('./routes/linkedin');
-const testRoutes = require('./routes/test');
 const promptRoutes = require('./routes/prompts');
 const newsRoutes = require('./routes/news');
 const subscriptionRoutes = require('./routes/subscription');
@@ -76,7 +75,6 @@ const noop = (req, res, next) => next();
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
 // app.use('/api/oauth', oauthRoutes); // DISABLED - using clean LinkedIn implementation
 app.use('/api', linkedInRoutes); // Clean LinkedIn routes - exact copy from working app
-app.use('/api/test', testRoutes);
 app.use('/api/prompts', promptRoutes); // Super admin prompt management
 app.use('/api/news', newsRoutes); // News curation routes
 app.use('/api/subscription', subscriptionRoutes); // Stripe subscription management
