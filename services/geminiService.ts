@@ -128,6 +128,29 @@ const getSystemInstruction = async (templateName: string, settings: UserSettings
   return createDefaultSystemInstruction(settings);
 };
 
+// Fetch system prompt for news commentary (super admin configurable)
+const getSystemPrompt = async (promptName: string): Promise<string | null> => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+
+    const response = await fetch(`/api/super-admin/system-prompts/${promptName}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.prompt.isActive ? data.prompt.content : null;
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch system prompt '${promptName}'`, error);
+  }
+  return null;
+};
+
 const createDefaultSystemInstruction = (settings: UserSettings): string => {
   return `You are an expert content creator for LinkedIn. Your persona is defined by the following characteristics:
 - Tone of Voice: ${settings.toneOfVoice}
@@ -189,7 +212,25 @@ export const generatePostIdeas = async (topic: string, settings: UserSettings): 
 export const generateDraftPost = async (idea: string, settings: UserSettings): Promise<Omit<DraftPost, 'id'>> => {
     try {
       const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-      const systemInstruction = await getSystemInstruction('post_generation', settings);
+      
+      // Check if this is a news commentary (contains article context)
+      const isNewsCommentary = idea.includes('Context: Commenting on article');
+      
+      let systemInstruction = await getSystemInstruction('post_generation', settings);
+      
+      // If news commentary, prepend super admin rules and news comment prompt
+      if (isNewsCommentary) {
+        const superAdminRules = await getSystemPrompt('super_admin_rules');
+        const newsCommentPrompt = await getSystemPrompt('news_comment_generation');
+        
+        if (superAdminRules) {
+          systemInstruction = superAdminRules + '\n\n' + systemInstruction;
+        }
+        if (newsCommentPrompt) {
+          systemInstruction = systemInstruction + '\n\n' + newsCommentPrompt;
+        }
+      }
+      
       const userPrompt = `Generate a full LinkedIn post based on the following idea: "${idea}".
   
       The post should include a compelling headline and a body of text suitable for a LinkedIn audience. The tone, style, and keywords should align with the persona I provided.

@@ -207,14 +207,14 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g., The future of AI in product management..."
-            className="w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+            className="input-field"
             rows={4}
         />
         <div className="mt-4 flex justify-end">
             <button
                 onClick={handleGenerateIdeas}
                 disabled={!topic || isLoading}
-                className="flex items-center justify-center w-full sm:w-auto px-6 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-primary hover:bg-brand-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-secondary disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="btn-primary w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {isLoading ? <Loader /> : <SparklesIcon className="w-5 h-5 mr-2" />}
                 Generate Ideas
@@ -232,10 +232,10 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
           <button
             key={index}
             onClick={() => handleSelectIdea(idea)}
-            className="w-full text-left p-4 bg-base-100 border border-base-300 rounded-lg hover:bg-base-200 hover:border-brand-primary transition-all duration-200 flex items-center space-x-3"
+            className="w-full text-left p-5 bg-gradient-to-br from-base-100 to-base-200 border border-base-300 rounded-xl hover:border-brand-primary hover:shadow-medium transition-all duration-300 flex items-center space-x-3 group"
           >
-             <WandIcon className="w-5 h-5 text-brand-primary flex-shrink-0" />
-            <span className="flex-grow">{idea}</span>
+             <WandIcon className="w-5 h-5 text-brand-primary flex-shrink-0 group-hover:scale-110 transition-transform" />
+            <span className="flex-grow text-content group-hover:text-brand-primary transition-colors">{idea}</span>
           </button>
         ))}
       </div>
@@ -259,22 +259,22 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
        ) : (
         <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
             <div>
-              <label htmlFor="draftTitle" className="block text-sm font-medium text-content-secondary">Title</label>
-              <input type="text" id="draftTitle" value={generatedDraft.title} onChange={(e) => handleDraftChange('title', e.target.value)} className="mt-1 block w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm font-semibold focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
+              <label htmlFor="draftTitle" className="block text-sm font-medium text-content-secondary mb-2">Title</label>
+              <input type="text" id="draftTitle" value={generatedDraft.title} onChange={(e) => handleDraftChange('title', e.target.value)} className="input-field font-semibold" />
             </div>
             <div>
-              <label htmlFor="draftText" className="block text-sm font-medium text-content-secondary">Text</label>
-              <textarea id="draftText" value={generatedDraft.text} onChange={(e) => handleDraftChange('text', e.target.value)} rows={8} className="mt-1 block w-full px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
+              <label htmlFor="draftText" className="block text-sm font-medium text-content-secondary mb-2">Text</label>
+              <textarea id="draftText" value={generatedDraft.text} onChange={(e) => handleDraftChange('text', e.target.value)} rows={8} className="input-field" />
             </div>
             
             {/* Image Section */}
             <div>
               <label className="block text-sm font-medium text-content-secondary mb-2">Image</label>
               {isImageLoading ? (
-                 <div className="flex items-center justify-center h-48 bg-base-200 rounded-lg"><Loader className="h-6 w-6 text-brand-primary" /></div>
+                 <div className="flex items-center justify-center h-48 bg-gradient-to-br from-base-200 to-base-300 rounded-xl shadow-soft"><Loader className="h-6 w-6 text-brand-primary" /></div>
               ) : generatedDraft.imageUrl ? (
                 <div className="space-y-3">
-                  <img src={generatedDraft.imageUrl} alt="Post visual" className="w-full h-auto max-h-80 object-cover rounded-md" />
+                  <img src={generatedDraft.imageUrl} alt="Post visual" className="w-full h-auto max-h-80 object-cover rounded-xl shadow-medium" />
                   <div className="flex items-center gap-2">
                       <input type="text" value={enhancementPrompt} onChange={(e) => setEnhancementPrompt(e.target.value)} placeholder="e.g., make it more futuristic" className="flex-grow px-3 py-2 bg-base-100 border border-base-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" />
                       <button onClick={handleEnhanceImage} disabled={!enhancementPrompt || isImageLoading} className="flex-shrink-0 flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-primary hover:bg-brand-secondary focus:outline-none disabled:bg-gray-400">
@@ -463,8 +463,8 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
-        <div className="bg-base-100 p-6 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+        <div className="bg-base-100 p-8 rounded-2xl shadow-strong border border-base-300 w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-content flex items-center">
                     <SparklesIcon className="w-6 h-6 mr-3 text-brand-primary" />

@@ -13,8 +13,11 @@ interface DashboardSectionProps {
 
 const DashboardSection: React.FC<DashboardSectionProps> = ({ title, posts, onSelectPost, onDeletePost, onReschedulePost, onCancelPost }) => {
   return (
-    <div className="bg-base-100 p-6 rounded-lg shadow-md">
-      <h2 className="text-lg font-semibold mb-4 text-content">{title}</h2>
+    <div className="card-elevated p-6 animate-fade-in-up">
+      <h2 className="text-xl font-bold mb-6 text-content flex items-center gap-2">
+        <span className="w-1 h-6 bg-gradient-to-b from-brand-primary to-brand-secondary rounded-full"></span>
+        {title}
+      </h2>
       {posts.length > 0 ? (
         <div className="space-y-4">
           {posts.map(post => {
@@ -25,10 +28,10 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, posts, onSel
             const postContent = (
               <>
                 {post.imageUrl ? (
-                  <img src={post.imageUrl} alt="Post visual" className="w-24 h-24 sm:w-32 sm:h-20 object-cover rounded-md flex-shrink-0" />
+                  <img src={post.imageUrl} alt="Post visual" className="w-24 h-24 sm:w-32 sm:h-20 object-cover rounded-lg flex-shrink-0 shadow-soft" />
                 ) : (
-                  <div className="w-24 h-24 sm:w-32 sm:h-20 bg-base-200 rounded-md flex-shrink-0 flex items-center justify-center">
-                      <PostIcon className="w-8 h-8 text-content-secondary" />
+                  <div className="w-24 h-24 sm:w-32 sm:h-20 bg-gradient-to-br from-base-200 to-base-300 rounded-lg flex-shrink-0 flex items-center justify-center shadow-soft">
+                      <PostIcon className="w-8 h-8 text-content-secondary opacity-50" />
                   </div>
                 )}
                 <div className="flex-grow min-w-0">
@@ -92,7 +95,7 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, posts, onSel
                 <button
                   key={post.id}
                   onClick={() => onSelectPost(post as any)}
-                  className="w-full flex items-start space-x-4 p-4 border border-base-300 rounded-lg text-left hover:bg-base-200 hover:border-brand-primary transition-all duration-200"
+                  className="w-full post-card hover-lift group"
                 >
                   {postContent}
                 </button>
@@ -100,7 +103,7 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, posts, onSel
             }
 
             return (
-              <div key={post.id} className="flex items-start space-x-4 p-4 border border-base-300 rounded-lg">
+              <div key={post.id} className="post-card">
                 {postContent}
               </div>
             );

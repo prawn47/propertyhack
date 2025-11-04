@@ -13,6 +13,7 @@ const linkedInRoutes = require('./routes/linkedin');
 const promptRoutes = require('./routes/prompts');
 const newsRoutes = require('./routes/news');
 const subscriptionRoutes = require('./routes/subscription');
+const superAdminRoutes = require('./routes/superAdmin');
 const { scheduledPostsQueue } = require('./queues/scheduledPostsQueue');
 const { newsCurationQueue } = require('./queues/newsCurationQueue');
 const { scheduledPostsWorker } = require('./workers/scheduledPostsWorker');
@@ -81,6 +82,7 @@ app.use('/api', linkedInRoutes); // Clean LinkedIn routes - exact copy from work
 app.use('/api/prompts', promptRoutes); // Super admin prompt management
 app.use('/api/news', newsRoutes); // News curation routes
 app.use('/api/subscription', subscriptionRoutes); // Stripe subscription management
+app.use('/api/super-admin', superAdminRoutes); // Super admin system management
 app.use('/api', apiRoutes);
 
 // Health check endpoint

@@ -60,12 +60,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, user, onChange, o
         <div className="bg-base-100 p-6 sm:p-8 rounded-xl shadow-md">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-xl sm:text-2xl font-bold text-content">User Settings</h1>
-                <button 
-                    onClick={onBack} 
-                    className="text-sm font-semibold text-brand-primary hover:text-brand-secondary"
-                >
-                    &larr; Back to Dashboard
-                </button>
+                <div className="flex gap-3">
+                    {user?.superAdmin && (
+                        <button 
+                            onClick={() => (window as any).appNavigate?.('superadmin')}
+                            className="text-sm font-semibold text-purple-600 hover:text-purple-700"
+                        >
+                            ⚙️ Super Admin
+                        </button>
+                    )}
+                    <button 
+                        onClick={onBack} 
+                        className="text-sm font-semibold text-brand-primary hover:text-brand-secondary"
+                    >
+                        &larr; Back to Dashboard
+                    </button>
+                </div>
             </div>
             
             <div className="space-y-8">

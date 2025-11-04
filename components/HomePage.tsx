@@ -226,7 +226,7 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder={placeholderText()}
-            className="w-full px-4 py-3 bg-base-100 border border-base-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent resize-none"
+            className="input-field resize-none"
             rows={6}
           />
           {error && <p className="text-sm text-red-500">{error}</p>}
@@ -234,7 +234,7 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
             <button
               onClick={handleGenerateIdeas}
               disabled={isLoading || !topic.trim()}
-              className="flex items-center px-6 py-3 bg-brand-primary text-white rounded-md hover:bg-brand-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -270,7 +270,7 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
               <button
                 key={idx}
                 onClick={() => handleSelectIdea(idea)}
-                className="w-full p-4 text-left bg-base-100 border border-base-300 rounded-lg hover:border-brand-primary hover:bg-base-200 transition-all"
+                className="w-full p-5 text-left bg-gradient-to-br from-base-100 to-base-200 border border-base-300 rounded-xl hover:border-brand-primary hover:shadow-medium transition-all duration-300 group"
               >
                 <p className="text-content">{idea}</p>
               </button>
@@ -306,7 +306,7 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
                   type="text"
                   value={generatedDraft.title}
                   onChange={(e) => handleDraftChange('title', e.target.value)}
-                  className="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  className="input-field font-semibold"
                 />
               </div>
 
@@ -315,7 +315,7 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
                 <textarea
                   value={generatedDraft.text}
                   onChange={(e) => handleDraftChange('text', e.target.value)}
-                  className="w-full px-4 py-3 bg-base-100 border border-base-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary resize-none"
+                  className="input-field resize-none"
                   rows={12}
                 />
               </div>
@@ -446,9 +446,9 @@ const HomePage: React.FC<HomePageProps> = ({ settings, onAddDraft, onPublish, on
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       {/* What's On Your Mind - Compact */}
-      <div className="bg-base-100 p-6 rounded-lg shadow-md">
+      <div className="card-elevated p-8">
         {renderStepContent()}
       </div>
 

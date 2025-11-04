@@ -15,6 +15,7 @@ import LandingPage from './components/LandingPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import { PromptManagementPage } from './components/PromptManagementPage';
+import SuperAdminSettings from './components/SuperAdminSettings';
 import type { UserSettings, DraftPost, PublishedPost, ScheduledPost, User, AuthState } from './types';
 import * as db from './services/dbService';
 import { postToLinkedIn } from './services/linkedInService';
@@ -30,7 +31,7 @@ const App: React.FC = () => {
   const [showLanding, setShowLanding] = useState(true);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [legalView, setLegalView] = useState<'privacy' | 'terms' | null>(null);
-  const [view, setView] = useState<'dashboard' | 'settings' | 'profile' | 'prompts'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'settings' | 'profile' | 'prompts' | 'superadmin'>('dashboard');
   const [currentPage, setCurrentPage] = useState<'home' | 'drafts' | 'scheduled' | 'published'>('home');
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [drafts, setDrafts] = useState<DraftPost[]>([]);
@@ -264,10 +265,18 @@ const App: React.FC = () => {
     }
   };
 
-  const handleNavigate = (newView: 'profile' | 'settings' | 'prompts') => {
+  const handleNavigate = (newView: 'profile' | 'settings' | 'prompts' | 'superadmin') => {
     setEditingDraft(null);
     setView(newView);
   };
+
+  // Expose navigation to window for settings page access
+  React.useEffect(() => {
+    (window as any).appNavigate = handleNavigate;
+    return () => {
+      delete (window as any).appNavigate;
+    };
+  }, []);
   
   const handleBackToDashboard = () => {
     setEditingDraft(null);
@@ -650,6 +659,16 @@ const App: React.FC = () => {
           );
         }
         return <PromptManagementPage />;
+      case 'superadmin':
+        // Only allow super admins to access
+        if (!authState.user?.superAdmin) {
+          return (
+            <div className="flex items-center justify-center min-h-screen bg-base-200">
+              <p className="text-content">Access denied. Super admin privileges required.</p>
+            </div>
+          );
+        }
+        return <SuperAdminSettings onBack={() => setView('settings')} />;
       case 'settings':
         console.log('Rendering settings page, settings:', settings);
         if (!settings) {
@@ -713,8 +732,8 @@ const App: React.FC = () => {
       />
       {renderContent()}
       {rescheduleTarget && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-base-100 p-6 rounded-xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="card-elevated p-8 w-full max-w-md animate-fade-in-up">
             <h3 className="text-lg font-semibold mb-3">Reschedule Post</h3>
             <p className="text-sm text-content-secondary mb-3 line-clamp-2">{rescheduleTarget.title}</p>
             <label htmlFor="reschedAt" className="text-sm text-content-secondary">New date & time</label>

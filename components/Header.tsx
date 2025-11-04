@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
   }
 
   return (
-    <header className="bg-base-100 shadow-sm border-b border-base-300">
+    <header className="bg-base-100 shadow-soft border-b border-base-300 backdrop-blur-sm bg-opacity-95 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
@@ -48,9 +48,9 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
               <nav className="hidden md:flex space-x-1">
                 <button
                   onClick={() => onPageChange('home')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentPage === 'home'
-                      ? 'bg-brand-primary text-white'
+                      ? 'bg-gradient-to-r from-brand-primary to-brand-secondary text-white shadow-soft'
                       : 'text-content-secondary hover:text-content hover:bg-base-200'
                   }`}
                 >
@@ -58,9 +58,9 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
                 </button>
                 <button
                   onClick={() => onPageChange('drafts')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentPage === 'drafts'
-                      ? 'bg-brand-primary text-white'
+                      ? 'bg-gradient-to-r from-brand-primary to-brand-secondary text-white shadow-soft'
                       : 'text-content-secondary hover:text-content hover:bg-base-200'
                   }`}
                 >
@@ -68,9 +68,9 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
                 </button>
                 <button
                   onClick={() => onPageChange('scheduled')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentPage === 'scheduled'
-                      ? 'bg-brand-primary text-white'
+                      ? 'bg-gradient-to-r from-brand-primary to-brand-secondary text-white shadow-soft'
                       : 'text-content-secondary hover:text-content hover:bg-base-200'
                   }`}
                 >
@@ -78,9 +78,9 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
                 </button>
                 <button
                   onClick={() => onPageChange('published')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentPage === 'published'
-                      ? 'bg-brand-primary text-white'
+                      ? 'bg-gradient-to-r from-brand-primary to-brand-secondary text-white shadow-soft'
                       : 'text-content-secondary hover:text-content hover:bg-base-200'
                   }`}
                 >
@@ -133,7 +133,7 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
             </button>
             {isDropdownOpen && (
               <div 
-                className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-base-100 ring-1 ring-black ring-opacity-5 focus:outline-none animate-fade-in-up z-50"
+                className="origin-top-right absolute right-0 mt-2 w-48 rounded-xl shadow-strong py-2 bg-base-100 border border-base-300 focus:outline-none animate-fade-in-up z-50"
                 style={{animationDuration: '0.15s'}}
                 role="menu"
                 aria-orientation="vertical"

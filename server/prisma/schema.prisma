@@ -195,3 +195,15 @@ model EmailResponse {
   @@index([status])
   @@map("email_responses")
 }
+
+model SystemPrompt {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g. "super_admin_rules", "news_comment_generation"
+  description String
+  content     String   // The actual prompt/rules text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_prompts")
+}

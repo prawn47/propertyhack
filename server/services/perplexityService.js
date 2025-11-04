@@ -17,7 +17,7 @@ async function fetchCuratedNews(userSettings) {
     throw new Error('NewsAPI.ai API key not configured');
   }
 
-  const { industry, keywords } = userSettings;
+  const { industry, keywords, position, audience, englishVariant } = userSettings;
   
   // Parse JSON strings from database
   const newsCategories = userSettings.newsCategories ? 
@@ -26,9 +26,14 @@ async function fetchCuratedNews(userSettings) {
     (typeof userSettings.newsLanguages === 'string' ? JSON.parse(userSettings.newsLanguages) : userSettings.newsLanguages) : ['eng'];
   const newsSources = userSettings.newsSources ? 
     (typeof userSettings.newsSources === 'string' ? JSON.parse(userSettings.newsSources) : userSettings.newsSources) : [];
+  
+  // Map englishVariant to language code if newsLanguages is default
+  const effectiveLanguages = mapLanguagePreferences(newsLanguages, englishVariant);
+  console.log(`[NewsAPI] Language preferences: newsLanguages=${JSON.stringify(newsLanguages)}, englishVariant=${englishVariant}, effective=${JSON.stringify(effectiveLanguages)}`);
 
-  // Build query based on user settings
-  const query = buildNewsAPIQuery(industry, keywords, newsCategories);
+  // Build query based on user settings (include more user interests)
+  const query = buildNewsAPIQuery(industry, keywords, position, audience, newsCategories);
+  console.log(`[NewsAPI] User interests: industry=${industry}, position=${position}, audience=${audience}, keywords=${keywords}`);
 
   try {
     const requestBody = {
@@ -42,9 +47,9 @@ async function fetchCuratedNews(userSettings) {
       articleBodyLen: 300,
     };
 
-    // Add language filter if specified
-    if (newsLanguages && newsLanguages.length > 0) {
-      requestBody.query.$query.lang = newsLanguages;
+    // Add language filter (use effective languages which include englishVariant mapping)
+    if (effectiveLanguages && effectiveLanguages.length > 0) {
+      requestBody.query.$query.lang = effectiveLanguages;
     }
 
     // Add source filter if specified
@@ -102,20 +107,45 @@ async function fetchCuratedNews(userSettings) {
 }
 
 /**
+ * Map englishVariant and newsLanguages to effective language codes
+ */
+function mapLanguagePreferences(newsLanguages, englishVariant) {
+  // If user has explicitly selected languages, respect that
+  if (newsLanguages && newsLanguages.length > 0 && !(newsLanguages.length === 1 && newsLanguages[0] === 'eng')) {
+    return newsLanguages;
+  }
+  
+  // Otherwise, map englishVariant to appropriate language/region
+  // NewsAPI.ai uses ISO 639-3 codes
+  const variantMap = {
+    'American': ['eng'],
+    'British': ['eng'],
+    'Australian': ['eng'],
+    // Could extend with other variants if needed
+  };
+  
+  return variantMap[englishVariant] || ['eng'];
+}
+
+/**
  * Build NewsAPI.ai query based on user settings
  */
-function buildNewsAPIQuery(industry, keywords, categories) {
+function buildNewsAPIQuery(industry, keywords, position, audience, categories) {
   const keywordList = keywords ? keywords.split(',').map(k => k.trim()).filter(Boolean) : [];
   
-  // Build simple OR query with keywords
+  // Build comprehensive OR query with all user interests
+  // Limit to 10 keywords to stay well under API limit of 15
   const keywordConditions = [];
   
-  if (industry) {
+  // Priority 1: Industry (highest relevance)
+  if (industry && keywordConditions.length < 10) {
     keywordConditions.push({ keyword: industry, keywordLoc: 'title,body' });
   }
   
-  if (keywordList.length > 0) {
-    keywordList.forEach(kw => {
+  // Priority 2: User-specified keywords (most specific)
+  if (keywordList.length > 0 && keywordConditions.length < 10) {
+    const remainingSlots = 10 - keywordConditions.length;
+    keywordList.slice(0, remainingSlots).forEach(kw => {
       keywordConditions.push({ keyword: kw, keywordLoc: 'title,body' });
     });
   }
