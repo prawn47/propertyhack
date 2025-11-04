@@ -1,6 +1,7 @@
 // Authentication service for handling JWT tokens and user authentication
+import { getApiUrl } from './apiConfig';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = getApiUrl('/api');
 
 interface LoginCredentials {
   email: string;

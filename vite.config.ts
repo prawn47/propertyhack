@@ -4,17 +4,19 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const isProd = mode === 'production';
+    
     return {
       server: {
         port: 3004,
         host: '0.0.0.0',
-        proxy: {
+        proxy: !isProd ? {
           '/api': {
-            target: 'http://localhost:3001',
+            target: env.VITE_API_URL || 'http://localhost:3001',
             changeOrigin: true,
             secure: false,
           }
-        }
+        } : undefined
       },
       plugins: [react()],
       define: {

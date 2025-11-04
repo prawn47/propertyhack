@@ -1,0 +1,88 @@
+services:
+  # Express Backend API
+  - type: web
+    name: quord-api
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: cd server && npm install && npx prisma generate && npx prisma migrate deploy
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false  # Set in Render dashboard
+      - key: REDIS_URL
+        sync: false  # Set in Render dashboard
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        value: https://app.quord.ai,https://quord.ai
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: post@mail.quord.ai
+      - key: LINKEDIN_CLIENT_ID
+        sync: false
+      - key: QUORD_LINKEDIN_CLIENT_SECRET
+        sync: false
+      - key: QUORD_LINKEDIN_REDIRECT_URI
+        value: https://api.quord.ai/api/auth/linkedin/callback
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://api.quord.ai/api/oauth/google/callback
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRO_PRICE_ID
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: NEWSAPI_API_KEY
+        sync: false
+      - key: PERPLEXITY_API_KEY
+        sync: false
+    healthCheckPath: /health
+
+  # PostgreSQL Database
+  - type: pserv
+    name: quord-postgres
+    env: docker
+    plan: starter
+    image: postgres:16-alpine
+    disk:
+      name: quord-postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+    envVars:
+      - key: POSTGRES_USER
+        value: quord
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: POSTGRES_DB
+        value: quord_production
+
+  # Redis for BullMQ
+  - type: pserv
+    name: quord-redis
+    env: docker
+    plan: starter
+    image: redis:7-alpine
+    disk:
+      name: quord-redis-data
+      mountPath: /data
+      sizeGB: 1

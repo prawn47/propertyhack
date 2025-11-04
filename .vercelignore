@@ -1,0 +1,14 @@
+# Exclude backend from Vercel deployment
+server/
+*.log
+backend.log
+frontend.log
+
+# Development files
+TEMP_FILES/
+.env.local
+.env.development
+
+# Database
+*.db
+*.db-journal
