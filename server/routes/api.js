@@ -602,6 +602,7 @@ router.get('/user/profile', async (req, res) => {
         emailVerified: true,
         createdAt: true,
         linkedinConnected: true,
+        superAdmin: true,
         settings: {
           select: {
             profilePictureUrl: true,
