@@ -1,7 +1,8 @@
 import type { UserSettings, DraftPost, PublishedPost } from '../types';
 import { authService } from './authService';
+import { getApiUrl } from './apiConfig';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = getApiUrl('/api');
 
 interface Database {
     settings: UserSettings;

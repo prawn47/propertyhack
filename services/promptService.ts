@@ -1,7 +1,8 @@
 import type { PromptTemplate } from '../types';
 import { authService } from './authService';
+import { getApiUrl } from './apiConfig';
 
-const API_BASE = '/api/prompts';
+const API_BASE = getApiUrl('/api/prompts');
 
 export const promptService = {
   async getAllTemplates(): Promise<PromptTemplate[]> {

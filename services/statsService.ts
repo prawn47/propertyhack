@@ -1,6 +1,7 @@
 import { authService } from './authService';
+import { getApiUrl } from './apiConfig';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = getApiUrl('/api');
 
 export interface StreakStats {
   currentStreak: number;
