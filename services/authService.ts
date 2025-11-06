@@ -122,8 +122,14 @@ class AuthService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Registration failed');
+      let errorMessage = 'Registration failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (e) {
+        console.error('Failed to parse error response:', e);
+      }
+      throw new Error(errorMessage);
     }
 
     const data: AuthResponse = await response.json();
@@ -142,8 +148,14 @@ class AuthService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      let errorMessage = 'Login failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (e) {
+        console.error('Failed to parse error response:', e);
+      }
+      throw new Error(errorMessage);
     }
 
     const data: AuthResponse = await response.json();
