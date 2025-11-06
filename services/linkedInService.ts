@@ -2,6 +2,7 @@
  * Simple LinkedIn Service - Uses cookie-based authentication
  * Matches the approach from the working example project
  */
+import { getApiUrl } from './apiConfig';
 
 interface PostPayload {
     text: string;
@@ -12,7 +13,7 @@ interface PostPayload {
 export const postToLinkedIn = async (payload: PostPayload): Promise<void> => {
     try {
         const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-        const response = await fetch('/api/linkedin/post', {
+        const response = await fetch(getApiUrl('/api/linkedin/post'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

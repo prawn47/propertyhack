@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../services/apiConfig';
 
 // Minimal LinkedIn UI for Settings only: status + connect/disconnect
 const LinkedInSimple: React.FC = () => {
@@ -13,7 +14,7 @@ const LinkedInSimple: React.FC = () => {
   const checkAuthStatus = async () => {
     try {
       // Check LinkedIn authentication status using the proper endpoint
-      const response = await fetch('/api/linkedin/status');
+      const response = await fetch(getApiUrl('/api/linkedin/status'));
       const data = await response.json();
       setIsAuthenticated(data.isAuthenticated || false);
       if (data.user) {
@@ -27,12 +28,12 @@ const LinkedInSimple: React.FC = () => {
 
   const handleConnect = () => {
     // Redirect to LinkedIn OAuth - exact same as working app
-    window.location.href = '/api/auth/linkedin';
+    window.location.href = getApiUrl('/api/auth/linkedin');
   };
 
   const handleDisconnect = async () => {
     try {
-      await fetch('/api/linkedin/logout', { method: 'POST' });
+      await fetch(getApiUrl('/api/linkedin/logout'), { method: 'POST' });
       setIsAuthenticated(false);
       setUserInfo(null);
       setMessage('✅ Disconnected from LinkedIn');
