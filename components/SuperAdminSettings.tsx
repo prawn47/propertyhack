@@ -15,6 +15,19 @@ interface SuperAdminSettingsProps {
   onBack: () => void;
 }
 
+const AVAILABLE_VARIABLES = [
+  { name: 'toneOfVoice', description: 'User\'s preferred tone of voice', example: 'Professional & Authoritative' },
+  { name: 'industry', description: 'User\'s industry', example: 'Technology (SaaS)' },
+  { name: 'position', description: 'User\'s job position', example: 'Senior Product Manager' },
+  { name: 'englishVariant', description: 'Language variant', example: 'American, British, Australian' },
+  { name: 'audience', description: 'Target audience', example: 'Tech executives, product leaders' },
+  { name: 'postGoal', description: 'Goal of posts', example: 'Establish thought leadership' },
+  { name: 'keywords', description: 'Keywords to incorporate', example: 'AI, Product Management, SaaS' },
+  { name: 'contentExample1', description: 'First writing example', example: 'User\'s first sample post' },
+  { name: 'contentExample2', description: 'Second writing example', example: 'User\'s second sample post' },
+  { name: 'postText', description: 'Post content (for image generation)', example: 'Full post text' },
+];
+
 const SuperAdminSettings: React.FC<SuperAdminSettingsProps> = ({ onBack }) => {
   const [prompts, setPrompts] = useState<SystemPrompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +35,7 @@ const SuperAdminSettings: React.FC<SuperAdminSettingsProps> = ({ onBack }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showVariables, setShowVariables] = useState(false);
 
   useEffect(() => {
     fetchPrompts();
@@ -152,19 +166,46 @@ const SuperAdminSettings: React.FC<SuperAdminSettingsProps> = ({ onBack }) => {
 
         {!editingPrompt ? (
           <>
-            <div className="mb-6">
+            <div className="mb-6 flex justify-between items-center">
               <button
-                onClick={handleCreateNew}
-                className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-secondary"
+                onClick={() => setShowVariables(!showVariables)}
+                className="px-4 py-2 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50"
               >
-                + Create New System Prompt
+                {showVariables ? 'Hide' : 'Show'} Available Variables
               </button>
             </div>
+
+            {showVariables && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="font-semibold text-lg mb-3 text-blue-900">Available Template Variables</h3>
+                <p className="text-sm text-blue-700 mb-3">Use these variables in your prompts with double curly braces: <code className="bg-blue-100 px-1">{'{{variableName}}'}</code></p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-blue-100">
+                      <tr>
+                        <th className="text-left p-2 font-semibold text-blue-900">Variable</th>
+                        <th className="text-left p-2 font-semibold text-blue-900">Description</th>
+                        <th className="text-left p-2 font-semibold text-blue-900">Example Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {AVAILABLE_VARIABLES.map(v => (
+                        <tr key={v.name} className="border-t border-blue-200">
+                          <td className="p-2 font-mono text-xs bg-white">{'{{' + v.name + '}}'}</td>
+                          <td className="p-2 text-blue-800">{v.description}</td>
+                          <td className="p-2 text-blue-600 italic">{v.example}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               {prompts.length === 0 ? (
                 <p className="text-content-secondary text-center py-8">
-                  No system prompts configured yet. Create one to get started.
+                  No system prompts configured yet.
                 </p>
               ) : (
                 prompts.map(prompt => (

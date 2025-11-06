@@ -173,7 +173,15 @@ Do not use emojis unless specifically asked. Be concise and professional. Struct
 export const generatePostIdeas = async (topic: string, settings: UserSettings): Promise<string[]> => {
   try {
     const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-    const systemInstruction = await getSystemInstruction('idea_generation', settings);
+    
+    // Try to get system prompt from database first
+    let systemInstruction = await getSystemPrompt('article_idea_generation');
+    if (systemInstruction) {
+      systemInstruction = interpolateTemplate(systemInstruction, settings);
+    } else {
+      // Fallback to old template system
+      systemInstruction = await getSystemInstruction('idea_generation', settings);
+    }
     const userPrompt = `Generate 5 distinct LinkedIn post ideas based on the topic: "${topic}".
     Each idea should be a short, compelling title or a one-sentence concept.
     Return the ideas as a JSON array of strings.`;
@@ -216,7 +224,14 @@ export const generateDraftPost = async (idea: string, settings: UserSettings): P
       // Check if this is a news commentary (contains article context)
       const isNewsCommentary = idea.includes('Context: Commenting on article');
       
-      let systemInstruction = await getSystemInstruction('post_generation', settings);
+      // Try to get system prompt from database first
+      let systemInstruction = await getSystemPrompt('article_generation');
+      if (systemInstruction) {
+        systemInstruction = interpolateTemplate(systemInstruction, settings);
+      } else {
+        // Fallback to old template system
+        systemInstruction = await getSystemInstruction('post_generation', settings);
+      }
       
       // If news commentary, prepend super admin rules and news comment prompt
       if (isNewsCommentary) {
@@ -285,20 +300,30 @@ export const generatePostImage = async (postText: string, settings?: UserSetting
     try {
         const startedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         
-        // Try to get custom image prompt template if settings provided
-        let imagePrompt = `Create a visually appealing and professional image that complements the following LinkedIn post. The image should be abstract or conceptual, suitable for a professional tech audience. Avoid text in the image. The style should be modern and clean. Post content: "${postText.substring(0, 500)}..."`;
+        // Try to get system prompt from database first
+        let imagePrompt = await getSystemPrompt('image_generation');
         
-        if (settings) {
-          try {
-            const response = await fetch('/api/prompts/active/image_generation');
-            if (response.ok) {
-              const data = await response.json();
-              const template = data.template.template;
-              // Replace {{postText}} placeholder
-              imagePrompt = template.replace(/\{\{postText\}\}/g, postText.substring(0, 500));
+        if (imagePrompt) {
+          // Replace {{postText}} placeholder
+          imagePrompt = imagePrompt.replace(/\{\{postText\}\}/g, postText.substring(0, 500));
+        } else {
+          // Fallback to old template system or default
+          if (settings) {
+            try {
+              const response = await fetch('/api/prompts/active/image_generation');
+              if (response.ok) {
+                const data = await response.json();
+                const template = data.template.template;
+                imagePrompt = template.replace(/\{\{postText\}\}/g, postText.substring(0, 500));
+              } else {
+                imagePrompt = `Create a visually appealing and professional image that complements the following LinkedIn post. The image should be abstract or conceptual, suitable for a professional tech audience. Avoid text in the image. The style should be modern and clean. Post content: "${postText.substring(0, 500)}..."`;
+              }
+            } catch (error) {
+              console.warn('Failed to fetch image generation template, using default', error);
+              imagePrompt = `Create a visually appealing and professional image that complements the following LinkedIn post. The image should be abstract or conceptual, suitable for a professional tech audience. Avoid text in the image. The style should be modern and clean. Post content: "${postText.substring(0, 500)}..."`;
             }
-          } catch (error) {
-            console.warn('Failed to fetch image generation template, using default', error);
+          } else {
+            imagePrompt = `Create a visually appealing and professional image that complements the following LinkedIn post. The image should be abstract or conceptual, suitable for a professional tech audience. Avoid text in the image. The style should be modern and clean. Post content: "${postText.substring(0, 500)}..."`;
           }
         }
 
