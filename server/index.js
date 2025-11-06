@@ -14,6 +14,7 @@ const promptRoutes = require('./routes/prompts');
 const newsRoutes = require('./routes/news');
 const subscriptionRoutes = require('./routes/subscription');
 const superAdminRoutes = require('./routes/superAdmin');
+const cronRoutes = require('./routes/cron');
 const { scheduledPostsQueue } = require('./queues/scheduledPostsQueue');
 const { newsCurationQueue } = require('./queues/newsCurationQueue');
 const { scheduledPostsWorker } = require('./workers/scheduledPostsWorker');
@@ -85,6 +86,7 @@ app.use('/api/prompts', promptRoutes); // Super admin prompt management
 app.use('/api/news', newsRoutes); // News curation routes
 app.use('/api/subscription', subscriptionRoutes); // Stripe subscription management
 app.use('/api/super-admin', superAdminRoutes); // Super admin system management
+app.use('/api/cron', cronRoutes); // Cron job endpoints for external schedulers
 app.use('/api', apiRoutes);
 
 // Health check endpoint
