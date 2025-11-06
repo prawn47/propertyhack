@@ -133,6 +133,20 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
     onClose();
   };
 
+  const handleClose = () => {
+    // If user has generated a draft with content, save it before closing
+    if (step === 'draft' && (generatedDraft.title || generatedDraft.text)) {
+      if (confirm('Save this post as a draft before closing?')) {
+        const newDraft: DraftPost = {
+          id: new Date().toISOString(),
+          ...generatedDraft
+        };
+        onAddToDrafts(newDraft);
+      }
+    }
+    onClose();
+  };
+
   const handlePublish = async () => {
     setIsPublishing(true);
     const postToPublish: DraftPost = {
@@ -140,9 +154,15 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
       ...generatedDraft
     };
     // The onPublish function from App.tsx now handles all logic including errors
-    await onPublish(postToPublish);
-    setIsPublishing(false);
-    onClose();
+    try {
+      await onPublish(postToPublish);
+      onClose(); // Close directly without prompt
+    } catch (error) {
+      // Keep wizard open on error so user can retry
+      console.error('Publish error:', error);
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handleSchedule = () => {
@@ -470,7 +490,7 @@ const PostCreationWizard: React.FC<PostCreationWizardProps> = ({ settings, onAdd
                     <SparklesIcon className="w-6 h-6 mr-3 text-brand-primary" />
                     New Post Generator
                 </h2>
-                <button onClick={onClose} className="text-sm font-semibold text-content-secondary hover:text-content">
+                <button onClick={handleClose} className="text-sm font-semibold text-content-secondary hover:text-content">
                     &times; Close
                 </button>
             </div>
