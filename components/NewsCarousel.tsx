@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { NewsArticle } from '../types';
 import Loader from './Loader';
+import { getApiUrl } from '../services/apiConfig';
 
 interface NewsCarouselProps {
   onCommentOnArticle: (article: NewsArticle) => void;
@@ -20,7 +21,7 @@ const NewsCarousel: React.FC<NewsCarouselProps> = ({ onCommentOnArticle }) => {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
 
-      const response = await fetch('http://localhost:3001/api/news?limit=10', {
+      const response = await fetch(getApiUrl('/api/news?limit=10'), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -44,7 +45,7 @@ const NewsCarousel: React.FC<NewsCarouselProps> = ({ onCommentOnArticle }) => {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
 
-      const response = await fetch('http://localhost:3001/api/news/refresh', {
+      const response = await fetch(getApiUrl('/api/news/refresh'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -72,7 +73,7 @@ const NewsCarousel: React.FC<NewsCarouselProps> = ({ onCommentOnArticle }) => {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
 
-      await fetch(`http://localhost:3001/api/news/${articleId}/read`, {
+      await fetch(getApiUrl(`/api/news/${articleId}/read`), {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
