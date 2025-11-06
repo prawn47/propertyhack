@@ -246,7 +246,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ settings, user, onChange, o
 
                 <fieldset>
                     <legend className="text-lg font-semibold text-content border-b border-base-300 pb-2 mb-4">Integrations</legend>
-                    <LinkedInSimple />
+                    <LinkedInSimple key={user?.linkedinConnected ? 'connected' : 'disconnected'} />
                 </fieldset>
             </div>
 
