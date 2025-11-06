@@ -26,6 +26,8 @@ async function fetchCuratedNews(userSettings) {
     (typeof userSettings.newsLanguages === 'string' ? JSON.parse(userSettings.newsLanguages) : userSettings.newsLanguages) : ['eng'];
   const newsSources = userSettings.newsSources ? 
     (typeof userSettings.newsSources === 'string' ? JSON.parse(userSettings.newsSources) : userSettings.newsSources) : [];
+  const newsCountries = userSettings.newsCountries ? 
+    (typeof userSettings.newsCountries === 'string' ? JSON.parse(userSettings.newsCountries) : userSettings.newsCountries) : [];
   
   // Map englishVariant to language code if newsLanguages is default
   const effectiveLanguages = mapLanguagePreferences(newsLanguages, englishVariant);
@@ -34,6 +36,7 @@ async function fetchCuratedNews(userSettings) {
   // Build query based on user settings (include more user interests)
   const query = buildNewsAPIQuery(industry, keywords, position, audience, newsCategories);
   console.log(`[NewsAPI] User interests: industry=${industry}, position=${position}, audience=${audience}, keywords=${keywords}`);
+  console.log(`[NewsAPI] News preferences: categories=${JSON.stringify(newsCategories)}, sources=${newsSources.length}, countries=${JSON.stringify(newsCountries)}`);
 
   try {
     const requestBody = {
@@ -55,6 +58,16 @@ async function fetchCuratedNews(userSettings) {
     // Add source filter if specified
     if (newsSources && newsSources.length > 0) {
       requestBody.query.$query.sourceUri = { $in: newsSources };
+    }
+
+    // Add country filter if specified
+    if (newsCountries && newsCountries.length > 0) {
+      requestBody.query.$query.sourceLocationUri = newsCountries.map(c => `http://en.wikipedia.org/wiki/${c}`);
+    }
+
+    // Add category filter if specified
+    if (newsCategories && newsCategories.length > 0) {
+      requestBody.query.$query.categoryUri = { $or: newsCategories };
     }
 
     console.log('[NewsAPI] Fetching with query:', JSON.stringify(requestBody.query, null, 2));
