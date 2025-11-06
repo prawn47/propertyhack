@@ -1,30 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { getApiUrl } from '../services/apiConfig';
+import { makeAuthenticatedRequest } from '../services/authService';
+import type { User } from '../types';
+
+interface LinkedInSimpleProps {
+  user: User | null;
+  onUserUpdate?: () => void;
+}
 
 // Minimal LinkedIn UI for Settings only: status + connect/disconnect
-const LinkedInSimple: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState<any>(null);
+const LinkedInSimple: React.FC<LinkedInSimpleProps> = ({ user, onUserUpdate }) => {
   const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      // Check LinkedIn authentication status using the proper endpoint
-      const response = await fetch(getApiUrl('/api/linkedin/status'));
-      const data = await response.json();
-      setIsAuthenticated(data.isAuthenticated || false);
-      if (data.user) {
-        setUserInfo(data.user);
-      }
-    } catch (error) {
-      console.error('Failed to check LinkedIn status:', error);
-      setIsAuthenticated(false);
-    }
-  };
 
   const handleConnect = () => {
     // Redirect to LinkedIn OAuth - exact same as working app
@@ -33,10 +19,11 @@ const LinkedInSimple: React.FC = () => {
 
   const handleDisconnect = async () => {
     try {
-      await fetch(getApiUrl('/api/linkedin/logout'), { method: 'POST' });
-      setIsAuthenticated(false);
-      setUserInfo(null);
+      await makeAuthenticatedRequest('/api/linkedin/logout', { method: 'POST' });
       setMessage('✅ Disconnected from LinkedIn');
+      if (onUserUpdate) {
+        onUserUpdate();
+      }
     } catch (error) {
       setMessage('❌ Logout failed');
     }
@@ -52,9 +39,9 @@ const LinkedInSimple: React.FC = () => {
         </div>
       )}
 
-      {isAuthenticated ? (
+      {user?.linkedinConnected ? (
         <div className="space-y-4">
-          <p className="text-green-600 font-medium">✅ LinkedIn Connected{userInfo?.name ? ` (${userInfo.name})` : ''}</p>
+          <p className="text-green-600 font-medium">✅ LinkedIn Connected</p>
           <button className="btn btn-outline btn-sm w-full" onClick={handleDisconnect}>Disconnect</button>
         </div>
       ) : (

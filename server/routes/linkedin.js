@@ -1,4 +1,5 @@
 const express = require('express');
+const { authenticateJWT } = require('../middleware/auth');
 const router = express.Router();
 
 // EXACT copy from working app: app/api/auth/linkedin/route.ts
@@ -312,7 +313,26 @@ router.get('/linkedin/status', async (req, res) => {
 });
 
 // Logout from LinkedIn
-router.post('/linkedin/logout', (req, res) => {
+router.post('/linkedin/logout', authenticateJWT, async (req, res) => {
+  const accessToken = req.cookies.linkedin_access_token;
+  
+  // Clear database fields for the authenticated user
+  if (req.user && req.user.id) {
+    try {
+      await req.prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          linkedinConnected: false,
+          linkedinAccessToken: null,
+          linkedinTokenExpiry: null,
+        },
+      });
+      console.log('[LinkedIn] Disconnected user', req.user.id, 'from database');
+    } catch (error) {
+      console.error('[LinkedIn] Failed to update database on logout:', error);
+    }
+  }
+  
   res.clearCookie('linkedin_access_token');
   res.json({ success: true, message: 'Logged out from LinkedIn' });
 });
