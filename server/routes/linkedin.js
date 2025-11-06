@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateJWT } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // EXACT copy from working app: app/api/auth/linkedin/route.ts
@@ -313,7 +313,7 @@ router.get('/linkedin/status', async (req, res) => {
 });
 
 // Logout from LinkedIn
-router.post('/linkedin/logout', authenticateJWT, async (req, res) => {
+router.post('/linkedin/logout', authenticateToken, async (req, res) => {
   const accessToken = req.cookies.linkedin_access_token;
   
   // Clear database fields for the authenticated user
