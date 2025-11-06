@@ -2,9 +2,13 @@ const { Queue, Worker } = require('bullmq');
 const IORedis = require('ioredis');
 
 // Redis connection configuration
-const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const isTLS = redisUrl.startsWith('rediss://');
+
+const connection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
+  tls: isTLS ? { rejectUnauthorized: false } : undefined,
 });
 
 // Handle connection errors
