@@ -89,6 +89,8 @@ const App: React.FC = () => {
     }
     
     if (connectedParam === 'true') {
+      // Reload user profile to get updated LinkedIn status
+      loadUserData();
       // Show success message and clear URL parameters
       setTimeout(() => {
         alert('LinkedIn account connected successfully!');
