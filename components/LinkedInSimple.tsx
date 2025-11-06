@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { getApiUrl } from '../services/apiConfig';
-import { makeAuthenticatedRequest } from '../services/authService';
+import authService from '../services/authService';
 import type { User } from '../types';
 
 interface LinkedInSimpleProps {
@@ -19,7 +19,7 @@ const LinkedInSimple: React.FC<LinkedInSimpleProps> = ({ user, onUserUpdate }) =
 
   const handleDisconnect = async () => {
     try {
-      await makeAuthenticatedRequest('/api/linkedin/logout', { method: 'POST' });
+      await authService.makeAuthenticatedRequest(getApiUrl('/api/linkedin/logout'), { method: 'POST' });
       setMessage('✅ Disconnected from LinkedIn');
       if (onUserUpdate) {
         onUserUpdate();
