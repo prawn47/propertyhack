@@ -28,6 +28,8 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.CORS_ORIGIN || 'http://localhost:3004',
+    'https://www.quord.ai',
+    'https://app.quord.ai',
     'http://localhost:3000',
     'http://localhost:3001', 
     'http://localhost:3002',
