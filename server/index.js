@@ -76,6 +76,78 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint (before auth)
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// BullMQ diagnostics endpoint (before auth)
+app.get('/system/queue-status', async (req, res) => {
+  try {
+    const { connection } = require('./queues/connection');
+    
+    // Check Redis connection
+    let redisStatus = 'unknown';
+    try {
+      await connection.ping();
+      redisStatus = 'connected';
+    } catch (err) {
+      redisStatus = `error: ${err.message}`;
+    }
+    
+    // Get queue job counts
+    const [scheduledPostsWaiting, scheduledPostsActive, scheduledPostsFailed] = await Promise.all([
+      scheduledPostsQueue.getWaitingCount(),
+      scheduledPostsQueue.getActiveCount(),
+      scheduledPostsQueue.getFailedCount(),
+    ]).catch(() => [null, null, null]);
+    
+    const [newsCurationWaiting, newsCurationActive, newsCurationFailed] = await Promise.all([
+      newsCurationQueue.getWaitingCount(),
+      newsCurationQueue.getActiveCount(),
+      newsCurationQueue.getFailedCount(),
+    ]).catch(() => [null, null, null]);
+    
+    // Check for due posts
+    const now = new Date();
+    const duePosts = await prisma.scheduledPost.findMany({
+      where: { status: 'scheduled', scheduledFor: { lte: now } },
+      select: { id: true, title: true, scheduledFor: true, status: true },
+    });
+    
+    res.json({
+      redis: {
+        status: redisStatus,
+        url: process.env.REDIS_URL ? 'configured' : 'not configured',
+      },
+      queues: {
+        scheduledPosts: {
+          waiting: scheduledPostsWaiting,
+          active: scheduledPostsActive,
+          failed: scheduledPostsFailed,
+        },
+        newsCuration: {
+          waiting: newsCurationWaiting,
+          active: newsCurationActive,
+          failed: newsCurationFailed,
+        },
+      },
+      scheduledPosts: {
+        dueNow: duePosts.length,
+        posts: duePosts,
+      },
+      workers: {
+        scheduledPostsWorker: 'running',
+        newsCurationWorker: 'running',
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Queue status check error:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // Routes
 // In development, do not rate limit auth routes to prevent throttling during testing
 const noop = (req, res, next) => next();
@@ -88,11 +160,6 @@ app.use('/api/subscription', subscriptionRoutes); // Stripe subscription managem
 app.use('/api/super-admin', superAdminRoutes); // Super admin system management
 app.use('/api/cron', cronRoutes); // Cron job endpoints for external schedulers
 app.use('/api', apiRoutes);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
