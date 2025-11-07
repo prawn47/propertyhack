@@ -25,6 +25,10 @@ model User {
   linkedinTokenExpiry DateTime? @map("linkedin_token_expiry")
   linkedinConnected   Boolean   @default(false) @map("linkedin_connected")
 
+  // OTP fields
+  otpCode       String?   @map("otp_code")
+  otpExpiry     DateTime? @map("otp_expiry")
+
   // Subscription fields
   subscriptionTier    String    @default("free") @map("subscription_tier") // "free", "pro", "enterprise"
   stripeCustomerId    String?   @map("stripe_customer_id")
@@ -75,6 +79,10 @@ model UserSettings {
   emailPromptTime      String    @default("09:00") @map("email_prompt_time") // HH:mm format
   emailPromptDays      String    @default("[1]") @map("email_prompt_days") // JSON array: [1,4] for Mon/Thu
   lastEmailPromptSent  DateTime? @map("last_email_prompt_sent")
+  
+  // Image generation preferences
+  imageStyle          String    @default("Abstract/Conceptual") @map("image_style") // Preset style or "Custom"
+  customImagePrompt   String?   @map("custom_image_prompt") // Custom prompt when imageStyle is "Custom"
   
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")

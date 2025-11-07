@@ -233,6 +233,19 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOTPLogin = async (email: string, otp: string) => {
+    try {
+      const response = await authService.loginWithOTP({ email, otp });
+      setAuthState({
+        isAuthenticated: true,
+        user: response.user,
+        isLoading: false,
+      });
+    } catch (error) {
+      throw error; // Re-throw to be handled by the login component
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -591,7 +604,8 @@ const App: React.FC = () => {
     }
     return (
       <LoginPage 
-        onLogin={handleLogin} 
+        onLogin={handleLogin}
+        onOTPLogin={handleOTPLogin}
         onSwitchToRegister={() => setAuthView('register')} 
       />
     );

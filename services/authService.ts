@@ -13,6 +13,11 @@ interface RegisterCredentials {
   password: string;
 }
 
+interface OTPCredentials {
+  email: string;
+  otp: string;
+}
+
 interface AuthResponse {
   message: string;
   user: {
@@ -149,6 +154,32 @@ class AuthService {
 
     if (!response.ok) {
       let errorMessage = 'Login failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (e) {
+        console.error('Failed to parse error response:', e);
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data: AuthResponse = await response.json();
+    this.saveTokensToStorage(data.accessToken, data.refreshToken);
+    
+    return data;
+  }
+
+  public async loginWithOTP(credentials: OTPCredentials): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'OTP verification failed';
       try {
         const error = await response.json();
         errorMessage = error.error || errorMessage;

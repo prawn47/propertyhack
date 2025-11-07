@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { authenticateRefreshToken, generateTokens } = require('../middleware/auth');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail, sendOTPEmail } = require('../services/emailService');
 
 const router = express.Router();
 
@@ -27,6 +27,15 @@ const resetPasswordValidation = [
   body('token').notEmpty().withMessage('Reset token is required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
   body('password').matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
+];
+
+const otpRequestValidation = [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+];
+
+const otpVerifyValidation = [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
 ];
 
 // Helper function to handle validation errors
@@ -298,6 +307,113 @@ router.post('/reset-password', resetPasswordValidation, handleValidationErrors, 
     }
     console.error('Password reset error:', error);
     res.status(500).json({ error: 'Password reset failed' });
+  }
+});
+
+// Request OTP for email login
+router.post('/otp/request', otpRequestValidation, handleValidationErrors, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Find user
+    const user = await req.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true }
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({ message: 'If an account with that email exists, an OTP code has been sent' });
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+    // Store OTP in database
+    await req.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        otpCode,
+        otpExpiry
+      }
+    });
+
+    // Send OTP email (don't wait for it to complete)
+    if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 'your-resend-api-key-here') {
+      sendOTPEmail(email, otpCode).catch(error => {
+        console.error('Failed to send OTP email:', error);
+      });
+    }
+
+    res.json({ message: 'If an account with that email exists, an OTP code has been sent' });
+  } catch (error) {
+    console.error('OTP request error:', error);
+    res.status(500).json({ error: 'OTP request failed' });
+  }
+});
+
+// Verify OTP and login
+router.post('/otp/verify', otpVerifyValidation, handleValidationErrors, async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find user with OTP
+    const user = await req.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        emailVerified: true,
+        superAdmin: true,
+        createdAt: true,
+        otpCode: true,
+        otpExpiry: true,
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid OTP code' });
+    }
+
+    // Check if OTP exists and hasn't expired
+    if (!user.otpCode || !user.otpExpiry) {
+      return res.status(401).json({ error: 'No OTP requested for this account' });
+    }
+
+    if (new Date() > user.otpExpiry) {
+      return res.status(401).json({ error: 'OTP code has expired' });
+    }
+
+    // Verify OTP matches
+    if (user.otpCode !== otp) {
+      return res.status(401).json({ error: 'Invalid OTP code' });
+    }
+
+    // Clear OTP from database
+    await req.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        otpCode: null,
+        otpExpiry: null
+      }
+    });
+
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user.id);
+
+    // Remove OTP fields from response
+    const { otpCode: _, otpExpiry: __, ...userWithoutOTP } = user;
+
+    res.json({
+      message: 'Login successful',
+      user: userWithoutOTP,
+      accessToken,
+      refreshToken,
+    });
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    res.status(500).json({ error: 'OTP verification failed' });
   }
 });
 
