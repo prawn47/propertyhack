@@ -56,7 +56,24 @@ services:
         sync: false
       - key: PERPLEXITY_API_KEY
         sync: false
+      - key: CRON_SECRET
+        sync: false  # Set in Render dashboard
     healthCheckPath: /health
+
+  # Cron Job: Process scheduled posts every 2 minutes
+  - type: cron
+    name: quord-scheduled-posts-processor
+    env: node
+    schedule: "*/2 * * * *"
+    buildCommand: echo "No build needed for cron job"
+    startCommand: |
+      curl -X POST https://api.quord.ai/api/cron/process-scheduled-posts \
+        -H "X-Cron-Secret: $CRON_SECRET" \
+        -H "Content-Type: application/json" \
+        --fail --silent --show-error
+    envVars:
+      - key: CRON_SECRET
+        sync: false  # Must match web service CRON_SECRET
 
   # PostgreSQL Database
   - type: pserv
