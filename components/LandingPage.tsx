@@ -27,9 +27,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
                 <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">Q</span>
+                  <span className="text-white font-bold text-lg">PH</span>
                 </div>
-                <span className="ml-2 text-xl font-semibold text-gray-900">QUORD.ai</span>
+                <span className="ml-2 text-xl font-semibold text-gray-900">PropertyHack</span>
               </div>
             </div>
 
@@ -133,11 +133,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              Turn Quick Ideas Into<br />
-              <span className="text-green-200">Polished LinkedIn Posts</span>
+              Your Daily Property<br />
+              <span className="text-green-200">Intelligence Hub</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-green-100 max-w-3xl mx-auto">
-              Reply to our daily prompts via email or SMS, and get AI-crafted LinkedIn posts that match your voice and tone. Post directly or edit first.
+              Curated property news, AI-powered insights, and expert analysis. Stay ahead of market trends with the tools professionals trust.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button 
@@ -194,8 +194,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Email & SMS Prompts</h3>
-              <p className="text-gray-600">Receive daily prompts via your preferred channel. Simply reply with your quick thoughts or ideas.</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Curated News Feed</h3>
+              <p className="text-gray-600">Get the latest property news from trusted sources, filtered by your interests and market focus.</p>
             </div>
 
             {/* Feature 2 */}
@@ -331,7 +331,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
                   </svg>
                 ))}
               </div>
-              <p className="text-gray-600 italic">"QUORD transformed my LinkedIn presence. I went from posting once a month to 3x per week, and my engagement has tripled. The AI really captures my voice."</p>
+              <p className="text-gray-600 italic">"PropertyHack transformed my LinkedIn presence. I went from posting once a month to 3x per week, and my engagement has tripled. The AI really captures my voice."</p>
             </div>
 
             {/* Testimonial 2 */}
@@ -352,7 +352,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
                   </svg>
                 ))}
               </div>
-              <p className="text-gray-600 italic">"As someone who hates social media, QUORD makes it painless. I just reply to prompts during my commute and get professional posts. Game-changer."</p>
+              <p className="text-gray-600 italic">"As someone who hates social media, PropertyHack makes it painless. I just reply to prompts during my commute and get professional posts. Game-changer."</p>
             </div>
 
             {/* Testimonial 3 */}
@@ -485,7 +485,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
               <div className="text-2xl font-bold text-gray-900 mb-1">Custom</div>
               <div className="text-gray-600 text-sm mb-6">Talk to sales</div>
               <a
-                href="mailto:hello@quord.ai?subject=Enterprise%20Inquiry"
+                href="mailto:hello@propertyhack.com?subject=Enterprise%20Inquiry"
                 className="w-full bg-brand-primary text-white hover:bg-brand-secondary mb-8 px-4 py-2 rounded-lg inline-block"
               >
                 Contact Sales
@@ -534,7 +534,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
             Ready to transform your LinkedIn presence?
           </h2>
           <p className="text-xl text-green-100 mb-8">
-            Join 2,500+ professionals who use QUORD to maintain consistent, engaging LinkedIn content without the time investment.
+            Join 2,500+ professionals who use PropertyHack to maintain consistent, engaging LinkedIn content without the time investment.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
@@ -562,7 +562,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
               <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">Q</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">QUORD.ai</span>
+              <span className="text-xl font-bold text-gray-900">PropertyHack</span>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <button 
@@ -577,11 +577,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin, onPriv
               >
                 Terms & Conditions
               </button>
-              <a className="hover:text-gray-700" href="mailto:hello@quord.ai">Contact</a>
+              <a className="hover:text-gray-700" href="mailto:hello@propertyhack.com">Contact</a>
             </div>
           </div>
           <div className="mt-4 text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} QUORD.ai. All rights reserved.
+            © {new Date().getFullYear()} PropertyHack. All rights reserved.
           </div>
         </div>
       </footer>

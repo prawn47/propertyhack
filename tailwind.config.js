@@ -13,13 +13,14 @@ export default {
     extend: {
       colors: {
         'brand': {
-          'primary': '#1DB68D',
-          'secondary': '#159A75',
-          'accent': '#24D9A7',
+          'primary': '#2b2b2b',
+          'secondary': '#3a3a3a',
+          'accent': '#d4b038',
+          'gold': '#d4b038',
         },
         'base': {
           100: '#ffffff',
-          200: '#f7f9fb',
+          200: '#f0f0f0',
           300: '#e5e7eb',
         },
         'content': {

@@ -1,7 +1,7 @@
 {
-  "name": "server",
+  "name": "propertyhack-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "PropertyHack backend server",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -15,7 +15,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.18.0",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.63.0",
     "cookie-parser": "^1.4.7",
@@ -28,6 +30,7 @@
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.2.1",
     "openai": "^6.6.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",

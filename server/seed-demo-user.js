@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 async function seedDemoUser() {
   try {
-    const demoEmail = 'demo@quord.ai';
+    const demoEmail = 'demo@propertyhack.com';
     const demoPassword = 'demo123';
 
     // Check if demo user already exists
@@ -61,7 +61,7 @@ async function seedDemoUser() {
 
     console.log('✅ Demo user settings created');
     console.log('\n🎉 Demo account ready!');
-    console.log('   Email: demo@quord.ai');
+    console.log('   Email: demo@propertyhack.com');
     console.log('   Password: demo123');
   } catch (error) {
     console.error('❌ Error seeding demo user:', error);

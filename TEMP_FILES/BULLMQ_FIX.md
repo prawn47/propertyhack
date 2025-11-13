@@ -41,7 +41,7 @@ The app has TWO scheduling mechanisms:
      name: quord-scheduled-posts
      schedule: "*/2 * * * *"  # Every 2 minutes
      command: |
-       curl -X POST https://api.quord.ai/api/cron/process-scheduled-posts \
+       curl -X POST https://api.propertyhack.com/api/cron/process-scheduled-posts \
          -H "X-Cron-Secret: $CRON_SECRET"
    ```
 
@@ -68,7 +68,7 @@ jobs:
     steps:
       - name: Trigger post processing
         run: |
-          curl -X POST https://api.quord.ai/api/cron/process-scheduled-posts \
+          curl -X POST https://api.propertyhack.com/api/cron/process-scheduled-posts \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
 ```
 
@@ -85,7 +85,7 @@ If you need BullMQ workers to run continuously:
 ```bash
 # 1. Set CRON_SECRET in Render dashboard
 # 2. Manually trigger processing:
-curl -X POST https://api.quord.ai/api/cron/process-scheduled-posts \
+curl -X POST https://api.propertyhack.com/api/cron/process-scheduled-posts \
   -H "X-Cron-Secret: YOUR_SECRET"
 ```
 

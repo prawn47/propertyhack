@@ -4,7 +4,7 @@ const router = express.Router();
 
 // EXACT copy from working app: app/api/auth/linkedin/route.ts
 router.get('/auth/linkedin', (req, res) => {
-  const clientId = process.env.LINKEDIN_CLIENT_ID || process.env.QUORD_LINKEDIN_CLIENT_ID;
+  const clientId = process.env.LINKEDIN_CLIENT_ID || process.env.PropertyHack_LINKEDIN_CLIENT_ID;
   // Build redirect URI dynamically from current host for dev; allow env override in production
   const isProduction = process.env.NODE_ENV === 'production';
   const dynamicRedirect = `${(req.headers['x-forwarded-proto'] || req.protocol)}://${req.get('host')}/api/auth/linkedin/callback`;
@@ -39,8 +39,8 @@ router.get('/auth/linkedin/callback', async (req, res) => {
     return res.redirect(`${getFrontendUrl()}/?error=no_code`);
   }
 
-  const clientId = process.env.LINKEDIN_CLIENT_ID || process.env.QUORD_LINKEDIN_CLIENT_ID;
-  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET || process.env.QUORD_LINKEDIN_CLIENT_SECRET;
+  const clientId = process.env.LINKEDIN_CLIENT_ID || process.env.PropertyHack_LINKEDIN_CLIENT_ID;
+  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET || process.env.PropertyHack_LINKEDIN_CLIENT_SECRET;
   // Build redirect URI dynamically from current host for dev; allow env override in production
   const isProduction = process.env.NODE_ENV === 'production';
   const dynamicRedirect = `${(req.headers['x-forwarded-proto'] || req.protocol)}://${req.get('host')}/api/auth/linkedin/callback`;

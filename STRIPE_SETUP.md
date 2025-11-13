@@ -1,6 +1,6 @@
 # Stripe Payment Integration Setup Guide
 
-This guide walks you through setting up Stripe for subscription payments in QUORD.
+This guide walks you through setting up Stripe for subscription payments in PropertyHack.
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ VITE_STRIPE_PUBLIC_KEY=pk_test_your_publishable_key_here
 
 1. In the Stripe Dashboard, go to **Products** → **Add product**
 2. Create a product with these details:
-   - **Name**: QUORD Pro
+   - **Name**: PropertyHack Pro
    - **Description**: Professional LinkedIn content assistant with unlimited posts
    - **Pricing model**: Recurring
    - **Price**: $49.00 USD

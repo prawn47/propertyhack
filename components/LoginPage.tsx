@@ -82,14 +82,20 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onOTPLogin, onSwitchToRe
     <div className="min-h-screen bg-base-200 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-content flex items-center justify-center">
-                <SparklesIcon className="w-8 h-8 mr-3 text-brand-primary"/>
-                QUORD.ai
-            </h1>
-            <p className="text-content-secondary mt-2">Sign in to your AI content assistant.</p>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="inline-flex items-center text-sm text-content-secondary hover:text-brand-accent transition-colors mb-4"
+            >
+              ← Back to Home
+            </button>
+            <div className="flex items-center justify-center space-x-4 mb-3">
+              <img src="/ph-logo.jpg" alt="Property Hack" className="h-16 w-16 rounded-[15px]" />
+              <h1 className="text-3xl font-bold text-content">Property Hack</h1>
+            </div>
+            <p className="text-content-secondary mt-2">Agenda-free Australian property news</p>
         </div>
 
-        <div className="bg-base-100 p-8 rounded-xl shadow-md">
+        <div className="bg-base-100 p-8 rounded-xl shadow-lg gold-frame">
           {/* Login Method Toggle */}
           <div className="flex gap-2 mb-6">
             <button

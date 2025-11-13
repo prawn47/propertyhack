@@ -1,9 +1,9 @@
 #!/bin/bash
-# Quord Local Development Startup Script
+# Property Hack Local Development Startup Script
 
 set -e
 
-echo "🚀 Starting Quord Development Environment"
+echo "🚀 Starting Property Hack Development Environment"
 echo ""
 
 # Kill any existing processes on ports 3001 and 3004

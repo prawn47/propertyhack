@@ -6,8 +6,8 @@ interface HeaderProps {
     profilePictureUrl?: string;
     isSuperAdmin?: boolean;
     currentPage?: 'home' | 'drafts' | 'scheduled' | 'published';
-    currentView?: 'dashboard' | 'settings' | 'profile' | 'prompts';
-    onNavigate: (view: 'profile' | 'settings' | 'prompts') => void;
+    currentView?: 'dashboard' | 'settings' | 'profile' | 'prompts' | 'articles';
+    onNavigate: (view: 'profile' | 'settings' | 'prompts' | 'articles') => void;
     onPageChange?: (page: 'home' | 'drafts' | 'scheduled' | 'published') => void;
     onBackToDashboard?: () => void;
     onLogout: () => void;
@@ -30,21 +30,21 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
     };
   }, []);
 
-  const handleNavigation = (view: 'profile' | 'settings' | 'prompts') => {
+  const handleNavigation = (view: 'profile' | 'settings' | 'prompts' | 'articles') => {
     onNavigate(view);
     setIsDropdownOpen(false);
   }
 
   return (
-    <header className="bg-base-100 shadow-soft border-b border-base-300 backdrop-blur-sm bg-opacity-95 sticky top-0 z-40">
+    <header className="bg-base-100 shadow-soft border-b-2 border-brand-accent backdrop-blur-sm bg-opacity-95 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-4">
-              <img src="/assets/quord-logo.svg" alt="Quord" className="h-8 w-8" />
-              <h1 className="text-xl font-bold text-content">QUORD</h1>
+            <div className="flex items-center space-x-3">
+              <img src="/ph-logo.jpg" alt="Property Hack" className="h-10 w-10 rounded-[15px]" />
+              <h1 className="text-2xl font-bold text-content">Property Hack Admin</h1>
             </div>
-            {currentView === 'dashboard' && onPageChange ? (
+            {false && currentView === 'dashboard' && onPageChange ? (
               <nav className="hidden md:flex space-x-1">
                 <button
                   onClick={() => onPageChange('home')}
@@ -100,7 +100,7 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
             )}
           </div>
           <div className="flex items-center space-x-4">
-            {currentView === 'dashboard' && <GamificationStats />}
+            {false && currentView === 'dashboard' && <GamificationStats />}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-content-secondary hover:text-content hover:bg-base-200 transition-colors"
@@ -139,18 +139,18 @@ const Header: React.FC<HeaderProps> = ({ profilePictureUrl, isSuperAdmin, curren
                 aria-orientation="vertical"
               >
                 <button
-                  onClick={() => handleNavigation('profile')}
+                  onClick={() => handleNavigation('articles')}
                   className="w-full text-left block px-4 py-2 text-sm text-content hover:bg-base-200"
                   role="menuitem"
                 >
-                  My Profile
+                  📰 Articles
                 </button>
                 <button
                   onClick={() => handleNavigation('settings')}
                   className="w-full text-left block px-4 py-2 text-sm text-content hover:bg-base-200"
                   role="menuitem"
                 >
-                  Settings
+                  ⚙️ Settings
                 </button>
                 {isSuperAdmin && (
                   <button

@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -41,6 +41,10 @@ model User {
   monthlyPostCount    Int       @default(0) @map("monthly_post_count")
   lastPostCountReset  DateTime  @default(now()) @map("last_post_count_reset")
 
+  // Admin fields for Property Hack
+  role            String    @default("admin") // "admin", "super_admin"
+  displayName     String?   @map("display_name")
+
   // Relations
   settings      UserSettings?
   draftPosts    DraftPost[]
@@ -48,6 +52,7 @@ model User {
   scheduledPosts ScheduledPost[]
   newsArticles  NewsArticle[]
   emailResponses EmailResponse[]
+  articles      Article[]  // Property Hack articles
 
   @@map("users")
 }
@@ -214,4 +219,111 @@ model SystemPrompt {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("system_prompts")
+}
+
+// ============================================
+// PROPERTY HACK MODELS
+// ============================================
+
+model Market {
+  id          String   @id @default(cuid())
+  code        String   @unique // "AU", "US", "UK", "CA"
+  name        String   // "Australia", "United States", "United Kingdom", "Canada"
+  currency    String   // "AUD", "USD", "GBP", "CAD"
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("markets")
+}
+
+model ArticleCategory {
+  id          String    @id @default(cuid())
+  name        String    // "Market Analysis", "Investment Tips", "Policy Changes"
+  slug        String    @unique
+  description String?
+  market      String    // "ALL" or specific market code ("AU", "US", etc.)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  articles    Article[]
+
+  @@map("article_categories")
+}
+
+model ArticleSource {
+  id          String    @id @default(cuid())
+  name        String    @unique // "Domain", "realestate.com.au", "Property Observer"
+  url         String    // Base URL
+  logoUrl     String?   @map("logo_url")
+  
+  // Feed configuration
+  feedType    String    // "rss", "api", "manual"
+  feedUrl     String?   @map("feed_url") // RSS feed URL or API endpoint
+  apiKey      String?   @map("api_key")  // For API sources
+  
+  // Settings
+  isActive    Boolean   @default(true) @map("is_active")
+  autoImport  Boolean   @default(false) @map("auto_import") // Auto-import or require approval
+  market      String    // Primary market: "AU", "US", "UK", "CA"
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  articles    Article[]
+
+  @@map("article_sources")
+}
+
+model Article {
+  id                String    @id @default(cuid())
+  title             String
+  slug              String    @unique // URL-friendly: "why-sydney-property-prices-soaring"
+  summary           String    // AI-generated rewrite/summary
+  content           String?   // Full content if available
+  sourceUrl         String    @map("source_url") // Original article URL
+  sourceName        String    @map("source_name") // e.g., "Domain", "realestate.com.au"
+  sourceLogoUrl     String?   @map("source_logo_url") // Source publication logo
+  
+  // SEO fields
+  metaDescription   String    @map("meta_description")
+  focusKeywords     String    @map("focus_keywords") // JSON array: ["sydney property", "housing market"]
+  ogImage           String?   @map("og_image") // Open Graph image (can be different from main image)
+  
+  // Image with alt text
+  imageUrl          String?   @map("image_url")
+  imageAltText      String?   @map("image_alt_text") // Descriptive alt text for SEO
+  
+  // Market
+  market            String    // "AU", "US", "UK", "CA"
+  
+  // Status
+  status            String    @default("draft") // "draft", "published", "archived"
+  publishedAt       DateTime? @map("published_at")
+  
+  // Engagement
+  viewCount         Int       @default(0) @map("view_count")
+  featured          Boolean   @default(false) // Featured articles get larger tiles
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  authorId          String    @map("author_id")
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  sourceId          String?   @map("source_id")
+  source            ArticleSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  
+  categoryId        String?   @map("category_id")
+  category          ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  @@index([market])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([featured])
+  @@index([authorId])
+  @@map("articles")
 }

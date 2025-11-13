@@ -16,7 +16,10 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import { PromptManagementPage } from './components/PromptManagementPage';
 import SuperAdminSettings from './components/SuperAdminSettings';
-import type { UserSettings, DraftPost, PublishedPost, ScheduledPost, User, AuthState } from './types';
+import ArticlesList from './components/admin/ArticlesList';
+import ArticleEditor from './components/admin/ArticleEditor';
+import PropertyHackHome from './components/PropertyHackHome';
+import type { UserSettings, DraftPost, PublishedPost, ScheduledPost, User, AuthState, Article } from './types';
 import * as db from './services/dbService';
 import { postToLinkedIn } from './services/linkedInService';
 import { getScheduledPosts, createScheduledPost, updateScheduledPost, cancelScheduledPost } from './services/schedulingService';
@@ -31,8 +34,11 @@ const App: React.FC = () => {
   const [showLanding, setShowLanding] = useState(true);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const [legalView, setLegalView] = useState<'privacy' | 'terms' | null>(null);
-  const [view, setView] = useState<'dashboard' | 'settings' | 'profile' | 'prompts' | 'superadmin'>('dashboard');
+  const [view, setView] = useState<'home' | 'dashboard' | 'settings' | 'profile' | 'prompts' | 'superadmin' | 'articles'>('home');
   const [currentPage, setCurrentPage] = useState<'home' | 'drafts' | 'scheduled' | 'published'>('home');
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [creatingArticle, setCreatingArticle] = useState(false);
+  const [articlesRefreshTrigger, setArticlesRefreshTrigger] = useState(0);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [drafts, setDrafts] = useState<DraftPost[]>([]);
   const [published, setPublished] = useState<PublishedPost[]>([]);
@@ -258,7 +264,7 @@ const App: React.FC = () => {
         isLoading: false,
       });
       // Reset state on logout
-      setView('dashboard');
+      setView('articles');
       setSettings(null);
       setDrafts([]);
       setPublished([]);
@@ -280,9 +286,31 @@ const App: React.FC = () => {
     }
   };
 
-  const handleNavigate = (newView: 'profile' | 'settings' | 'prompts' | 'superadmin') => {
+  const handleNavigate = (newView: 'profile' | 'settings' | 'prompts' | 'superadmin' | 'articles') => {
     setEditingDraft(null);
     setView(newView);
+  };
+
+  const handleEditArticle = (article: Article) => {
+    setEditingArticle(article);
+    setCreatingArticle(false);
+  };
+
+  const handleCreateArticle = () => {
+    setEditingArticle(null);
+    setCreatingArticle(true);
+  };
+
+  const handleCloseArticleEditor = () => {
+    setEditingArticle(null);
+    setCreatingArticle(false);
+  };
+
+  const handleArticleSaved = () => {
+    // Refresh the articles list
+    setEditingArticle(null);
+    setCreatingArticle(false);
+    setArticlesRefreshTrigger(prev => prev + 1);
   };
 
   // Expose navigation to window for settings page access
@@ -295,7 +323,7 @@ const App: React.FC = () => {
   
   const handleBackToDashboard = () => {
     setEditingDraft(null);
-    setView('dashboard');
+    setView('articles');
     setCurrentPage('home');
   };
 
@@ -566,6 +594,15 @@ const App: React.FC = () => {
     );
   }
   
+  // Show public homepage if not authenticated and view is 'home'
+  if (!authState.isAuthenticated && view === 'home') {
+    return <PropertyHackHome onAdminClick={() => {
+      setShowLanding(false);
+      setAuthView('login');
+      setView('dashboard'); // Change view to exit homepage
+    }} />;
+  }
+  
   if (!authState.isAuthenticated) {
     // Show legal pages
     if (legalView === 'privacy') {
@@ -665,6 +702,25 @@ const App: React.FC = () => {
   
   const renderContent = () => {
     switch(view) {
+      case 'home':
+        return <PropertyHackHome onAdminClick={() => setView('articles')} />;
+      case 'articles':
+        return (
+          <>
+            <ArticlesList
+              onEditArticle={handleEditArticle}
+              onCreateNew={handleCreateArticle}
+              refreshTrigger={articlesRefreshTrigger}
+            />
+            {(editingArticle || creatingArticle) && (
+              <ArticleEditor
+                article={editingArticle}
+                onClose={handleCloseArticleEditor}
+                onSaved={handleArticleSaved}
+              />
+            )}
+          </>
+        );
       case 'prompts':
         // Only allow super admins to access
         if (!authState.user?.superAdmin) {

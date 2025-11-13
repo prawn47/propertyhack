@@ -1,4 +1,4 @@
-# QUORD.ai Deployment Guide
+# PropertyHack Deployment Guide
 
 ## Environment Variables Setup
 
@@ -19,7 +19,7 @@ JWT_REFRESH_EXPIRES_IN="7d"
 
 # Email Service (Resend)
 RESEND_API_KEY="your-resend-api-key"
-RESEND_FROM_EMAIL="noreply@mail.quord.ai"
+RESEND_FROM_EMAIL="noreply@mail.propertyhack.com"
 
 # AI Services
 GEMINI_API_KEY="your-gemini-api-key"
@@ -31,8 +31,8 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 GOOGLE_CALLBACK_URL="http://localhost:3001/api/oauth/google/callback"
 
 LINKEDIN_CLIENT_ID="your-linkedin-client-id"
-QUORD_LINKEDIN_CLIENT_SECRET="your-linkedin-client-secret"
-QUORD_LINKEDIN_REDIRECT_URI="http://localhost:3001/api/oauth/linkedin/callback"
+PropertyHack_LINKEDIN_CLIENT_SECRET="your-linkedin-client-secret"
+PropertyHack_LINKEDIN_REDIRECT_URI="http://localhost:3001/api/oauth/linkedin/callback"
 
 # Server Configuration
 PORT=3001

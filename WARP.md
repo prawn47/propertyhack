@@ -4,6 +4,19 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Commands
 
+### Quick Start
+```bash
+# Start both frontend and backend services (recommended)
+./start.sh
+
+# Stop all services
+./stop.sh
+
+# View logs
+tail -f backend.log
+tail -f frontend.log
+```
+
 ### Development
 ```bash
 # Frontend (React + Vite, runs on port 3004)
@@ -15,7 +28,9 @@ cd server
 npm install
 npm run dev
 
-# Start both: run frontend and backend in separate terminals
+# Manual start (two terminals required)
+# Terminal 1: cd server && npm run dev
+# Terminal 2: npm run dev
 ```
 
 ### Database Management
@@ -42,27 +57,48 @@ cd server
 npm start
 ```
 
+### Testing & Development
+```bash
+# No formal test suite currently exists
+# Manual testing workflow:
+# 1. Run ./start.sh to spin up both services
+# 2. Navigate to http://localhost:3004
+# 3. Check logs in backend.log and frontend.log for issues
+
+# Redis (required for background jobs)
+brew install redis          # macOS
+brew services start redis   # Start Redis
+brew services stop redis    # Stop Redis
+
+# Check Redis is running
+redis-cli ping  # Should return "PONG"
+```
+
 ## Architecture Overview
 
 ### Stack
-- **Frontend**: React 19 + TypeScript + Vite
-- **Backend**: Express + Node.js (JavaScript)
+- **Frontend**: React 19 + TypeScript + Vite (port 3004)
+- **Backend**: Express + Node.js (JavaScript, port 3001)
 - **Database**: SQLite (dev) via Prisma ORM, PostgreSQL-ready for production
 - **Job Queue**: BullMQ with Redis (for scheduled posts and background jobs)
 - **Auth**: JWT tokens (access + refresh) stored in localStorage
+- **Payments**: Stripe (subscription management, customer portal)
 - **AI**: Google Gemini API (client-side generation), OpenAI (server-side)
 - **OAuth**: LinkedIn OAuth2 (via `passport-linkedin-oauth2`)
+- **Email**: Resend (for email prompts and notifications)
 
 ### Directory Structure
 ```
-quord_g0/
+propertyhack/
 ├── components/         # React UI components
 │   ├── DashboardSection.tsx      # Main posts management view
 │   ├── PostCreationWizard.tsx    # Multi-step post creation
 │   ├── DraftEditor.tsx           # Edit drafts
 │   ├── NewsCarousel.tsx          # Curated news articles carousel
 │   ├── SettingsPage.tsx          # User settings management
+│   ├── SuperAdminSettings.tsx    # Admin panel for managing users/prompts
 │   ├── LoginPage.tsx / RegisterPage.tsx
+│   ├── LandingPage.tsx           # Marketing landing page
 │   └── OAuthCallback.tsx         # LinkedIn OAuth handler
 ├── services/           # Frontend service layer
 │   ├── authService.ts       # JWT token management, auto-refresh
@@ -77,7 +113,10 @@ quord_g0/
 │   │   ├── api.js           # User settings, posts CRUD
 │   │   ├── linkedin.js      # LinkedIn OAuth flow + posting
 │   │   ├── news.js          # News curation API
-│   │   └── test.js
+│   │   ├── subscription.js  # Stripe subscription/payment handling
+│   │   ├── prompts.js       # Prompt template management
+│   │   ├── superAdmin.js    # Admin operations
+│   │   └── cron.js          # Cron job endpoints
 │   ├── services/
 │   │   └── perplexityService.js # Perplexity AI news fetching
 │   ├── queues/              # BullMQ queue definitions
@@ -92,9 +131,13 @@ quord_g0/
 │   │   └── migrations/
 │   ├── middleware/          # Auth middleware
 │   └── index.js             # Express server + job queue schedulers
-├── App.tsx              # Root component, routing, auth state
-├── types.ts             # Shared TypeScript types
-└── vite.config.ts       # Dev server (port 3004) + API proxy
+├── contexts/           # React contexts
+├── start.sh            # Start both frontend and backend
+├── stop.sh             # Stop all services
+├── App.tsx             # Root component, routing, auth state
+├── types.ts            # Shared TypeScript types
+├── vite.config.ts      # Dev server (port 3004) + API proxy
+└── TEMP_FILES/         # Temporary files, test scripts
 ```
 
 ### Key Architectural Patterns
@@ -148,12 +191,14 @@ quord_g0/
 - Adds jobs to `news-curation` queue for eligible users
 
 ### Database Models (Prisma)
-- **User**: Authentication + LinkedIn OAuth fields
-- **UserSettings**: User preferences (tone, industry, timezone, etc.)
+- **User**: Authentication, LinkedIn OAuth, Stripe subscription fields
+- **UserSettings**: User preferences (tone, industry, timezone, news preferences, email prompts, image styles)
 - **DraftPost**: Unpublished content
 - **PublishedPost**: Posts that have been published to LinkedIn
 - **ScheduledPost**: Posts scheduled for future publishing (includes status tracking)
 - **NewsArticle**: Curated news articles for each user (title, summary, url, source, etc.)
+- **PromptTemplate**: AI prompt templates with variable substitution
+- **EmailResponse**: Email prompt replies and workflow tracking
 
 ### Environment Variables
 **Frontend** (`.env` or `.env.local`):
@@ -169,7 +214,8 @@ quord_g0/
 - `PERPLEXITY_API_KEY` - For news curation (get from https://www.perplexity.ai/settings/api)
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL` - Email service
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
-- `LINKEDIN_CLIENT_ID`, `QUORD_LINKEDIN_CLIENT_SECRET`, `QUORD_LINKEDIN_REDIRECT_URI`
+- `LINKEDIN_CLIENT_ID`, `PropertyHack_LINKEDIN_CLIENT_SECRET`, `PropertyHack_LINKEDIN_REDIRECT_URI`
+- `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET` - For subscriptions (see STRIPE_SETUP.md)
 - `PORT` (default: 3001), `NODE_ENV`, `CORS_ORIGIN`
 
 ### Important Implementation Notes
@@ -185,13 +231,18 @@ quord_g0/
 - For production, change `provider = "sqlite"` to `"postgresql"` in schema.prisma and run `npx prisma migrate deploy`
 
 #### Testing Scheduled Posts
-See `TEST_STATUS.md` for detailed testing procedures. Key points:
 - **Requires Redis running**: `brew install redis && brew services start redis` (macOS)
 - Backend logs show: `[scheduler] Found X due posts`, `[scheduler] Queued post X for publishing`
 - Worker logs show: `[scheduled-posts-worker] Processing post X`, `[scheduled-posts-worker] Successfully published post X`
 - Schedule posts 2 minutes in future to test worker quickly
 - Check user has valid LinkedIn token: `linkedinConnected = true`, token not expired
 - View queue status: Use BullMQ dashboard or Redis CLI (`redis-cli` → `KEYS *`)
+
+#### Subscription/Payment Testing
+See `STRIPE_SETUP.md` for detailed setup. Key test cards:
+- **Successful**: 4242 4242 4242 4242
+- **Declined**: 4000 0000 0000 0002
+- Test webhooks: `stripe listen --forward-to http://localhost:3001/api/subscription/webhook`
 
 ### Common Tasks
 
@@ -215,10 +266,19 @@ See `TEST_STATUS.md` for detailed testing procedures. Key points:
 
 #### Debug OAuth Issues
 1. Check callback URLs match in LinkedIn Developer Console
-2. Verify environment variables: `LINKEDIN_CLIENT_ID`, `QUORD_LINKEDIN_CLIENT_SECRET`
+2. Verify environment variables: `LINKEDIN_CLIENT_ID`, `PropertyHack_LINKEDIN_CLIENT_SECRET`
 3. Check backend logs for OAuth errors
 4. Test redirect: `http://localhost:3001/api/linkedin` should redirect to LinkedIn
 
-### Migration Notes
+### Project History & Migration Notes
+- **Origin**: Repurposed from PropertyHack codebase for property-related application development
 - **SQLite → PostgreSQL**: Follow guide in `DEPLOYMENT.md`
 - Backend uses Prisma, so migration is straightforward (change `provider` in schema, update `DATABASE_URL`, run `npx prisma migrate deploy`)
+
+### Key Files for Reference
+- `STRIPE_SETUP.md` - Complete Stripe integration guide
+- `DEPLOYMENT.md`, `DEPLOYMENT_GUIDE.md`, `DEPLOYMENT_CHECKLIST.md` - Production deployment instructions
+- `RENDER_CRON_SETUP.md` - Setting up cron jobs on Render
+- `start.sh` / `stop.sh` - Local development scripts
+- `generate-secrets.js` - Generate JWT secrets
+- `seed-*.js` - Database seeding scripts

@@ -11,14 +11,17 @@ const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const linkedInRoutes = require('./routes/linkedin');
 const promptRoutes = require('./routes/prompts');
-const newsRoutes = require('./routes/news');
 const subscriptionRoutes = require('./routes/subscription');
 const superAdminRoutes = require('./routes/superAdmin');
 const cronRoutes = require('./routes/cron');
+const adminArticlesRoutes = require('./routes/admin/articles');
+const adminMetaRoutes = require('./routes/admin/meta');
+const adminNewsFetchRoutes = require('./routes/admin/newsFetch');
+const publicArticlesRoutes = require('./routes/public/articles');
 const { scheduledPostsQueue } = require('./queues/scheduledPostsQueue');
-const { newsCurationQueue } = require('./queues/newsCurationQueue');
 const { scheduledPostsWorker } = require('./workers/scheduledPostsWorker');
-const { newsCurationWorker } = require('./workers/newsCurationWorker');
+const { articleProcessingWorker } = require('./workers/articleProcessingWorker');
+const { scheduleDailyNewsFetch } = require('./jobs/dailyNewsFetch');
 // ALL OAuth/Passport infrastructure COMPLETELY REMOVED
 
 const app = express();
@@ -29,8 +32,8 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.CORS_ORIGIN || 'http://localhost:3004',
-    'https://www.quord.ai',
-    'https://app.quord.ai',
+    'https://www.propertyhack.com',
+    'https://app.propertyhack.com',
     'http://localhost:3000',
     'http://localhost:3001', 
     'http://localhost:3002',
@@ -102,11 +105,6 @@ app.get('/system/queue-status', async (req, res) => {
       scheduledPostsQueue.getFailedCount(),
     ]).catch(() => [null, null, null]);
     
-    const [newsCurationWaiting, newsCurationActive, newsCurationFailed] = await Promise.all([
-      newsCurationQueue.getWaitingCount(),
-      newsCurationQueue.getActiveCount(),
-      newsCurationQueue.getFailedCount(),
-    ]).catch(() => [null, null, null]);
     
     // Check for due posts
     const now = new Date();
@@ -126,11 +124,6 @@ app.get('/system/queue-status', async (req, res) => {
           active: scheduledPostsActive,
           failed: scheduledPostsFailed,
         },
-        newsCuration: {
-          waiting: newsCurationWaiting,
-          active: newsCurationActive,
-          failed: newsCurationFailed,
-        },
       },
       scheduledPosts: {
         dueNow: duePosts.length,
@@ -138,7 +131,7 @@ app.get('/system/queue-status', async (req, res) => {
       },
       workers: {
         scheduledPostsWorker: 'running',
-        newsCurationWorker: 'running',
+        articleProcessingWorker: 'running',
       },
       timestamp: new Date().toISOString(),
     });
@@ -152,13 +145,15 @@ app.get('/system/queue-status', async (req, res) => {
 // In development, do not rate limit auth routes to prevent throttling during testing
 const noop = (req, res, next) => next();
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
-// app.use('/api/oauth', oauthRoutes); // DISABLED - using clean LinkedIn implementation
-app.use('/api', linkedInRoutes); // Clean LinkedIn routes - exact copy from working app
+app.use('/api', linkedInRoutes); // LinkedIn OAuth (legacy PropertyHack)
 app.use('/api/prompts', promptRoutes); // Super admin prompt management
-app.use('/api/news', newsRoutes); // News curation routes
 app.use('/api/subscription', subscriptionRoutes); // Stripe subscription management
 app.use('/api/super-admin', superAdminRoutes); // Super admin system management
 app.use('/api/cron', cronRoutes); // Cron job endpoints for external schedulers
+app.use('/api/admin/articles', adminArticlesRoutes); // Property Hack article management
+app.use('/api/admin/meta', adminMetaRoutes); // Property Hack categories & sources
+app.use('/api/admin/news', adminNewsFetchRoutes); // Property Hack news fetch
+app.use('/api/public/articles', publicArticlesRoutes); // Public articles feed (no auth)
 app.use('/api', apiRoutes);
 
 // Error handling middleware
@@ -196,6 +191,9 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// Start daily news fetch cron job
+scheduleDailyNewsFetch();
+
 const PORT = process.env.PORT || 3001;
 
 /**
@@ -231,58 +229,16 @@ async function checkAndQueueScheduledPosts() {
   }
 }
 
-/**
- * Check all users and queue news curation jobs for those at their 6 AM local time
- */
-async function checkAndQueueNewsCuration() {
-  try {
-    const users = await prisma.user.findMany({
-      where: { settings: { isNot: null } },
-      include: { settings: true },
-    });
-
-    if (users.length === 0) return;
-
-    const now = new Date();
-    
-    for (const user of users) {
-      if (!user.settings) continue;
-
-      const userTimezone = user.settings.timeZone || 'UTC';
-      const userNow = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
-      const userHour = userNow.getHours();
-      
-      // Check if it's 6 AM in user's timezone
-      if (userHour !== 6) continue;
-
-      console.log(`[news-scheduler] Queueing news curation for user ${user.id} at their 6 AM (${userTimezone})`);
-      
-      await newsCurationQueue.add('fetch-news',
-        { userId: user.id },
-        {
-          jobId: `news-${user.id}-${now.toISOString().split('T')[0]}`,
-          removeOnComplete: true,
-          removeOnFail: false,
-        }
-      );
-    }
-  } catch (error) {
-    console.error('[news-scheduler] Error checking news curation:', error);
-  }
-}
 
 let schedulerCheckInterval = null;
-let newsCheckInterval = null;
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
   if (schedulerCheckInterval) clearInterval(schedulerCheckInterval);
-  if (newsCheckInterval) clearInterval(newsCheckInterval);
   await scheduledPostsWorker.close();
-  await newsCurationWorker.close();
+  await articleProcessingWorker.close();
   await scheduledPostsQueue.close();
-  await newsCurationQueue.close();
   await prisma.$disconnect();
   process.exit(0);
 });
@@ -290,11 +246,9 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully');
   if (schedulerCheckInterval) clearInterval(schedulerCheckInterval);
-  if (newsCheckInterval) clearInterval(newsCheckInterval);
   await scheduledPostsWorker.close();
-  await newsCurationWorker.close();
+  await articleProcessingWorker.close();
   await scheduledPostsQueue.close();
-  await newsCurationQueue.close();
   await prisma.$disconnect();
   process.exit(0);
 });
@@ -305,7 +259,7 @@ app.listen(PORT, async () => {
   console.log(`🔒 CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3004'}`);
   console.log('📦 BullMQ workers initialized');
   console.log('   - Scheduled posts worker: processing queue "scheduled-posts"');
-  console.log('   - News curation worker: processing queue "news-curation"');
+  console.log('   - Article processing worker: processing queue "article-processing"');
   
   // Start checking for due posts every 60 seconds
   if (!schedulerCheckInterval) {
@@ -313,13 +267,5 @@ app.listen(PORT, async () => {
     console.log('⏱️  Scheduled posts checker started (interval 60s)');
     // Check immediately on startup
     checkAndQueueScheduledPosts();
-  }
-  
-  // Start checking for news curation every 10 minutes
-  if (!newsCheckInterval) {
-    newsCheckInterval = setInterval(checkAndQueueNewsCuration, 10 * 60 * 1000);
-    console.log('📰 News curation checker started (interval 10m)');
-    // Check after 5 seconds on startup
-    setTimeout(checkAndQueueNewsCuration, 5000);
   }
 });

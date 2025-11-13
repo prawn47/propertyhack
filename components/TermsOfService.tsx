@@ -14,9 +14,9 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
                 <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">Q</span>
+                  <span className="text-white font-bold text-lg">PH</span>
                 </div>
-                <span className="ml-2 text-xl font-semibold text-gray-900">QUORD.ai</span>
+                <span className="ml-2 text-xl font-semibold text-gray-900">PropertyHack</span>
               </div>
             </div>
             <button
@@ -38,17 +38,17 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Agreement to Terms</h2>
             <p className="text-gray-700 mb-4">
-              By accessing or using QUORD.ai ("Service," "we," "our," or "us"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not access or use the Service.
+              By accessing or using PropertyHack ("Service," "we," "our," or "us"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not access or use the Service.
             </p>
             <p className="text-gray-700">
-              These Terms constitute a legally binding agreement between you and QUORD.ai. We reserve the right to modify these Terms at any time, and your continued use of the Service constitutes acceptance of any changes.
+              These Terms constitute a legally binding agreement between you and PropertyHack. We reserve the right to modify these Terms at any time, and your continued use of the Service constitutes acceptance of any changes.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Description of Service</h2>
             <p className="text-gray-700 mb-4">
-              QUORD.ai is a LinkedIn content assistant that uses artificial intelligence to help users create, manage, and publish professional content. Our Service includes:
+              PropertyHack is a LinkedIn content assistant that uses artificial intelligence to help users create, manage, and publish professional content. Our Service includes:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2">
               <li>AI-powered content generation</li>
@@ -159,7 +159,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">8.1 Our Intellectual Property</h3>
             <p className="text-gray-700 mb-4">
-              The Service, including its design, features, code, and content (excluding user-generated content), is owned by QUORD.ai and protected by intellectual property laws. You may not:
+              The Service, including its design, features, code, and content (excluding user-generated content), is owned by PropertyHack and protected by intellectual property laws. You may not:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2">
               <li>Copy, modify, or distribute our proprietary content</li>
@@ -183,7 +183,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
 
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">9.2 Limitation of Liability</h3>
             <p className="text-gray-700 mb-4">
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, QUORD.AI SHALL NOT BE LIABLE FOR:
+              TO THE MAXIMUM EXTENT PERMITTED BY LAW, PropertyHack.AI SHALL NOT BE LIABLE FOR:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2">
               <li>Any indirect, incidental, special, consequential, or punitive damages</li>
@@ -200,7 +200,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Indemnification</h2>
             <p className="text-gray-700">
-              You agree to indemnify, defend, and hold harmless QUORD.ai and its officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from:
+              You agree to indemnify, defend, and hold harmless PropertyHack and its officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from:
             </p>
             <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-4">
               <li>Your use of the Service</li>
@@ -215,7 +215,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">11.1 Termination by You</h3>
             <p className="text-gray-700 mb-4">
-              You may terminate your account at any time by contacting us at hello@quord.ai or through your account settings.
+              You may terminate your account at any time by contacting us at hello@propertyhack.com or through your account settings.
             </p>
 
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">11.2 Termination by Us</h3>
@@ -247,12 +247,12 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">13.1 Informal Resolution</h3>
             <p className="text-gray-700 mb-4">
-              If you have a dispute with us, please contact us at hello@quord.ai to attempt to resolve it informally before pursuing legal action.
+              If you have a dispute with us, please contact us at hello@propertyhack.com to attempt to resolve it informally before pursuing legal action.
             </p>
 
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">13.2 Governing Law</h3>
             <p className="text-gray-700 mb-4">
-              These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which QUORD.ai operates, without regard to conflict of law principles.
+              These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which PropertyHack operates, without regard to conflict of law principles.
             </p>
 
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">13.3 Arbitration</h3>
@@ -266,7 +266,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">14.1 Entire Agreement</h3>
             <p className="text-gray-700 mb-4">
-              These Terms, together with our Privacy Policy, constitute the entire agreement between you and QUORD.ai regarding the Service.
+              These Terms, together with our Privacy Policy, constitute the entire agreement between you and PropertyHack regarding the Service.
             </p>
 
             <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-6">14.2 Severability</h3>
@@ -298,14 +298,14 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
               If you have questions about these Terms, please contact us:
             </p>
             <ul className="list-none text-gray-700 space-y-2">
-              <li><strong>Email:</strong> hello@quord.ai</li>
-              <li><strong>Website:</strong> https://quord.ai</li>
+              <li><strong>Email:</strong> hello@propertyhack.com</li>
+              <li><strong>Website:</strong> https://propertyhack.com</li>
             </ul>
           </section>
 
           <section className="mb-8 border-t pt-8">
             <p className="text-gray-600 italic">
-              By using QUORD.ai, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+              By using PropertyHack, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
             </p>
           </section>
         </div>
@@ -315,7 +315,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} QUORD.ai. All rights reserved.
+            © {new Date().getFullYear()} PropertyHack. All rights reserved.
           </div>
         </div>
       </footer>

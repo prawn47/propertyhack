@@ -1,13 +1,13 @@
-# ✅ Quord.ai is Ready for Production Deployment
+# ✅ PropertyHack.ai is Ready for Production Deployment
 
 ## What's Been Done
 
 Your project is now fully configured for production deployment with a split architecture:
 
 ### 🎯 Architecture
-- **quord.ai** → Marketing landing page (Vercel)
-- **app.quord.ai** → User application (Vercel) 
-- **api.quord.ai** → Backend API (Render)
+- **propertyhack.com** → Marketing landing page (Vercel)
+- **app.propertyhack.com** → User application (Vercel) 
+- **api.propertyhack.com** → Backend API (Render)
 
 ### 📦 Configuration Files Added
 - ✅ `vercel.json` - Vercel deployment configuration
@@ -85,7 +85,7 @@ Both Render and Vercel offer free tiers:
 - [ ] Render account (sign up free)
 
 ### Domain Access
-- [ ] DNS management for quord.ai
+- [ ] DNS management for propertyhack.com
 - [ ] Ability to add A and CNAME records
 
 ### API Keys (from your current .env)
@@ -142,7 +142,7 @@ Your local SQLite database won't transfer to production. After deployment:
 ### Staging (Optional)
 Deploy to free tiers first:
 - Use Render free tier
-- Use different subdomain (staging.quord.ai)
+- Use different subdomain (staging.propertyhack.com)
 - Test thoroughly before production
 
 ### Production Testing
@@ -183,13 +183,13 @@ A: Yes! Railway, Fly.io, or AWS work too. Adjust render.yaml accordingly.
 A: Yes! Netlify, Cloudflare Pages work. Adjust vercel.json for their format.
 
 **Q: Do I need all three domains?**
-A: Technically no, but recommended for SEO and clarity. Minimum: app.quord.ai + api.quord.ai
+A: Technically no, but recommended for SEO and clarity. Minimum: app.propertyhack.com + api.propertyhack.com
 
 **Q: Can I test on free tiers first?**
 A: Absolutely! Both Render and Vercel have free tiers. Perfect for testing.
 
 **Q: What about the marketing landing page?**
-A: Currently, app.quord.ai serves both. Create separate marketing pages as needed.
+A: Currently, app.propertyhack.com serves both. Create separate marketing pages as needed.
 
 **Q: How do I rollback if something breaks?**
 A: Both platforms keep previous deployments. One-click rollback available.

@@ -8,12 +8,12 @@ const sendVerificationEmail = async (email, verificationToken) => {
     const verificationUrl = `${process.env.CORS_ORIGIN}/verify-email?token=${verificationToken}`;
     
     const { data, error } = await resend.emails.send({
-      from: `QUORD.ai <${process.env.RESEND_FROM_EMAIL || 'noreply@mail.quord.ai'}>`,
+      from: `PropertyHack <${process.env.RESEND_FROM_EMAIL || 'noreply@mail.propertyhack.com'}>`,
       to: [email],
-      subject: 'Verify your QUORD.ai account',
+      subject: 'Verify your PropertyHack account',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #333; text-align: center;">Welcome to QUORD.ai!</h1>
+          <h1 style="color: #333; text-align: center;">Welcome to PropertyHack!</h1>
           <p>Thank you for signing up. Please verify your email address by clicking the button below:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${verificationUrl}" 
@@ -26,7 +26,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
           <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
           <p style="color: #999; font-size: 12px; text-align: center;">
-            If you didn't create an account with QUORD.ai, you can safely ignore this email.
+            If you didn't create an account with PropertyHack, you can safely ignore this email.
           </p>
         </div>
       `,
@@ -50,13 +50,13 @@ const sendPasswordResetEmail = async (email, resetToken) => {
     const resetUrl = `${process.env.CORS_ORIGIN}/reset-password?token=${resetToken}`;
     
     const { data, error } = await resend.emails.send({
-      from: `QUORD.ai <${process.env.RESEND_FROM_EMAIL || 'noreply@mail.quord.ai'}>`,
+      from: `PropertyHack <${process.env.RESEND_FROM_EMAIL || 'noreply@mail.propertyhack.com'}>`,
       to: [email],
-      subject: 'Reset your QUORD.ai password',
+      subject: 'Reset your PropertyHack password',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333; text-align: center;">Password Reset Request</h1>
-          <p>You requested to reset your password for your QUORD.ai account. Click the button below to set a new password:</p>
+          <p>You requested to reset your password for your PropertyHack account. Click the button below to set a new password:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}" 
                style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
@@ -90,13 +90,13 @@ const sendPasswordResetEmail = async (email, resetToken) => {
 const sendOTPEmail = async (email, otpCode) => {
   try {
     const { data, error } = await resend.emails.send({
-      from: `QUORD.ai <${process.env.RESEND_FROM_EMAIL || 'noreply@mail.quord.ai'}>`,
+      from: `PropertyHack <${process.env.RESEND_FROM_EMAIL || 'noreply@mail.propertyhack.com'}>`,
       to: [email],
-      subject: 'Your QUORD.ai login code',
+      subject: 'Your PropertyHack login code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333; text-align: center;">Your Login Code</h1>
-          <p>Here is your one-time password (OTP) to sign in to your QUORD.ai account:</p>
+          <p>Here is your one-time password (OTP) to sign in to your PropertyHack account:</p>
           <div style="text-align: center; margin: 30px 0;">
             <div style="background-color: #f5f5f5; border: 2px solid #007bff; border-radius: 8px; padding: 20px; display: inline-block;">
               <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #007bff;">${otpCode}</span>

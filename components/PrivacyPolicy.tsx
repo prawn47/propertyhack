@@ -14,9 +14,9 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
                 <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">Q</span>
+                  <span className="text-white font-bold text-lg">PH</span>
                 </div>
-                <span className="ml-2 text-xl font-semibold text-gray-900">QUORD.ai</span>
+                <span className="ml-2 text-xl font-semibold text-gray-900">PropertyHack</span>
               </div>
             </div>
             <button
@@ -38,7 +38,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Introduction</h2>
             <p className="text-gray-700 mb-4">
-              Welcome to QUORD.ai ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our LinkedIn content assistant service.
+              Welcome to PropertyHack ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our LinkedIn content assistant service.
             </p>
           </section>
 
@@ -137,7 +137,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Data Retention</h2>
             <p className="text-gray-700">
-              We retain your personal information for as long as your account is active or as needed to provide you services. You may request deletion of your account and associated data at any time by contacting us at hello@quord.ai.
+              We retain your personal information for as long as your account is active or as needed to provide you services. You may request deletion of your account and associated data at any time by contacting us at hello@propertyhack.com.
             </p>
           </section>
 
@@ -153,7 +153,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
               <li><strong>Withdrawal:</strong> Withdraw consent for data processing</li>
             </ul>
             <p className="text-gray-700 mt-4">
-              To exercise these rights, please contact us at hello@quord.ai.
+              To exercise these rights, please contact us at hello@propertyhack.com.
             </p>
           </section>
 
@@ -191,8 +191,8 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
               If you have questions or concerns about this Privacy Policy or our data practices, please contact us:
             </p>
             <ul className="list-none text-gray-700 space-y-2">
-              <li><strong>Email:</strong> hello@quord.ai</li>
-              <li><strong>Website:</strong> https://quord.ai</li>
+              <li><strong>Email:</strong> hello@propertyhack.com</li>
+              <li><strong>Website:</strong> https://propertyhack.com</li>
             </ul>
           </section>
         </div>
@@ -202,7 +202,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} QUORD.ai. All rights reserved.
+            © {new Date().getFullYear()} PropertyHack. All rights reserved.
           </div>
         </div>
       </footer>

@@ -25,7 +25,7 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
       - key: CORS_ORIGIN
-        value: https://app.quord.ai,https://quord.ai
+        value: https://app.propertyhack.com,https://propertyhack.com
       - key: GEMINI_API_KEY
         sync: false
       - key: OPENAI_API_KEY
@@ -33,19 +33,19 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
-        value: post@mail.quord.ai
+        value: post@mail.propertyhack.com
       - key: LINKEDIN_CLIENT_ID
         sync: false
-      - key: QUORD_LINKEDIN_CLIENT_SECRET
+      - key: PropertyHack_LINKEDIN_CLIENT_SECRET
         sync: false
-      - key: QUORD_LINKEDIN_REDIRECT_URI
-        value: https://api.quord.ai/api/auth/linkedin/callback
+      - key: PropertyHack_LINKEDIN_REDIRECT_URI
+        value: https://api.propertyhack.com/api/auth/linkedin/callback
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL
-        value: https://api.quord.ai/api/oauth/google/callback
+        value: https://api.propertyhack.com/api/oauth/google/callback
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_PRO_PRICE_ID
@@ -67,7 +67,7 @@ services:
     schedule: "*/2 * * * *"
     buildCommand: echo "No build needed for cron job"
     startCommand: |
-      curl -X POST https://api.quord.ai/api/cron/process-scheduled-posts \
+      curl -X POST https://api.propertyhack.com/api/cron/process-scheduled-posts \
         -H "X-Cron-Secret: $CRON_SECRET" \
         -H "Content-Type: application/json" \
         --fail --silent --show-error

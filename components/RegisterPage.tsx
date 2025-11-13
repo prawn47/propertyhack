@@ -65,14 +65,20 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister, onSwitchToLogin
     <div className="min-h-screen bg-base-200 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-content flex items-center justify-center">
-            <SparklesIcon className="w-8 h-8 mr-3 text-brand-primary"/>
-            QUORD.ai
-          </h1>
-          <p className="text-content-secondary mt-2">Create your AI content assistant account.</p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="inline-flex items-center text-sm text-content-secondary hover:text-brand-accent transition-colors mb-4"
+          >
+            ← Back to Home
+          </button>
+          <div className="flex items-center justify-center space-x-4 mb-3">
+            <img src="/ph-logo.jpg" alt="Property Hack" className="h-16 w-16 rounded-[15px]" />
+            <h1 className="text-3xl font-bold text-content">Property Hack</h1>
+          </div>
+          <p className="text-content-secondary mt-2">Agenda-free Australian property news</p>
         </div>
 
-        <div className="bg-base-100 p-8 rounded-xl shadow-md">
+        <div className="bg-base-100 p-8 rounded-xl shadow-lg gold-frame">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-content-secondary">

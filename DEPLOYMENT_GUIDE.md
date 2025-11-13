@@ -1,19 +1,19 @@
-# Quord.ai Production Deployment Guide
+# PropertyHack.ai Production Deployment Guide
 
-Complete guide for deploying Quord.ai to production with split architecture.
+Complete guide for deploying PropertyHack.ai to production with split architecture.
 
 ## Architecture Overview
 
-- **quord.ai** → Marketing landing page (Vercel)
-- **app.quord.ai** → Logged-in user application (Vercel)
-- **api.quord.ai** → Backend API (Render)
+- **propertyhack.com** → Marketing landing page (Vercel)
+- **app.propertyhack.com** → Logged-in user application (Vercel)
+- **api.propertyhack.com** → Backend API (Render)
 
 ## Prerequisites
 
 1. GitHub account with repository access
 2. Vercel account (free tier is fine)
 3. Render account (free tier for testing, paid for production)
-4. Domain: quord.ai (with DNS access)
+4. Domain: propertyhack.com (with DNS access)
 
 ## Part 1: Backend Deployment (Render)
 
@@ -72,7 +72,7 @@ JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 
 # CORS
-CORS_ORIGIN=https://app.quord.ai,https://quord.ai
+CORS_ORIGIN=https://app.propertyhack.com,https://propertyhack.com
 
 # AI APIs (copy from your .env)
 GEMINI_API_KEY=<your-gemini-key>
@@ -81,17 +81,17 @@ PERPLEXITY_API_KEY=<your-perplexity-key>
 
 # Email
 RESEND_API_KEY=<your-resend-key>
-RESEND_FROM_EMAIL=post@mail.quord.ai
+RESEND_FROM_EMAIL=post@mail.propertyhack.com
 
 # LinkedIn OAuth
 LINKEDIN_CLIENT_ID=<your-linkedin-client-id>
-QUORD_LINKEDIN_CLIENT_SECRET=<your-linkedin-secret>
-QUORD_LINKEDIN_REDIRECT_URI=https://api.quord.ai/api/auth/linkedin/callback
+PropertyHack_LINKEDIN_CLIENT_SECRET=<your-linkedin-secret>
+PropertyHack_LINKEDIN_REDIRECT_URI=https://api.propertyhack.com/api/auth/linkedin/callback
 
 # Google OAuth
 GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-secret>
-GOOGLE_CALLBACK_URL=https://api.quord.ai/api/oauth/google/callback
+GOOGLE_CALLBACK_URL=https://api.propertyhack.com/api/oauth/google/callback
 
 # Stripe
 STRIPE_SECRET_KEY=<your-stripe-secret>
@@ -109,7 +109,7 @@ NEWSAPI_API_KEY=<your-newsapi-key>
 ### Step 5: Configure Custom Domain for API
 1. In Render dashboard, select `quord-api`
 2. Go to "Settings" → "Custom Domain"
-3. Add domain: `api.quord.ai`
+3. Add domain: `api.propertyhack.com`
 4. Render will provide DNS records
 5. Add to your DNS provider:
    ```
@@ -137,8 +137,8 @@ NEWSAPI_API_KEY=<your-newsapi-key>
 Add in Vercel dashboard → Settings → Environment Variables:
 
 ```bash
-VITE_API_URL=https://api.quord.ai
-VITE_APP_URL=https://app.quord.ai
+VITE_API_URL=https://api.propertyhack.com
+VITE_APP_URL=https://app.propertyhack.com
 VITE_GEMINI_API_KEY=<your-gemini-key>
 ```
 
@@ -149,9 +149,9 @@ VITE_GEMINI_API_KEY=<your-gemini-key>
 
 ### Step 5: Configure Custom Domains
 
-#### Main App (app.quord.ai)
+#### Main App (app.propertyhack.com)
 1. In Vercel dashboard, go to "Settings" → "Domains"
-2. Add domain: `app.quord.ai`
+2. Add domain: `app.propertyhack.com`
 3. Vercel provides DNS records:
    ```
    Type: CNAME
@@ -160,9 +160,9 @@ VITE_GEMINI_API_KEY=<your-gemini-key>
    ```
 4. Add to your DNS provider
 
-#### Marketing Site (quord.ai)
-1. Add domain: `quord.ai`
-2. Also add: `www.quord.ai` (for redirect)
+#### Marketing Site (propertyhack.com)
+1. Add domain: `propertyhack.com`
+2. Also add: `www.propertyhack.com` (for redirect)
 3. DNS records:
    ```
    Type: A
@@ -195,37 +195,37 @@ CNAME api   quord-api.onrender.com
 ### LinkedIn Developer Console
 Update redirect URIs:
 ```
-https://api.quord.ai/api/auth/linkedin/callback
+https://api.propertyhack.com/api/auth/linkedin/callback
 ```
 
 ### Google Cloud Console
 Update authorized redirect URIs:
 ```
-https://api.quord.ai/api/oauth/google/callback
+https://api.propertyhack.com/api/oauth/google/callback
 ```
 
 ### Stripe Dashboard
 Update webhook endpoint:
 ```
-https://api.quord.ai/api/subscription/webhook
+https://api.propertyhack.com/api/subscription/webhook
 ```
 
 ## Part 5: Testing
 
 ### 1. Test Backend API
 ```bash
-curl https://api.quord.ai/health
+curl https://api.propertyhack.com/health
 # Should return: {"status":"OK","timestamp":"..."}
 ```
 
 ### 2. Test Frontend
-- Visit https://quord.ai (marketing)
-- Visit https://app.quord.ai (app)
+- Visit https://propertyhack.com (marketing)
+- Visit https://app.propertyhack.com (app)
 - Try registering a new account
 - Try logging in with existing account
 
 ### 3. Test Full Flow
-1. Register at app.quord.ai
+1. Register at app.propertyhack.com
 2. Login
 3. Go to Settings → Connect LinkedIn
 4. Create a draft post
@@ -304,8 +304,8 @@ You can test on free tiers:
 
 ### Frontend Can't Reach API
 1. Verify CORS_ORIGIN includes your frontend URL
-2. Check api.quord.ai DNS is resolving
-3. Test API directly: `curl https://api.quord.ai/health`
+2. Check api.propertyhack.com DNS is resolving
+3. Test API directly: `curl https://api.propertyhack.com/health`
 4. Check Vercel environment variables
 
 ### OAuth Not Working

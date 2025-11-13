@@ -90,3 +90,75 @@ export interface NewsArticle {
   relevanceScore?: number;
   isRead: boolean;
 }
+
+// ============================================
+// PROPERTY HACK TYPES
+// ============================================
+
+export interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string;
+  content?: string;
+  sourceUrl: string;
+  sourceName: string;
+  sourceLogoUrl?: string;
+  metaDescription: string;
+  focusKeywords: string; // JSON array as string
+  ogImage?: string;
+  imageUrl?: string;
+  imageAltText?: string;
+  market: string;
+  status: 'draft' | 'published' | 'archived';
+  publishedAt?: string;
+  viewCount: number;
+  featured: boolean;
+  createdAt: string;
+  updatedAt: string;
+  authorId: string;
+  author?: {
+    id: string;
+    email: string;
+    displayName?: string;
+  };
+  categoryId?: string;
+  category?: ArticleCategory;
+  sourceId?: string;
+  source?: ArticleSource;
+}
+
+export interface ArticleCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  market: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ArticleSource {
+  id: string;
+  name: string;
+  url: string;
+  logoUrl?: string;
+  feedType: 'rss' | 'api' | 'manual';
+  feedUrl?: string;
+  apiKey?: string;
+  isActive: boolean;
+  autoImport: boolean;
+  market: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Market {
+  id: string;
+  code: string;
+  name: string;
+  currency: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

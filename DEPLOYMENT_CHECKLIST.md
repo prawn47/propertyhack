@@ -1,4 +1,4 @@
-# Quord.ai Deployment Checklist
+# PropertyHack.ai Deployment Checklist
 
 Quick reference for deploying to production.
 
@@ -7,9 +7,9 @@ Quick reference for deploying to production.
 - [ ] Code pushed to GitHub (`main` branch)
 - [ ] All tests passing locally
 - [ ] Environment variables documented
-- [ ] Domain `quord.ai` ready with DNS access
+- [ ] Domain `propertyhack.com` ready with DNS access
 
-## Backend (Render) - api.quord.ai
+## Backend (Render) - api.propertyhack.com
 
 ### 1. Create Services
 - [ ] PostgreSQL database created (Starter plan, $7/mo)
@@ -27,23 +27,23 @@ Quick reference for deploying to production.
 - [ ] `PERPLEXITY_API_KEY`
 - [ ] `RESEND_API_KEY`
 - [ ] `LINKEDIN_CLIENT_ID`
-- [ ] `QUORD_LINKEDIN_CLIENT_SECRET`
+- [ ] `PropertyHack_LINKEDIN_CLIENT_SECRET`
 - [ ] `GOOGLE_CLIENT_ID`
 - [ ] `GOOGLE_CLIENT_SECRET`
 - [ ] `STRIPE_SECRET_KEY`
 - [ ] `STRIPE_PRO_PRICE_ID`
 - [ ] `NEWSAPI_API_KEY`
-- [ ] `CORS_ORIGIN=https://app.quord.ai,https://quord.ai`
+- [ ] `CORS_ORIGIN=https://app.propertyhack.com,https://propertyhack.com`
 
 ### 3. Deployment
 - [ ] Backend deployed successfully
 - [ ] Migrations ran automatically
 - [ ] Health check passes: `curl https://<your-render-url>.onrender.com/health`
-- [ ] Custom domain `api.quord.ai` added in Render
+- [ ] Custom domain `api.propertyhack.com` added in Render
 - [ ] DNS CNAME record added: `api` → `quord-api.onrender.com`
 - [ ] SSL certificate active
 
-## Frontend (Vercel) - app.quord.ai & quord.ai
+## Frontend (Vercel) - app.propertyhack.com & propertyhack.com
 
 ### 1. Import Project
 - [ ] Connected GitHub repository
@@ -52,17 +52,17 @@ Quick reference for deploying to production.
 - [ ] Output directory: `dist`
 
 ### 2. Environment Variables Set
-- [ ] `VITE_API_URL=https://api.quord.ai`
-- [ ] `VITE_APP_URL=https://app.quord.ai`
+- [ ] `VITE_API_URL=https://api.propertyhack.com`
+- [ ] `VITE_APP_URL=https://app.propertyhack.com`
 - [ ] `VITE_GEMINI_API_KEY`
 
 ### 3. Deployment
 - [ ] Initial deployment successful
 - [ ] Build passes
 - [ ] Preview URL works
-- [ ] Domain `app.quord.ai` added in Vercel
-- [ ] Domain `quord.ai` added in Vercel
-- [ ] Domain `www.quord.ai` added (redirects to quord.ai)
+- [ ] Domain `app.propertyhack.com` added in Vercel
+- [ ] Domain `propertyhack.com` added in Vercel
+- [ ] Domain `www.propertyhack.com` added (redirects to propertyhack.com)
 
 ### 4. DNS Configuration
 - [ ] A record: `@` → `76.76.21.21`
@@ -73,20 +73,20 @@ Quick reference for deploying to production.
 ## OAuth & Integrations
 
 ### LinkedIn
-- [ ] Redirect URI updated: `https://api.quord.ai/api/auth/linkedin/callback`
+- [ ] Redirect URI updated: `https://api.propertyhack.com/api/auth/linkedin/callback`
 
 ### Google
-- [ ] Redirect URI updated: `https://api.quord.ai/api/oauth/google/callback`
+- [ ] Redirect URI updated: `https://api.propertyhack.com/api/oauth/google/callback`
 
 ### Stripe
-- [ ] Webhook endpoint: `https://api.quord.ai/api/subscription/webhook`
+- [ ] Webhook endpoint: `https://api.propertyhack.com/api/subscription/webhook`
 - [ ] Webhook signing secret updated in Render
 
 ## Post-Deployment
 
 ### Testing
-- [ ] Visit https://quord.ai - marketing page loads
-- [ ] Visit https://app.quord.ai - app loads
+- [ ] Visit https://propertyhack.com - marketing page loads
+- [ ] Visit https://app.propertyhack.com - app loads
 - [ ] Register new account
 - [ ] Login works
 - [ ] LinkedIn connection works
@@ -125,7 +125,7 @@ node generate-secrets.js
 
 ### Test API health
 ```bash
-curl https://api.quord.ai/health
+curl https://api.propertyhack.com/health
 ```
 
 ### View Render logs
