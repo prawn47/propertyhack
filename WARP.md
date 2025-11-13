@@ -214,7 +214,7 @@ propertyhack/
 - `PERPLEXITY_API_KEY` - For news curation (get from https://www.perplexity.ai/settings/api)
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL` - Email service
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
-- `LINKEDIN_CLIENT_ID`, `PropertyHack_LINKEDIN_CLIENT_SECRET`, `PropertyHack_LINKEDIN_REDIRECT_URI`
+- `LINKEDIN_CLIENT_ID`, `QUORD_LINKEDIN_CLIENT_SECRET`, `QUORD_LINKEDIN_REDIRECT_URI`
 - `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET` - For subscriptions (see STRIPE_SETUP.md)
 - `PORT` (default: 3001), `NODE_ENV`, `CORS_ORIGIN`
 
@@ -266,12 +266,12 @@ See `STRIPE_SETUP.md` for detailed setup. Key test cards:
 
 #### Debug OAuth Issues
 1. Check callback URLs match in LinkedIn Developer Console
-2. Verify environment variables: `LINKEDIN_CLIENT_ID`, `PropertyHack_LINKEDIN_CLIENT_SECRET`
+2. Verify environment variables: `LINKEDIN_CLIENT_ID`, `QUORD_LINKEDIN_CLIENT_SECRET`
 3. Check backend logs for OAuth errors
 4. Test redirect: `http://localhost:3001/api/linkedin` should redirect to LinkedIn
 
 ### Project History & Migration Notes
-- **Origin**: Repurposed from PropertyHack codebase for property-related application development
+- **Origin**: Repurposed from QUORD codebase for property-related application development
 - **SQLite → PostgreSQL**: Follow guide in `DEPLOYMENT.md`
 - Backend uses Prisma, so migration is straightforward (change `provider` in schema, update `DATABASE_URL`, run `npx prisma migrate deploy`)
 

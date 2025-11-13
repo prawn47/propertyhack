@@ -32,8 +32,8 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.CORS_ORIGIN || 'http://localhost:3004',
-    'https://www.propertyhack.com',
-    'https://app.propertyhack.com',
+    'https://www.quord.ai',
+    'https://app.quord.ai',
     'http://localhost:3000',
     'http://localhost:3001', 
     'http://localhost:3002',
@@ -145,7 +145,7 @@ app.get('/system/queue-status', async (req, res) => {
 // In development, do not rate limit auth routes to prevent throttling during testing
 const noop = (req, res, next) => next();
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
-app.use('/api', linkedInRoutes); // LinkedIn OAuth (legacy PropertyHack)
+app.use('/api', linkedInRoutes); // LinkedIn OAuth (legacy QUORD)
 app.use('/api/prompts', promptRoutes); // Super admin prompt management
 app.use('/api/subscription', subscriptionRoutes); // Stripe subscription management
 app.use('/api/super-admin', superAdminRoutes); // Super admin system management
