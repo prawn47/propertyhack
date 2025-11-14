@@ -19,6 +19,7 @@ import SuperAdminSettings from './components/SuperAdminSettings';
 import ArticlesList from './components/admin/ArticlesList';
 import ArticleEditor from './components/admin/ArticleEditor';
 import PropertyHackHome from './components/PropertyHackHome';
+import PublicArticlesGrid from './components/public/PublicArticlesGrid';
 import type { UserSettings, DraftPost, PublishedPost, ScheduledPost, User, AuthState, Article } from './types';
 import * as db from './services/dbService';
 import { postToLinkedIn } from './services/linkedInService';
@@ -594,9 +595,9 @@ const App: React.FC = () => {
     );
   }
   
-  // Show public homepage if not authenticated and view is 'home'
+  // Show public articles homepage if not authenticated and view is 'home'
   if (!authState.isAuthenticated && view === 'home') {
-    return <PropertyHackHome onAdminClick={() => {
+    return <PublicArticlesGrid onAdminClick={() => {
       setShowLanding(false);
       setAuthView('login');
       setView('dashboard'); // Change view to exit homepage
@@ -703,7 +704,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch(view) {
       case 'home':
-        return <PropertyHackHome onAdminClick={() => setView('articles')} />;
+        return <PublicArticlesGrid onAdminClick={() => setView('articles')} />;
       case 'articles':
         return (
           <>
