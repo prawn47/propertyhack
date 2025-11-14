@@ -34,6 +34,7 @@ app.use(cors({
     process.env.CORS_ORIGIN || 'http://localhost:3004',
     'https://www.quord.ai',
     'https://app.quord.ai',
+    'https://propertyhack.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001', 
     'http://localhost:3002',
