@@ -32,8 +32,6 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.CORS_ORIGIN || 'http://localhost:3004',
-    'https://www.quord.ai',
-    'https://app.quord.ai',
     'https://propertyhack.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001', 
