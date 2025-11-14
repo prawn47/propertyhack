@@ -1,9 +1,14 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Send email verification
 const sendVerificationEmail = async (email, verificationToken) => {
+  if (!resend) {
+    console.warn('Email service not configured - skipping verification email');
+    return { warning: 'Email service not available' };
+  }
+  
   try {
     const verificationUrl = `${process.env.CORS_ORIGIN}/verify-email?token=${verificationToken}`;
     
@@ -46,6 +51,11 @@ const sendVerificationEmail = async (email, verificationToken) => {
 
 // Send password reset email
 const sendPasswordResetEmail = async (email, resetToken) => {
+  if (!resend) {
+    console.warn('Email service not configured - skipping password reset email');
+    return { warning: 'Email service not available' };
+  }
+  
   try {
     const resetUrl = `${process.env.CORS_ORIGIN}/reset-password?token=${resetToken}`;
     
@@ -88,6 +98,11 @@ const sendPasswordResetEmail = async (email, resetToken) => {
 
 // Send OTP login code
 const sendOTPEmail = async (email, otpCode) => {
+  if (!resend) {
+    console.warn('Email service not configured - skipping OTP email');
+    return { warning: 'Email service not available' };
+  }
+  
   try {
     const { data, error } = await resend.emails.send({
       from: `PropertyHack <${process.env.RESEND_FROM_EMAIL || 'noreply@mail.propertyhack.com'}>`,
