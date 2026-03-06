@@ -1,4 +1,3 @@
-// Authentication service for handling JWT tokens and user authentication
 import { getApiUrl } from './apiConfig';
 
 const API_BASE_URL = getApiUrl('/api');
@@ -8,27 +7,16 @@ interface LoginCredentials {
   password: string;
 }
 
-interface RegisterCredentials {
-  email: string;
-  password: string;
-}
-
-interface OTPCredentials {
-  email: string;
-  otp: string;
-}
-
 interface AuthResponse {
   message: string;
   user: {
     id: string;
     email: string;
-    emailVerified: boolean;
+    superAdmin: boolean;
     createdAt: string;
   };
   accessToken: string;
   refreshToken: string;
-  emailVerificationSent?: boolean;
 }
 
 interface RefreshResponse {
@@ -41,7 +29,6 @@ class AuthService {
   private refreshToken: string | null = null;
 
   constructor() {
-    // Load tokens from localStorage on initialization
     this.loadTokensFromStorage();
   }
 
@@ -62,7 +49,7 @@ class AuthService {
     this.refreshToken = null;
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    localStorage.removeItem('isAuthenticated'); // Legacy cleanup
+    localStorage.removeItem('isAuthenticated');
   }
 
   public getAccessToken(): string | null {
@@ -73,42 +60,27 @@ class AuthService {
     return !!this.accessToken;
   }
 
-  // Make authenticated API requests with automatic token refresh
-  public async makeAuthenticatedRequest(
-    url: string,
-    options: RequestInit = {}
-  ): Promise<Response> {
+  public async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
     if (!this.accessToken) {
       throw new Error('No access token available');
     }
 
-    // Add authorization header
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${this.accessToken}`,
       ...options.headers,
     };
 
-    let response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    let response = await fetch(url, { ...options, headers });
 
-    // If token expired, try to refresh
     if (response.status === 401 && this.refreshToken) {
       try {
         await this.refreshAccessToken();
-        
-        // Retry the original request with new token
         response = await fetch(url, {
           ...options,
-          headers: {
-            ...headers,
-            'Authorization': `Bearer ${this.accessToken}`,
-          },
+          headers: { ...headers, 'Authorization': `Bearer ${this.accessToken}` },
         });
-      } catch (refreshError) {
-        // Refresh failed, user needs to log in again
+      } catch {
         this.clearTokensFromStorage();
         throw new Error('Session expired. Please log in again.');
       }
@@ -117,38 +89,10 @@ class AuthService {
     return response;
   }
 
-  public async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      let errorMessage = 'Registration failed';
-      try {
-        const error = await response.json();
-        errorMessage = error.error || errorMessage;
-      } catch (e) {
-        console.error('Failed to parse error response:', e);
-      }
-      throw new Error(errorMessage);
-    }
-
-    const data: AuthResponse = await response.json();
-    this.saveTokensToStorage(data.accessToken, data.refreshToken);
-    
-    return data;
-  }
-
   public async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
 
@@ -165,51 +109,20 @@ class AuthService {
 
     const data: AuthResponse = await response.json();
     this.saveTokensToStorage(data.accessToken, data.refreshToken);
-    
-    return data;
-  }
-
-  public async loginWithOTP(credentials: OTPCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/otp/verify`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      let errorMessage = 'OTP verification failed';
-      try {
-        const error = await response.json();
-        errorMessage = error.error || errorMessage;
-      } catch (e) {
-        console.error('Failed to parse error response:', e);
-      }
-      throw new Error(errorMessage);
-    }
-
-    const data: AuthResponse = await response.json();
-    this.saveTokensToStorage(data.accessToken, data.refreshToken);
-    
     return data;
   }
 
   public async logout(): Promise<void> {
     try {
-      // Call logout endpoint to invalidate tokens on server (if implemented)
       if (this.accessToken) {
         await fetch(`${API_BASE_URL}/auth/logout`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-          },
+          headers: { 'Authorization': `Bearer ${this.accessToken}` },
         });
       }
     } catch (error) {
       console.error('Logout API call failed:', error);
     } finally {
-      // Always clear local tokens
       this.clearTokensFromStorage();
     }
   }
@@ -221,9 +134,7 @@ class AuthService {
 
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken: this.refreshToken }),
     });
 
@@ -235,60 +146,7 @@ class AuthService {
     const data: RefreshResponse = await response.json();
     this.saveTokensToStorage(data.accessToken, data.refreshToken);
   }
-
-  public async forgotPassword(email: string): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Password reset request failed');
-    }
-
-    return await response.json();
-  }
-
-  public async resetPassword(token: string, password: string): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Password reset failed');
-    }
-
-    return await response.json();
-  }
-
-  public async verifyEmail(token: string): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-email?token=${token}`, {
-      method: 'GET',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Email verification failed');
-    }
-
-    return await response.json();
-  }
-
-  // Public method for OAuth token handling
-  public setTokens(accessToken: string, refreshToken: string): void {
-    this.saveTokensToStorage(accessToken, refreshToken);
-  }
 }
 
-// Create and export a singleton instance
 export const authService = new AuthService();
 export default authService;

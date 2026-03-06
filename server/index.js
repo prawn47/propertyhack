@@ -11,6 +11,7 @@ const adminArticlesRoutes = require('./routes/admin/articles');
 const adminMetaRoutes = require('./routes/admin/meta');
 const adminNewsFetchRoutes = require('./routes/admin/newsFetch');
 const publicArticlesRoutes = require('./routes/public/articles');
+const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { articleProcessingWorker } = require('./workers/articleProcessingWorker');
 const { scheduleDailyNewsFetch } = require('./jobs/dailyNewsFetch');
 
@@ -67,6 +68,7 @@ app.get('/health', (req, res) => {
 
 const noop = (req, res, next) => next();
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
+app.use('/api/admin', authenticateToken, requireSuperAdmin);
 app.use('/api/admin/articles', adminArticlesRoutes);
 app.use('/api/admin/meta', adminMetaRoutes);
 app.use('/api/admin/news', adminNewsFetchRoutes);
