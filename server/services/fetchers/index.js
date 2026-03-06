@@ -5,6 +5,7 @@ const perplexityFetcher = require('./perplexityFetcher');
 const manualFetcher = require('./manualFetcher');
 const scraperFetcher = require('./scraperFetcher');
 const newsletterFetcher = require('./newsletterFetcher');
+const socialFetcher = require('./socialFetcher');
 
 function notImplemented(sourceType) {
   return async function () {
@@ -19,7 +20,7 @@ const fetchers = {
   PERPLEXITY: perplexityFetcher.fetch,
   NEWSLETTER: newsletterFetcher.fetch,
   SCRAPER: scraperFetcher.fetch,
-  SOCIAL: notImplemented('SOCIAL'),
+  SOCIAL: socialFetcher.fetch,
   MANUAL: manualFetcher.fetch,
 };
 
