@@ -1,5 +1,7 @@
 const rssFetcher = require('./rssFetcher');
 const newsApiOrgFetcher = require('./newsApiOrgFetcher');
+const newsApiAiFetcher = require('./newsApiAiFetcher');
+const perplexityFetcher = require('./perplexityFetcher');
 const manualFetcher = require('./manualFetcher');
 
 function notImplemented(sourceType) {
@@ -11,8 +13,8 @@ function notImplemented(sourceType) {
 const fetchers = {
   RSS: rssFetcher.fetch,
   NEWSAPI_ORG: newsApiOrgFetcher.fetch,
-  NEWSAPI_AI: notImplemented('NEWSAPI_AI'),
-  PERPLEXITY: notImplemented('PERPLEXITY'),
+  NEWSAPI_AI: newsApiAiFetcher.fetch,
+  PERPLEXITY: perplexityFetcher.fetch,
   NEWSLETTER: notImplemented('NEWSLETTER'),
   SCRAPER: notImplemented('SCRAPER'),
   SOCIAL: notImplemented('SOCIAL'),
