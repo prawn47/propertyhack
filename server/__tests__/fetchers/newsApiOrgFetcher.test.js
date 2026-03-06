@@ -1,14 +1,30 @@
-vi.mock('axios');
+import { createRequire } from 'module';
 
-import axios from 'axios';
-import { fetch } from '../../services/fetchers/newsApiOrgFetcher';
+const _require = createRequire(import.meta.url);
+
+// ─── Inject axios mock into require.cache before loading the source module ────
+const mockAxios = { get: vi.fn(), post: vi.fn() };
+
+const axiosPath = _require.resolve('axios');
+_require.cache[axiosPath] = {
+  id: axiosPath,
+  filename: axiosPath,
+  loaded: true,
+  exports: mockAxios,
+};
+
+// Force fresh load of fetcher so it picks up mock axios
+const fetcherPath = _require.resolve('../../services/fetchers/newsApiOrgFetcher.js');
+delete _require.cache[fetcherPath];
+const { fetch } = _require('../../services/fetchers/newsApiOrgFetcher.js');
 
 describe('newsApiOrgFetcher', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     process.env = { ...originalEnv, NEWSAPI_API_KEY: 'test-key' };
-    vi.resetAllMocks();
+    mockAxios.get.mockReset();
+    mockAxios.post.mockReset();
   });
 
   afterEach(() => {
@@ -29,7 +45,7 @@ describe('newsApiOrgFetcher', () => {
   });
 
   it('calls /everything endpoint when no country or category', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: {
         status: 'ok',
         articles: [
@@ -49,7 +65,7 @@ describe('newsApiOrgFetcher', () => {
 
     const result = await fetch({ keywords: ['property'] });
 
-    const callArgs = axios.get.mock.calls[0];
+    const callArgs = mockAxios.get.mock.calls[0];
     expect(callArgs[0]).toBe('https://newsapi.org/v2/everything');
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
@@ -64,29 +80,29 @@ describe('newsApiOrgFetcher', () => {
   });
 
   it('calls /top-headlines endpoint when country is set', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: { status: 'ok', articles: [] },
     });
 
     await fetch({ keywords: ['property'], country: 'au' });
 
-    const callArgs = axios.get.mock.calls[0];
+    const callArgs = mockAxios.get.mock.calls[0];
     expect(callArgs[0]).toBe('https://newsapi.org/v2/top-headlines');
   });
 
   it('calls /top-headlines endpoint when category is set', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: { status: 'ok', articles: [] },
     });
 
     await fetch({ keywords: ['property'], category: 'business' });
 
-    const callArgs = axios.get.mock.calls[0];
+    const callArgs = mockAxios.get.mock.calls[0];
     expect(callArgs[0]).toBe('https://newsapi.org/v2/top-headlines');
   });
 
   it('throws when API status is not ok', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: { status: 'error', message: 'Invalid API key' },
     });
 
@@ -94,7 +110,7 @@ describe('newsApiOrgFetcher', () => {
   });
 
   it('filters out articles with [Removed] in title', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: {
         status: 'ok',
         articles: [
@@ -110,7 +126,7 @@ describe('newsApiOrgFetcher', () => {
   });
 
   it('filters out articles with [Removed] in content', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: {
         status: 'ok',
         articles: [
@@ -126,7 +142,7 @@ describe('newsApiOrgFetcher', () => {
   });
 
   it('filters out articles missing title or url', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: {
         status: 'ok',
         articles: [
@@ -142,7 +158,7 @@ describe('newsApiOrgFetcher', () => {
   });
 
   it('falls back to description when content is missing', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: {
         status: 'ok',
         articles: [
@@ -156,7 +172,7 @@ describe('newsApiOrgFetcher', () => {
   });
 
   it('uses fallback sourceName when source name is missing', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: {
         status: 'ok',
         articles: [
@@ -172,7 +188,7 @@ describe('newsApiOrgFetcher', () => {
   it('throws rate limit error on 429', async () => {
     const err = new Error('Rate limited');
     err.response = { status: 429 };
-    axios.get = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.get.mockRejectedValueOnce(err);
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('rate limit exceeded (429)');
   });
@@ -180,7 +196,7 @@ describe('newsApiOrgFetcher', () => {
   it('throws auth error on 401', async () => {
     const err = new Error('Unauthorized');
     err.response = { status: 401 };
-    axios.get = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.get.mockRejectedValueOnce(err);
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('authentication failed (401)');
   });
@@ -188,25 +204,25 @@ describe('newsApiOrgFetcher', () => {
   it('throws server error on 500', async () => {
     const err = new Error('Server error');
     err.response = { status: 500 };
-    axios.get = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.get.mockRejectedValueOnce(err);
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('server error (500)');
   });
 
   it('throws generic error for network failures', async () => {
-    axios.get = vi.fn().mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    mockAxios.get.mockRejectedValueOnce(new Error('ECONNREFUSED'));
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('NewsAPI.org request failed: ECONNREFUSED');
   });
 
   it('caps pageSize at 100', async () => {
-    axios.get = vi.fn().mockResolvedValueOnce({
+    mockAxios.get.mockResolvedValueOnce({
       data: { status: 'ok', articles: [] },
     });
 
     await fetch({ keywords: ['property'], pageSize: 200 });
 
-    const params = axios.get.mock.calls[0][1].params;
+    const params = mockAxios.get.mock.calls[0][1].params;
     expect(params.pageSize).toBe(100);
   });
 });

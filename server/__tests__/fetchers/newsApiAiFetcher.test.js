@@ -1,14 +1,34 @@
-vi.mock('axios');
+import { createRequire } from 'module';
 
-import axios from 'axios';
-import { fetch } from '../../services/fetchers/newsApiAiFetcher';
+const _require = createRequire(import.meta.url);
+
+// ─── Inject axios mock into require.cache before loading the source module ────
+// axios may already be cached from another test file; reuse the same cache entry
+// so both test files share a consistent mock object.
+const axiosPath = _require.resolve('axios');
+let mockAxios = _require.cache[axiosPath]?.exports;
+if (!mockAxios || typeof mockAxios.post !== 'function') {
+  mockAxios = { get: vi.fn(), post: vi.fn() };
+  _require.cache[axiosPath] = {
+    id: axiosPath,
+    filename: axiosPath,
+    loaded: true,
+    exports: mockAxios,
+  };
+}
+
+// Force fresh load of fetcher so it picks up mock axios
+const fetcherPath = _require.resolve('../../services/fetchers/newsApiAiFetcher.js');
+delete _require.cache[fetcherPath];
+const { fetch } = _require('../../services/fetchers/newsApiAiFetcher.js');
 
 describe('newsApiAiFetcher', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     process.env = { ...originalEnv, NEWSAPI_AI_KEY: 'test-ai-key' };
-    vi.resetAllMocks();
+    mockAxios.get.mockReset();
+    mockAxios.post.mockReset();
   });
 
   afterEach(() => {
@@ -29,7 +49,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('returns empty array when articles is empty', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { articles: { results: [] } },
     });
 
@@ -38,7 +58,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('returns empty array when articles results is undefined', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {},
     });
 
@@ -47,7 +67,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('maps articles to expected shape', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {
         articles: {
           results: [
@@ -79,7 +99,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('filters out articles missing title or url', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {
         articles: {
           results: [
@@ -97,7 +117,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('falls back to description when body is missing', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {
         articles: {
           results: [
@@ -112,7 +132,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('falls back to dateTime when dateTimePub is missing', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {
         articles: {
           results: [
@@ -127,7 +147,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('uses fallback sourceName when source title is missing', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {
         articles: {
           results: [
@@ -142,7 +162,7 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('sets author to null when authors array is empty', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {
         articles: {
           results: [
@@ -157,31 +177,31 @@ describe('newsApiAiFetcher', () => {
   });
 
   it('includes categories in request when provided', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { articles: { results: [] } },
     });
 
     await fetch({ keywords: ['property'], categories: ['cat1', 'cat2'] });
 
-    const body = axios.post.mock.calls[0][1];
+    const body = mockAxios.post.mock.calls[0][1];
     expect(body.categoryUri).toEqual(['cat1', 'cat2']);
   });
 
   it('includes sourceLocations in request when provided', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { articles: { results: [] } },
     });
 
     await fetch({ keywords: ['property'], sourceLocations: ['http://en.wikipedia.org/wiki/Australia'] });
 
-    const body = axios.post.mock.calls[0][1];
+    const body = mockAxios.post.mock.calls[0][1];
     expect(body.sourceLocationUri).toEqual(['http://en.wikipedia.org/wiki/Australia']);
   });
 
   it('throws auth error on 401', async () => {
     const err = new Error('Unauthorized');
     err.response = { status: 401 };
-    axios.post = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.post.mockRejectedValueOnce(err);
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('authentication failed (401)');
   });
@@ -189,7 +209,7 @@ describe('newsApiAiFetcher', () => {
   it('throws rate limit error on 429', async () => {
     const err = new Error('Rate limited');
     err.response = { status: 429 };
-    axios.post = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.post.mockRejectedValueOnce(err);
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('rate limit exceeded (429)');
   });
@@ -197,13 +217,13 @@ describe('newsApiAiFetcher', () => {
   it('throws server error on 500+', async () => {
     const err = new Error('Server error');
     err.response = { status: 503 };
-    axios.post = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.post.mockRejectedValueOnce(err);
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('server error (503)');
   });
 
   it('throws generic error for network failures', async () => {
-    axios.post = vi.fn().mockRejectedValueOnce(new Error('Socket hang up'));
+    mockAxios.post.mockRejectedValueOnce(new Error('Socket hang up'));
 
     await expect(fetch({ keywords: ['property'] })).rejects.toThrow('NewsAPI.ai request failed: Socket hang up');
   });

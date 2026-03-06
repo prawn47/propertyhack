@@ -1,13 +1,46 @@
-vi.mock('axios');
-vi.mock('cheerio');
+import { createRequire } from 'module';
 
-import axios from 'axios';
-import cheerio from 'cheerio';
-import { fetch } from '../../services/fetchers/manualFetcher';
+const _require = createRequire(import.meta.url);
+
+// ─── Inject axios mock into require.cache before loading the source module ────
+const axiosPath = _require.resolve('axios');
+let mockAxios = _require.cache[axiosPath]?.exports;
+if (!mockAxios || typeof mockAxios.get !== 'function') {
+  mockAxios = { get: vi.fn(), post: vi.fn() };
+  _require.cache[axiosPath] = {
+    id: axiosPath,
+    filename: axiosPath,
+    loaded: true,
+    exports: mockAxios,
+  };
+}
+
+// ─── Inject cheerio mock into require.cache ───────────────────────────────────
+// We use a mutable object so tests can swap in the real cheerio.load when needed.
+const mockCheerio = { load: vi.fn() };
+
+const cheerioPath = _require.resolve('cheerio');
+_require.cache[cheerioPath] = {
+  id: cheerioPath,
+  filename: cheerioPath,
+  loaded: true,
+  exports: mockCheerio,
+};
+
+// Force fresh load of fetcher so it picks up both mocks
+const fetcherPath = _require.resolve('../../services/fetchers/manualFetcher.js');
+delete _require.cache[fetcherPath];
+const { fetch } = _require('../../services/fetchers/manualFetcher.js');
+
+// Load the real cheerio.load for tests that need actual HTML parsing
+import * as realCheerio from 'cheerio';
 
 describe('manualFetcher', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    mockAxios.get.mockReset();
+    mockAxios.post.mockReset();
+    // Reset cheerio.load back to a fresh vi.fn() each test (some tests swap in real cheerio)
+    mockCheerio.load = vi.fn();
   });
 
   it('returns article directly when title and content are provided', async () => {
@@ -67,11 +100,8 @@ describe('manualFetcher', () => {
       </html>
     `;
 
-    axios.get = vi.fn().mockResolvedValueOnce({ data: html });
-
-    // Use real cheerio for this test
-    const { load } = await import('cheerio');
-    cheerio.load = load;
+    mockAxios.get.mockResolvedValueOnce({ data: html });
+    mockCheerio.load = realCheerio.load;
 
     const result = await fetch({ url: 'https://example.com/article' });
 
@@ -85,10 +115,8 @@ describe('manualFetcher', () => {
 
   it('falls back to <title> when og:title is missing', async () => {
     const html = `<html><head><title>Page Title</title></head><body><main>${'x'.repeat(200)}</main></body></html>`;
-    axios.get = vi.fn().mockResolvedValueOnce({ data: html });
-
-    const { load } = await import('cheerio');
-    cheerio.load = load;
+    mockAxios.get.mockResolvedValueOnce({ data: html });
+    mockCheerio.load = realCheerio.load;
 
     const result = await fetch({ url: 'https://example.com/page' });
     expect(result[0].title).toBe('Page Title');
@@ -96,10 +124,8 @@ describe('manualFetcher', () => {
 
   it('falls back to hostname as siteName when og:site_name is missing', async () => {
     const html = `<html><head></head><body><main>${'x'.repeat(200)}</main></body></html>`;
-    axios.get = vi.fn().mockResolvedValueOnce({ data: html });
-
-    const { load } = await import('cheerio');
-    cheerio.load = load;
+    mockAxios.get.mockResolvedValueOnce({ data: html });
+    mockCheerio.load = realCheerio.load;
 
     const result = await fetch({ url: 'https://mysite.com/article' });
     expect(result[0].sourceName).toBe('mysite.com');
@@ -108,7 +134,7 @@ describe('manualFetcher', () => {
   it('throws on ETIMEDOUT error', async () => {
     const err = new Error('timeout of 30000ms exceeded');
     err.code = 'ETIMEDOUT';
-    axios.get = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.get.mockRejectedValueOnce(err);
 
     await expect(fetch({ url: 'https://example.com/slow' })).rejects.toThrow('Request timed out for URL');
   });
@@ -116,13 +142,13 @@ describe('manualFetcher', () => {
   it('throws on ECONNABORTED error', async () => {
     const err = new Error('aborted');
     err.code = 'ECONNABORTED';
-    axios.get = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.get.mockRejectedValueOnce(err);
 
     await expect(fetch({ url: 'https://example.com/slow' })).rejects.toThrow('Request timed out for URL');
   });
 
   it('throws generic fetch error for other network errors', async () => {
-    axios.get = vi.fn().mockRejectedValueOnce(new Error('ECONNREFUSED'));
+    mockAxios.get.mockRejectedValueOnce(new Error('ECONNREFUSED'));
 
     await expect(fetch({ url: 'https://example.com/error' })).rejects.toThrow('Failed to fetch URL');
   });

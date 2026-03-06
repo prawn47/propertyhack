@@ -1,14 +1,32 @@
-vi.mock('axios');
+import { createRequire } from 'module';
 
-import axios from 'axios';
-import { fetch } from '../../services/fetchers/perplexityFetcher';
+const _require = createRequire(import.meta.url);
+
+// ─── Inject axios mock into require.cache before loading the source module ────
+const axiosPath = _require.resolve('axios');
+let mockAxios = _require.cache[axiosPath]?.exports;
+if (!mockAxios || typeof mockAxios.post !== 'function') {
+  mockAxios = { get: vi.fn(), post: vi.fn() };
+  _require.cache[axiosPath] = {
+    id: axiosPath,
+    filename: axiosPath,
+    loaded: true,
+    exports: mockAxios,
+  };
+}
+
+// Force fresh load of fetcher so it picks up mock axios
+const fetcherPath = _require.resolve('../../services/fetchers/perplexityFetcher.js');
+delete _require.cache[fetcherPath];
+const { fetch } = _require('../../services/fetchers/perplexityFetcher.js');
 
 describe('perplexityFetcher', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     process.env = { ...originalEnv, PERPLEXITY_API_KEY: 'test-perplexity-key' };
-    vi.resetAllMocks();
+    mockAxios.get.mockReset();
+    mockAxios.post.mockReset();
   });
 
   afterEach(() => {
@@ -29,7 +47,7 @@ describe('perplexityFetcher', () => {
   });
 
   it('returns empty array when response has no content', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content: null } }] },
     });
 
@@ -38,7 +56,7 @@ describe('perplexityFetcher', () => {
   });
 
   it('returns empty array when content has no JSON array', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content: 'Here is some non-JSON text.' } }] },
     });
 
@@ -47,7 +65,7 @@ describe('perplexityFetcher', () => {
   });
 
   it('returns empty array when JSON is malformed', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content: '[{broken json}]' } }] },
     });
 
@@ -56,7 +74,7 @@ describe('perplexityFetcher', () => {
   });
 
   it('returns empty array when parsed JSON is not an array', async () => {
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content: '{"title": "not an array"}' } }] },
     });
 
@@ -77,7 +95,7 @@ describe('perplexityFetcher', () => {
       },
     ];
 
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: {
         choices: [{ message: { content: JSON.stringify(articles) } }],
       },
@@ -103,7 +121,7 @@ describe('perplexityFetcher', () => {
       { title: 'Valid', url: 'https://example.com/b' },
     ];
 
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content: JSON.stringify(articles) } }] },
     });
 
@@ -115,7 +133,7 @@ describe('perplexityFetcher', () => {
   it('uses fallback values for missing optional fields', async () => {
     const articles = [{ title: 'Minimal Article', url: 'https://example.com/a' }];
 
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content: JSON.stringify(articles) } }] },
     });
 
@@ -131,7 +149,7 @@ describe('perplexityFetcher', () => {
     const articles = [{ title: 'Embedded', url: 'https://example.com/a' }];
     const content = `Here are the results:\n${JSON.stringify(articles)}\nEnd of results.`;
 
-    axios.post = vi.fn().mockResolvedValueOnce({
+    mockAxios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content } }] },
     });
 
@@ -143,7 +161,7 @@ describe('perplexityFetcher', () => {
     const articles1 = [{ title: 'Article 1', url: 'https://example.com/1' }];
     const articles2 = [{ title: 'Article 2', url: 'https://example.com/2' }];
 
-    axios.post = vi.fn()
+    mockAxios.post
       .mockResolvedValueOnce({ data: { choices: [{ message: { content: JSON.stringify(articles1) } }] } })
       .mockResolvedValueOnce({ data: { choices: [{ message: { content: JSON.stringify(articles2) } }] } });
 
@@ -155,7 +173,7 @@ describe('perplexityFetcher', () => {
   it('throws auth error on 401', async () => {
     const err = new Error('Unauthorized');
     err.response = { status: 401 };
-    axios.post = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.post.mockRejectedValueOnce(err);
 
     await expect(fetch({ searchQueries: ['property'] })).rejects.toThrow('Perplexity authentication failed (401)');
   });
@@ -163,7 +181,7 @@ describe('perplexityFetcher', () => {
   it('throws rate limit error on 429', async () => {
     const err = new Error('Rate limited');
     err.response = { status: 429 };
-    axios.post = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.post.mockRejectedValueOnce(err);
 
     await expect(fetch({ searchQueries: ['property'] })).rejects.toThrow('Perplexity rate limit exceeded (429)');
   });
@@ -171,13 +189,13 @@ describe('perplexityFetcher', () => {
   it('throws server error on 500+', async () => {
     const err = new Error('Internal Server Error');
     err.response = { status: 500 };
-    axios.post = vi.fn().mockRejectedValueOnce(err);
+    mockAxios.post.mockRejectedValueOnce(err);
 
     await expect(fetch({ searchQueries: ['property'] })).rejects.toThrow('Perplexity server error (500)');
   });
 
   it('throws generic error for network failures', async () => {
-    axios.post = vi.fn().mockRejectedValueOnce(new Error('Connection refused'));
+    mockAxios.post.mockRejectedValueOnce(new Error('Connection refused'));
 
     await expect(fetch({ searchQueries: ['property'] })).rejects.toThrow('Perplexity request failed: Connection refused');
   });

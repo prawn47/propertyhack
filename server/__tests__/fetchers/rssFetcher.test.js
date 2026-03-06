@@ -1,18 +1,29 @@
-vi.mock('rss-parser', () => {
-  const MockParser = vi.fn();
-  MockParser.prototype.parseURL = vi.fn();
-  return { default: MockParser };
-});
+import { createRequire } from 'module';
 
-import Parser from 'rss-parser';
-import { fetch } from '../../services/fetchers/rssFetcher';
+const _require = createRequire(import.meta.url);
+
+// ─── Inject rss-parser mock into require.cache before loading the source module ───
+const mockParseURL = vi.fn();
+const MockParser = function () {};
+MockParser.prototype.parseURL = mockParseURL;
+MockParser.default = MockParser;
+
+const rssParserPath = _require.resolve('rss-parser');
+_require.cache[rssParserPath] = {
+  id: rssParserPath,
+  filename: rssParserPath,
+  loaded: true,
+  exports: MockParser,
+};
+
+// Force fresh load of rssFetcher so it picks up the mock Parser
+const fetcherPath = _require.resolve('../../services/fetchers/rssFetcher.js');
+delete _require.cache[fetcherPath];
+const { fetch } = _require('../../services/fetchers/rssFetcher.js');
 
 describe('rssFetcher', () => {
-  let parseURLMock;
-
   beforeEach(() => {
-    parseURLMock = Parser.prototype.parseURL;
-    parseURLMock.mockReset();
+    mockParseURL.mockReset();
   });
 
   it('throws if feedUrl is missing', async () => {
@@ -20,19 +31,19 @@ describe('rssFetcher', () => {
   });
 
   it('returns empty array when feed has no items', async () => {
-    parseURLMock.mockResolvedValueOnce({ title: 'Test Feed', items: [] });
+    mockParseURL.mockResolvedValueOnce({ title: 'Test Feed', items: [] });
     const result = await fetch({ feedUrl: 'https://example.com/rss' });
     expect(result).toEqual([]);
   });
 
   it('returns empty array when feed.items is undefined', async () => {
-    parseURLMock.mockResolvedValueOnce({ title: 'Test Feed' });
+    mockParseURL.mockResolvedValueOnce({ title: 'Test Feed' });
     const result = await fetch({ feedUrl: 'https://example.com/rss' });
     expect(result).toEqual([]);
   });
 
   it('maps feed items to articles', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Property News',
       items: [
         {
@@ -58,7 +69,7 @@ describe('rssFetcher', () => {
   });
 
   it('uses contentEncoded over content over contentSnippet', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [
         {
@@ -76,7 +87,7 @@ describe('rssFetcher', () => {
   });
 
   it('falls back to guid when link is missing', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [{ title: 'Test', guid: 'https://example.com/guid' }],
     });
@@ -86,7 +97,7 @@ describe('rssFetcher', () => {
   });
 
   it('filters out items with no url or guid', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [{ title: 'No URL', content: 'stuff' }],
     });
@@ -100,14 +111,14 @@ describe('rssFetcher', () => {
       title: `Article ${i}`,
       link: `https://example.com/${i}`,
     }));
-    parseURLMock.mockResolvedValueOnce({ title: 'Feed', items });
+    mockParseURL.mockResolvedValueOnce({ title: 'Feed', items });
 
     const result = await fetch({ feedUrl: 'https://example.com/rss', maxItems: 3 });
     expect(result).toHaveLength(3);
   });
 
   it('extracts image from mediaContent', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [
         {
@@ -123,7 +134,7 @@ describe('rssFetcher', () => {
   });
 
   it('extracts image from mediaThumbnail when mediaContent absent', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [
         {
@@ -139,7 +150,7 @@ describe('rssFetcher', () => {
   });
 
   it('extracts image from enclosure when type starts with image/', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [
         {
@@ -155,7 +166,7 @@ describe('rssFetcher', () => {
   });
 
   it('extracts image from <img> tag in content', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [
         {
@@ -171,7 +182,7 @@ describe('rssFetcher', () => {
   });
 
   it('returns null imageUrl when no image found', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [{ title: 'No Image', link: 'https://example.com/a' }],
     });
@@ -183,25 +194,25 @@ describe('rssFetcher', () => {
   it('throws timeout error on ETIMEDOUT', async () => {
     const err = new Error('connect ETIMEDOUT');
     err.code = 'ETIMEDOUT';
-    parseURLMock.mockRejectedValueOnce(err);
+    mockParseURL.mockRejectedValueOnce(err);
 
     await expect(fetch({ feedUrl: 'https://example.com/rss' })).rejects.toThrow('RSS fetch timed out');
   });
 
   it('throws invalid XML error on Non-whitespace parse failure', async () => {
-    parseURLMock.mockRejectedValueOnce(new Error('Non-whitespace before first tag'));
+    mockParseURL.mockRejectedValueOnce(new Error('Non-whitespace before first tag'));
 
     await expect(fetch({ feedUrl: 'https://example.com/rss' })).rejects.toThrow('RSS feed returned invalid XML');
   });
 
   it('throws generic error for other failures', async () => {
-    parseURLMock.mockRejectedValueOnce(new Error('Network failure'));
+    mockParseURL.mockRejectedValueOnce(new Error('Network failure'));
 
     await expect(fetch({ feedUrl: 'https://example.com/rss' })).rejects.toThrow('RSS fetch failed for https://example.com/rss');
   });
 
   it('uses Untitled when item title is missing', async () => {
-    parseURLMock.mockResolvedValueOnce({
+    mockParseURL.mockResolvedValueOnce({
       title: 'Feed',
       items: [{ link: 'https://example.com/a' }],
     });
