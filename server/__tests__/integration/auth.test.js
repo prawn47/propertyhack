@@ -1,7 +1,6 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-const express = require('express');
-const request = require('supertest');
-const bcrypt = require('bcrypt');
+import express from 'express';
+import request from 'supertest';
+import bcrypt from 'bcrypt';
 
 // Mock jsonwebtoken so we control token generation/verification
 vi.mock('jsonwebtoken', async () => {
@@ -18,8 +17,8 @@ vi.mock('jsonwebtoken', async () => {
   };
 });
 
-const authRoutes = require('../../routes/auth');
-const { authenticateRefreshToken } = require('../../middleware/auth');
+import authRoutes from '../../routes/auth';
+import { authenticateRefreshToken } from '../../middleware/auth';
 
 function buildApp(mockPrisma) {
   const app = express();

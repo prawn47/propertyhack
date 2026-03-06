@@ -1,13 +1,11 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-
 vi.mock('rss-parser', () => {
   const MockParser = vi.fn();
   MockParser.prototype.parseURL = vi.fn();
   return { default: MockParser };
 });
 
-const Parser = require('rss-parser');
-const { fetch } = require('../../services/fetchers/rssFetcher');
+import Parser from 'rss-parser';
+import { fetch } from '../../services/fetchers/rssFetcher';
 
 describe('rssFetcher', () => {
   let parseURLMock;

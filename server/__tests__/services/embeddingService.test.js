@@ -1,5 +1,3 @@
-const { describe, it, expect, vi, beforeEach, afterEach } = require('vitest');
-
 const mockEmbeddingsCreate = vi.fn();
 
 vi.mock('openai', () => {
@@ -12,7 +10,7 @@ vi.mock('openai', () => {
   };
 });
 
-const { generateEmbedding } = require('../../services/embeddingService');
+import { generateEmbedding } from '../../services/embeddingService';
 
 describe('generateEmbedding', () => {
   const originalEnv = process.env;

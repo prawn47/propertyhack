@@ -1,5 +1,4 @@
-const { describe, it, expect } = require('vitest');
-const { normalizeUrl } = require('../../utils/urlNormalizer');
+import { normalizeUrl } from '../../utils/urlNormalizer';
 
 describe('normalizeUrl', () => {
   it('upgrades http to https', () => {

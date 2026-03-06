@@ -1,6 +1,5 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-const express = require('express');
-const request = require('supertest');
+import express from 'express';
+import request from 'supertest';
 
 vi.mock('jsonwebtoken', async () => {
   const actual = await vi.importActual('jsonwebtoken');
@@ -23,8 +22,8 @@ vi.mock('../../queues/sourceFetchQueue', () => ({
   },
 }));
 
-const adminSourcesRoutes = require('../../routes/admin/sources');
-const { authenticateToken, requireSuperAdmin } = require('../../middleware/auth');
+import adminSourcesRoutes from '../../routes/admin/sources';
+import { authenticateToken, requireSuperAdmin } from '../../middleware/auth';
 
 const adminUser = {
   id: 'admin-user-1',
@@ -290,7 +289,7 @@ describe('DELETE /api/admin/sources/:id', () => {
 describe('POST /api/admin/sources/:id/fetch', () => {
   let app;
   let mockPrisma;
-  const { sourceFetchQueue } = require('../../queues/sourceFetchQueue');
+  import { sourceFetchQueue } from '../../queues/sourceFetchQueue';
 
   beforeEach(() => {
     mockPrisma = {

@@ -1,17 +1,15 @@
-const { describe, it, expect, vi } = require('vitest');
-
 vi.mock('../../services/fetchers/rssFetcher', () => ({ fetch: vi.fn() }));
 vi.mock('../../services/fetchers/newsApiOrgFetcher', () => ({ fetch: vi.fn() }));
 vi.mock('../../services/fetchers/newsApiAiFetcher', () => ({ fetch: vi.fn() }));
 vi.mock('../../services/fetchers/perplexityFetcher', () => ({ fetch: vi.fn() }));
 vi.mock('../../services/fetchers/manualFetcher', () => ({ fetch: vi.fn() }));
 
-const { getFetcher } = require('../../services/fetchers/index');
-const rssFetcher = require('../../services/fetchers/rssFetcher');
-const newsApiOrgFetcher = require('../../services/fetchers/newsApiOrgFetcher');
-const newsApiAiFetcher = require('../../services/fetchers/newsApiAiFetcher');
-const perplexityFetcher = require('../../services/fetchers/perplexityFetcher');
-const manualFetcher = require('../../services/fetchers/manualFetcher');
+import { getFetcher } from '../../services/fetchers/index';
+import rssFetcher from '../../services/fetchers/rssFetcher';
+import newsApiOrgFetcher from '../../services/fetchers/newsApiOrgFetcher';
+import newsApiAiFetcher from '../../services/fetchers/newsApiAiFetcher';
+import perplexityFetcher from '../../services/fetchers/perplexityFetcher';
+import manualFetcher from '../../services/fetchers/manualFetcher';
 
 describe('getFetcher (fetcher registry)', () => {
   it('returns RSS fetcher for RSS type', () => {

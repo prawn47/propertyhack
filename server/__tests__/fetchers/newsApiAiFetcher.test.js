@@ -1,9 +1,7 @@
-const { describe, it, expect, vi, beforeEach, afterEach } = require('vitest');
-
 vi.mock('axios');
 
-const axios = require('axios');
-const { fetch } = require('../../services/fetchers/newsApiAiFetcher');
+import axios from 'axios';
+import { fetch } from '../../services/fetchers/newsApiAiFetcher';
 
 describe('newsApiAiFetcher', () => {
   const originalEnv = process.env;

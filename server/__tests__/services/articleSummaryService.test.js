@@ -1,5 +1,3 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-
 const mockGenerateContent = vi.fn();
 const mockGetGenerativeModel = vi.fn().mockReturnValue({
   generateContent: mockGenerateContent,
@@ -11,7 +9,7 @@ vi.mock('@google/generative-ai', () => ({
   })),
 }));
 
-const { generateArticleSummary, generateImageAltText, generateSlug } = require('../../services/articleSummaryService');
+import { generateArticleSummary, generateImageAltText, generateSlug } from '../../services/articleSummaryService';
 
 function makeTextResponse(text) {
   return {

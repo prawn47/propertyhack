@@ -1,6 +1,5 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-const express = require('express');
-const request = require('supertest');
+import express from 'express';
+import request from 'supertest';
 
 // JWT mock so we can issue test tokens without real secrets
 vi.mock('jsonwebtoken', async () => {
@@ -17,8 +16,8 @@ vi.mock('jsonwebtoken', async () => {
   };
 });
 
-const adminArticlesRoutes = require('../../routes/admin/articles');
-const { authenticateToken, requireSuperAdmin } = require('../../middleware/auth');
+import adminArticlesRoutes from '../../routes/admin/articles';
+import { authenticateToken, requireSuperAdmin } from '../../middleware/auth';
 
 const sampleArticle = {
   id: 'article-1',

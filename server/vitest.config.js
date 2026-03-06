@@ -5,6 +5,10 @@ export default defineConfig({
     globals: true,
     include: ['__tests__/**/*.test.js'],
     root: './server',
+    pool: 'forks',
+    deps: {
+      interopDefault: true,
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

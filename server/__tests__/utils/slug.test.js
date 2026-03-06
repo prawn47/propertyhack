@@ -1,5 +1,4 @@
-const { describe, it, expect, vi } = require('vitest');
-const { generateSlug } = require('../../utils/slug');
+import { generateSlug } from '../../utils/slug';
 
 describe('generateSlug', () => {
   it('converts title to lowercase', () => {

@@ -1,15 +1,14 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-const express = require('express');
-const request = require('supertest');
+import express from 'express';
+import request from 'supertest';
 
 // Prevent the embedding service from making real network calls
 vi.mock('../../services/embeddingService', () => ({
   generateEmbedding: vi.fn().mockRejectedValue(new Error('embedding disabled in tests')),
 }));
 
-const publicArticlesRoutes = require('../../routes/public/articles');
-const publicCategoriesRoutes = require('../../routes/public/categories');
-const publicLocationsRoutes = require('../../routes/public/locations');
+import publicArticlesRoutes from '../../routes/public/articles';
+import publicCategoriesRoutes from '../../routes/public/categories';
+import publicLocationsRoutes from '../../routes/public/locations';
 
 function buildApp(mockPrisma) {
   const app = express();

@@ -1,11 +1,9 @@
-const { describe, it, expect, vi, beforeEach } = require('vitest');
-
 vi.mock('axios');
 vi.mock('cheerio');
 
-const axios = require('axios');
-const cheerio = require('cheerio');
-const { fetch } = require('../../services/fetchers/manualFetcher');
+import axios from 'axios';
+import cheerio from 'cheerio';
+import { fetch } from '../../services/fetchers/manualFetcher';
 
 describe('manualFetcher', () => {
   beforeEach(() => {
