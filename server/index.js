@@ -16,6 +16,7 @@ const adminDashboardRoutes = require('./routes/admin/dashboard');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
+const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
 const { articleProcessWorker } = require('./workers/articleProcessWorker');
@@ -127,6 +128,8 @@ app.use('/api/categories', publicCategoriesRoutes);
 app.use('/api/locations', publicLocationsRoutes);
 // Legacy path kept for existing frontend compatibility
 app.use('/api/public/articles', publicArticlesRoutes);
+// Webhooks (no auth, validated by x-webhook-secret header)
+app.use('/api/webhooks/newsletter', webhookNewsletterRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
