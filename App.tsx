@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Routes,
   Route,
   Navigate,
   useNavigate,
+  useLocation,
 } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import Loader from './components/Loader';
@@ -16,37 +17,42 @@ import ArticleEditor from './components/admin/ArticleEditor';
 import SourceList from './components/admin/SourceList';
 import SourceEditor from './components/admin/SourceEditor';
 import SocialPostList from './components/admin/SocialPostList';
+import SocialPostEditor from './components/admin/SocialPostEditor';
 import IngestionMonitor from './components/admin/IngestionMonitor';
 import type { AuthState } from './types';
 import authService from './services/authService';
 
-function withAdminLayout(Component: React.ComponentType) {
-  return function AdminPage() {
-    return (
-      <AdminLayout>
-        <Component />
-      </AdminLayout>
-    );
-  };
+function AdminPage({ children }: { children: React.ReactNode }) {
+  return <AdminLayout>{children}</AdminLayout>;
 }
 
-const AdminDashboard = withAdminLayout(IngestionMonitor);
-const AdminArticles = withAdminLayout(ArticleList);
-const AdminArticleEdit = withAdminLayout(ArticleEditor);
-const AdminSources = withAdminLayout(SourceList);
-const AdminSourceEdit = withAdminLayout(SourceEditor);
-const AdminSocial = withAdminLayout(SocialPostList);
-const AdminMonitor = withAdminLayout(IngestionMonitor);
+interface RequireAuthProps {
+  authState: AuthState;
+  children: React.ReactNode;
+}
+
+function RequireAuth({ authState, children }: RequireAuthProps) {
+  const location = useLocation();
+  if (authState.isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-base-200">
+        <Loader className="h-10 w-10 text-brand-primary" />
+      </div>
+    );
+  }
+  if (!authState.isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  return <>{children}</>;
+}
 
 interface AppInnerProps {
   authState: AuthState;
   onLogin: (email: string, password: string) => Promise<void>;
-  onLogout: () => Promise<void>;
 }
 
 function AppInner({ authState, onLogin }: AppInnerProps) {
   const navigate = useNavigate();
-  const [showLogin, setShowLogin] = useState(false);
 
   if (authState.isLoading) {
     return (
@@ -56,40 +62,119 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
     );
   }
 
-  if (!authState.isAuthenticated) {
-    if (showLogin) {
-      return (
-        <LoginPage
-          onLogin={async (email, password) => {
-            await onLogin(email, password);
-            navigate('/admin');
-          }}
-          onBack={() => setShowLogin(false)}
-        />
-      );
-    }
-    return (
-      <Routes>
-        <Route path="/" element={<HomePage onAdminClick={() => setShowLogin(true)} />} />
-        <Route path="/articles/:slug" element={<ArticleDetail onAdminClick={() => setShowLogin(true)} />} />
-        <Route path="*" element={<HomePage onAdminClick={() => setShowLogin(true)} />} />
-      </Routes>
-    );
-  }
-
   return (
     <Routes>
-      <Route path="/" element={<HomePage onAdminClick={() => setShowLogin(true)} />} />
-      <Route path="/articles/:slug" element={<ArticleDetail onAdminClick={() => setShowLogin(true)} />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/articles" element={<AdminArticles />} />
-      <Route path="/admin/articles/:id/edit" element={<AdminArticleEdit />} />
-      <Route path="/admin/sources" element={<AdminSources />} />
-      <Route path="/admin/sources/new" element={<AdminSourceEdit />} />
-      <Route path="/admin/sources/:id" element={<AdminSourceEdit />} />
-      <Route path="/admin/social" element={<AdminSocial />} />
-      <Route path="/admin/monitor" element={<AdminMonitor />} />
-      <Route path="*" element={<Navigate to="/admin" replace />} />
+      {/* Public routes */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/articles/:slug" element={<ArticleDetail />} />
+      <Route
+        path="/login"
+        element={
+          authState.isAuthenticated ? (
+            <Navigate to="/admin" replace />
+          ) : (
+            <LoginPage
+              onLogin={async (email, password) => {
+                await onLogin(email, password);
+                navigate('/admin');
+              }}
+            />
+          )
+        }
+      />
+
+      {/* Admin routes — require auth */}
+      <Route
+        path="/admin"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><IngestionMonitor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/monitor"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><IngestionMonitor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/articles"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><ArticleList /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/articles/new"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><ArticleEditor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/articles/:id/edit"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><ArticleEditor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/sources"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><SourceList /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/sources/new"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><SourceEditor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/sources/:id/edit"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><SourceEditor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/social"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><SocialPostList /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/social/new"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><SocialPostEditor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/social/:id/edit"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage><SocialPostEditor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+
+      {/* 404 catch-all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
@@ -126,23 +211,11 @@ const App: React.FC = () => {
     setAuthState({ isAuthenticated: true, user: response.user, isLoading: false });
   };
 
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch {
-      // ignore
-    } finally {
-      localStorage.removeItem('user');
-      setAuthState({ isAuthenticated: false, user: null, isLoading: false });
-    }
-  };
-
   return (
     <BrowserRouter>
       <AppInner
         authState={authState}
         onLogin={handleLogin}
-        onLogout={handleLogout}
       />
     </BrowserRouter>
   );

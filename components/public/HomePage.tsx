@@ -6,10 +6,6 @@ import ArticleFeed from './ArticleFeed';
 import type { Filters } from './FilterBar';
 import { useLocationDetection } from '../../hooks/useLocationDetection';
 
-interface HomePageProps {
-  onAdminClick?: () => void;
-}
-
 const DEFAULT_FILTERS: Filters = {
   search: '',
   location: '',
@@ -17,7 +13,7 @@ const DEFAULT_FILTERS: Filters = {
   dateRange: 'all',
 };
 
-const HomePage: React.FC<HomePageProps> = ({ onAdminClick }) => {
+const HomePage: React.FC = () => {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const { location: detectedLocation, loading: locationLoading } = useLocationDetection();
 
@@ -45,7 +41,7 @@ const HomePage: React.FC<HomePageProps> = ({ onAdminClick }) => {
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col">
-      <Header onAdminClick={onAdminClick} />
+      <Header />
       <FilterBar
         filters={filters}
         onChange={handleFiltersChange}

@@ -1,11 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-interface HeaderProps {
-  onAdminClick?: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ onAdminClick }) => {
+const Header: React.FC = () => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
 
@@ -38,12 +34,12 @@ const Header: React.FC<HeaderProps> = ({ onAdminClick }) => {
 
         <div className="flex items-center gap-3 flex-shrink-0">
           {!isAdminPage && (
-            <button
-              onClick={onAdminClick}
+            <Link
+              to="/login"
               className="text-sm text-white/70 hover:text-brand-gold transition-colors"
             >
               Admin
-            </button>
+            </Link>
           )}
         </div>
       </div>

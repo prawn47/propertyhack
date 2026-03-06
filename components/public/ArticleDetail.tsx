@@ -45,11 +45,7 @@ const ShareButton: React.FC<{ href?: string; onClick?: () => void; label: string
   );
 };
 
-interface ArticleDetailProps {
-  onAdminClick?: () => void;
-}
-
-const ArticleDetail: React.FC<ArticleDetailProps> = ({ onAdminClick }) => {
+const ArticleDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<PublicArticle | null>(null);
@@ -104,14 +100,12 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ onAdminClick }) => {
             <Link to="/" className="text-sm text-content-secondary hover:text-brand-gold transition-colors">
               ← All Articles
             </Link>
-            {onAdminClick && (
-              <button
-                onClick={onAdminClick}
-                className="text-sm text-content-secondary hover:text-brand-gold transition-colors"
-              >
-                Admin
-              </button>
-            )}
+            <Link
+              to="/login"
+              className="text-sm text-content-secondary hover:text-brand-gold transition-colors"
+            >
+              Admin
+            </Link>
           </div>
         </div>
       </header>
