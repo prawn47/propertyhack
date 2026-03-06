@@ -1,22 +1,21 @@
-import express from 'express';
-import request from 'supertest';
+/**
+ * Admin dashboard route integration tests.
+ *
+ * Server source files use CJS (require). vi.mock('jsonwebtoken') cannot
+ * intercept CJS require() calls. Instead we bypass the auth middleware
+ * entirely in the test app and inject req.user directly.
+ */
+import { createRequire } from 'module';
 
-vi.mock('jsonwebtoken', async () => {
-  const actual = await vi.importActual('jsonwebtoken');
-  return {
-    ...actual,
-    verify: vi.fn((token) => {
-      if (token === 'valid-admin-token') return { userId: 'admin-user-1' };
-      const err = new Error('invalid token');
-      err.name = 'JsonWebTokenError';
-      throw err;
-    }),
-    sign: vi.fn(() => 'mock-token'),
-  };
+const _require = createRequire(import.meta.url);
+
+vi.hoisted(() => {
+  process.env.JWT_ACCESS_SECRET = 'test-access-secret';
 });
 
-import adminDashboardRoutes from '../../routes/admin/dashboard';
-import { authenticateToken, requireSuperAdmin } from '../../middleware/auth';
+// ── App builder ───────────────────────────────────────────────────────────────
+
+let express, supertest, adminDashboardRoutes;
 
 const adminUser = {
   id: 'admin-user-1',
@@ -24,6 +23,43 @@ const adminUser = {
   superAdmin: true,
   createdAt: new Date().toISOString(),
 };
+
+function mockAuthMiddleware(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Access token required' });
+  if (token !== 'valid-admin-token') return res.status(401).json({ error: 'Invalid access token' });
+  req.user = adminUser;
+  next();
+}
+
+function mockRequireSuperAdmin(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+  if (!req.user.superAdmin) return res.status(403).json({ error: 'Super admin access required' });
+  next();
+}
+
+function buildApp(mockPrisma) {
+  const app = express();
+  app.use(express.json());
+  app.use((req, res, next) => {
+    req.prisma = mockPrisma;
+    next();
+  });
+  app.use('/api/admin', mockAuthMiddleware, mockRequireSuperAdmin);
+  app.use('/api/admin/dashboard', adminDashboardRoutes);
+  return app;
+}
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
+
+beforeAll(async () => {
+  express = (await import('express')).default;
+  supertest = (await import('supertest')).default;
+  adminDashboardRoutes = _require('../../routes/admin/dashboard.js');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function buildMockPrisma() {
   return {
@@ -80,18 +116,6 @@ function buildMockPrisma() {
   };
 }
 
-function buildApp(mockPrisma) {
-  const app = express();
-  app.use(express.json());
-  app.use((req, res, next) => {
-    req.prisma = mockPrisma;
-    next();
-  });
-  app.use('/api/admin', authenticateToken, requireSuperAdmin);
-  app.use('/api/admin/dashboard', adminDashboardRoutes);
-  return app;
-}
-
 describe('GET /api/admin/dashboard', () => {
   let app;
   let mockPrisma;
@@ -102,12 +126,12 @@ describe('GET /api/admin/dashboard', () => {
   });
 
   it('returns 401 without auth token', async () => {
-    const res = await request(app).get('/api/admin/dashboard');
+    const res = await supertest(app).get('/api/admin/dashboard');
     expect(res.status).toBe(401);
   });
 
   it('returns 200 with expected top-level shape', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/dashboard')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -119,7 +143,7 @@ describe('GET /api/admin/dashboard', () => {
   });
 
   it('articles stats have expected shape', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/dashboard')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -137,7 +161,7 @@ describe('GET /api/admin/dashboard', () => {
   });
 
   it('sources stats have expected shape', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/dashboard')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -151,7 +175,7 @@ describe('GET /api/admin/dashboard', () => {
   });
 
   it('ingestionHealth has perSource and recentLogs arrays', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/dashboard')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -177,7 +201,7 @@ describe('GET /api/admin/dashboard', () => {
   });
 
   it('health section has staleSources array and sourcesWithErrors count', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/dashboard')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -189,7 +213,7 @@ describe('GET /api/admin/dashboard', () => {
   it('returns 500 on prisma error', async () => {
     mockPrisma.article.count.mockRejectedValue(new Error('db error'));
 
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/dashboard')
       .set('Authorization', 'Bearer valid-admin-token');
 

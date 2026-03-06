@@ -1,24 +1,47 @@
-import express from 'express';
-import request from 'supertest';
+/**
+ * Auth route integration tests.
+ *
+ * Server source files use CJS (require). vi.mock() for ESM cannot intercept
+ * CJS require() calls into node_modules. We patch require.cache directly so
+ * the CJS jsonwebtoken mock is in place before any route/middleware loads.
+ */
+import { createRequire } from 'module';
 import bcrypt from 'bcrypt';
 
-// Mock jsonwebtoken so we control token generation/verification
-vi.mock('jsonwebtoken', async () => {
-  const actual = await vi.importActual('jsonwebtoken');
-  return {
-    ...actual,
-    verify: vi.fn((token, secret) => {
-      if (token === 'valid-refresh-token') return { userId: 'user-1' };
-      const err = new Error('invalid token');
-      err.name = 'JsonWebTokenError';
-      throw err;
-    }),
-    sign: vi.fn(() => 'mock-token'),
-  };
+const _require = createRequire(import.meta.url);
+
+// ── Patch jsonwebtoken in require.cache ──────────────────────────────────────
+// Must happen before any CJS module that calls require('jsonwebtoken') is loaded.
+
+vi.hoisted(() => {
+  process.env.JWT_ACCESS_SECRET = 'test-access-secret';
+  process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
 });
 
-import authRoutes from '../../routes/auth';
-import { authenticateRefreshToken } from '../../middleware/auth';
+const mockJwtVerify = vi.fn((token) => {
+  if (token === 'valid-refresh-token') return { userId: 'user-1' };
+  const err = new Error('invalid token');
+  err.name = 'JsonWebTokenError';
+  throw err;
+});
+const mockJwtSign = vi.fn(() => 'mock-token');
+
+function patchJwt() {
+  const jwtPath = _require.resolve('jsonwebtoken');
+  const realJwt = _require.cache[jwtPath]
+    ? _require.cache[jwtPath].exports
+    : _require('jsonwebtoken');
+  _require.cache[jwtPath] = {
+    id: jwtPath,
+    filename: jwtPath,
+    loaded: true,
+    exports: { ...realJwt, verify: mockJwtVerify, sign: mockJwtSign },
+  };
+}
+
+// ── Build minimal Express app ─────────────────────────────────────────────────
+
+let express, supertest, authRoutes;
 
 function buildApp(mockPrisma) {
   const app = express();
@@ -30,6 +53,25 @@ function buildApp(mockPrisma) {
   app.use('/api/auth', authRoutes);
   return app;
 }
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
+
+beforeAll(async () => {
+  patchJwt();
+
+  // Delete cached modules so they re-load with the patched jwt
+  const authMiddlewarePath = _require.resolve('../../middleware/auth.js');
+  const authRoutesPath = _require.resolve('../../routes/auth.js');
+  delete _require.cache[authMiddlewarePath];
+  delete _require.cache[authRoutesPath];
+
+  express = (await import('express')).default;
+  supertest = (await import('supertest')).default;
+
+  authRoutes = _require('../../routes/auth.js');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 describe('POST /api/auth/login', () => {
   let app;
@@ -45,6 +87,9 @@ describe('POST /api/auth/login', () => {
   };
 
   beforeEach(() => {
+    mockJwtVerify.mockClear();
+    mockJwtSign.mockClear();
+    mockJwtSign.mockReturnValue('mock-token');
     mockPrisma = {
       user: {
         findUnique: vi.fn(),
@@ -54,7 +99,7 @@ describe('POST /api/auth/login', () => {
   });
 
   it('returns 400 when email is missing', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/login')
       .send({ password: 'somepassword' });
 
@@ -63,7 +108,7 @@ describe('POST /api/auth/login', () => {
   });
 
   it('returns 400 when password is missing', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/login')
       .send({ email: 'admin@test.com' });
 
@@ -74,7 +119,7 @@ describe('POST /api/auth/login', () => {
   it('returns 401 when user does not exist', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(null);
 
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/login')
       .send({ email: 'nobody@test.com', password: 'wrong' });
 
@@ -85,7 +130,7 @@ describe('POST /api/auth/login', () => {
   it('returns 401 when password is wrong', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(adminUser);
 
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/login')
       .send({ email: 'admin@test.com', password: 'wrong-password' });
 
@@ -96,7 +141,7 @@ describe('POST /api/auth/login', () => {
   it('returns 403 when user is not a super admin', async () => {
     mockPrisma.user.findUnique.mockResolvedValue({ ...adminUser, superAdmin: false });
 
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/login')
       .send({ email: 'admin@test.com', password: 'correct-password' });
 
@@ -107,7 +152,7 @@ describe('POST /api/auth/login', () => {
   it('returns 200 with tokens on valid credentials', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(adminUser);
 
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/login')
       .send({ email: 'admin@test.com', password: 'correct-password' });
 
@@ -124,6 +169,16 @@ describe('POST /api/auth/refresh', () => {
   let mockPrisma;
 
   beforeEach(() => {
+    mockJwtVerify.mockClear();
+    mockJwtSign.mockClear();
+    mockJwtSign.mockReturnValue('mock-token');
+    // Reset verify to default behaviour
+    mockJwtVerify.mockImplementation((token) => {
+      if (token === 'valid-refresh-token') return { userId: 'user-1' };
+      const err = new Error('invalid token');
+      err.name = 'JsonWebTokenError';
+      throw err;
+    });
     mockPrisma = {
       user: {
         findUnique: vi.fn(),
@@ -133,7 +188,7 @@ describe('POST /api/auth/refresh', () => {
   });
 
   it('returns 401 when refresh token is missing', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/refresh')
       .send({});
 
@@ -141,7 +196,7 @@ describe('POST /api/auth/refresh', () => {
   });
 
   it('returns 401 when refresh token is invalid', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/refresh')
       .send({ refreshToken: 'bad-token' });
 
@@ -155,7 +210,7 @@ describe('POST /api/auth/refresh', () => {
       superAdmin: true,
     });
 
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/auth/refresh')
       .send({ refreshToken: 'valid-refresh-token' });
 
@@ -173,7 +228,7 @@ describe('POST /api/auth/logout', () => {
   });
 
   it('returns 200 with success message', async () => {
-    const res = await request(app).post('/api/auth/logout');
+    const res = await supertest(app).post('/api/auth/logout');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('message', 'Logged out successfully');

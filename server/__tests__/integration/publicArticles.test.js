@@ -1,14 +1,36 @@
-import express from 'express';
-import request from 'supertest';
+/**
+ * Public articles route integration tests.
+ *
+ * Server source files use CJS (require). vi.mock() for ESM cannot intercept
+ * CJS require() calls. We patch require.cache for embeddingService before
+ * loading the route modules so the CJS require picks up our mock.
+ */
+import { createRequire } from 'module';
 
-// Prevent the embedding service from making real network calls
-vi.mock('../../services/embeddingService', () => ({
-  generateEmbedding: vi.fn().mockRejectedValue(new Error('embedding disabled in tests')),
-}));
+const _require = createRequire(import.meta.url);
 
-import publicArticlesRoutes from '../../routes/public/articles';
-import publicCategoriesRoutes from '../../routes/public/categories';
-import publicLocationsRoutes from '../../routes/public/locations';
+vi.hoisted(() => {
+  process.env.OPENAI_API_KEY = 'test-key';
+});
+
+// ── Shared embedding mock ─────────────────────────────────────────────────────
+
+const mockGenerateEmbedding = vi.fn().mockRejectedValue(new Error('embedding disabled in tests'));
+
+function patchEmbeddingService() {
+  const svcPath = _require.resolve('../../services/embeddingService.js');
+  _require.cache[svcPath] = {
+    id: svcPath,
+    filename: svcPath,
+    loaded: true,
+    exports: { generateEmbedding: mockGenerateEmbedding },
+  };
+}
+
+// ── App builder ───────────────────────────────────────────────────────────────
+
+let express, supertest;
+let publicArticlesRoutes, publicCategoriesRoutes, publicLocationsRoutes;
 
 function buildApp(mockPrisma) {
   const app = express();
@@ -22,6 +44,21 @@ function buildApp(mockPrisma) {
   app.use('/api/locations', publicLocationsRoutes);
   return app;
 }
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
+
+beforeAll(async () => {
+  patchEmbeddingService();
+
+  express = (await import('express')).default;
+  supertest = (await import('supertest')).default;
+
+  publicArticlesRoutes = _require('../../routes/public/articles.js');
+  publicCategoriesRoutes = _require('../../routes/public/categories.js');
+  publicLocationsRoutes = _require('../../routes/public/locations.js');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const sampleArticle = {
   id: 'article-1',
@@ -51,6 +88,8 @@ describe('GET /api/articles', () => {
   let mockPrisma;
 
   beforeEach(() => {
+    mockGenerateEmbedding.mockReset();
+    mockGenerateEmbedding.mockRejectedValue(new Error('embedding disabled in tests'));
     mockPrisma = {
       article: {
         findMany: vi.fn().mockResolvedValue([sampleArticle]),
@@ -65,7 +104,7 @@ describe('GET /api/articles', () => {
   });
 
   it('returns paginated published articles', async () => {
-    const res = await request(app).get('/api/articles');
+    const res = await supertest(app).get('/api/articles');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('articles');
@@ -76,7 +115,7 @@ describe('GET /api/articles', () => {
   });
 
   it('passes status PUBLISHED filter to Prisma', async () => {
-    await request(app).get('/api/articles');
+    await supertest(app).get('/api/articles');
 
     const [findManyCall] = mockPrisma.article.findMany.mock.calls;
     expect(findManyCall[0].where.status).toBe('PUBLISHED');
@@ -86,7 +125,7 @@ describe('GET /api/articles', () => {
     mockPrisma.article.count.mockResolvedValue(50);
     mockPrisma.article.findMany.mockResolvedValue([]);
 
-    const res = await request(app).get('/api/articles?page=2&limit=10');
+    const res = await supertest(app).get('/api/articles?page=2&limit=10');
 
     expect(res.status).toBe(200);
     expect(res.body.page).toBe(2);
@@ -97,21 +136,21 @@ describe('GET /api/articles', () => {
   });
 
   it('filters by category', async () => {
-    await request(app).get('/api/articles?category=Finance');
+    await supertest(app).get('/api/articles?category=Finance');
 
     const [findManyCall] = mockPrisma.article.findMany.mock.calls;
     expect(findManyCall[0].where.category).toEqual({ equals: 'Finance', mode: 'insensitive' });
   });
 
   it('filters by location', async () => {
-    await request(app).get('/api/articles?location=Melbourne');
+    await supertest(app).get('/api/articles?location=Melbourne');
 
     const [findManyCall] = mockPrisma.article.findMany.mock.calls;
     expect(findManyCall[0].where.location).toEqual({ contains: 'Melbourne', mode: 'insensitive' });
   });
 
   it('filters by dateFrom and dateTo', async () => {
-    await request(app).get('/api/articles?dateFrom=2026-01-01&dateTo=2026-01-31');
+    await supertest(app).get('/api/articles?dateFrom=2026-01-01&dateTo=2026-01-31');
 
     const [findManyCall] = mockPrisma.article.findMany.mock.calls;
     expect(findManyCall[0].where.publishedAt).toBeDefined();
@@ -122,7 +161,7 @@ describe('GET /api/articles', () => {
   it('returns 500 on prisma error', async () => {
     mockPrisma.article.findMany.mockRejectedValue(new Error('db error'));
 
-    const res = await request(app).get('/api/articles');
+    const res = await supertest(app).get('/api/articles');
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('error', 'Failed to fetch articles');
@@ -146,7 +185,7 @@ describe('GET /api/articles/:slug', () => {
   it('returns article by slug', async () => {
     mockPrisma.article.findUnique.mockResolvedValue(sampleArticle);
 
-    const res = await request(app).get('/api/articles/sydney-property-market-rises');
+    const res = await supertest(app).get('/api/articles/sydney-property-market-rises');
 
     expect(res.status).toBe(200);
     expect(res.body.slug).toBe('sydney-property-market-rises');
@@ -156,7 +195,7 @@ describe('GET /api/articles/:slug', () => {
   it('increments viewCount after fetching', async () => {
     mockPrisma.article.findUnique.mockResolvedValue(sampleArticle);
 
-    await request(app).get('/api/articles/sydney-property-market-rises');
+    await supertest(app).get('/api/articles/sydney-property-market-rises');
 
     expect(mockPrisma.article.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -168,7 +207,7 @@ describe('GET /api/articles/:slug', () => {
   it('returns 404 for non-existent slug', async () => {
     mockPrisma.article.findUnique.mockResolvedValue(null);
 
-    const res = await request(app).get('/api/articles/does-not-exist');
+    const res = await supertest(app).get('/api/articles/does-not-exist');
 
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error', 'Article not found');
@@ -177,7 +216,7 @@ describe('GET /api/articles/:slug', () => {
   it('returns 404 for non-published article', async () => {
     mockPrisma.article.findUnique.mockResolvedValue({ ...sampleArticle, status: 'DRAFT' });
 
-    const res = await request(app).get('/api/articles/sydney-property-market-rises');
+    const res = await supertest(app).get('/api/articles/sydney-property-market-rises');
 
     expect(res.status).toBe(404);
   });
@@ -197,7 +236,7 @@ describe('GET /api/articles/:slug/related', () => {
   it('returns 404 when article slug not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
 
-    const res = await request(app).get('/api/articles/no-such-article/related');
+    const res = await supertest(app).get('/api/articles/no-such-article/related');
 
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error', 'Article not found');
@@ -209,7 +248,7 @@ describe('GET /api/articles/:slug/related', () => {
       .mockResolvedValueOnce([{ id: 'article-1', has_embedding: true }])
       .mockResolvedValueOnce([sampleArticle]);
 
-    const res = await request(app).get('/api/articles/sydney-property-market-rises/related');
+    const res = await supertest(app).get('/api/articles/sydney-property-market-rises/related');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('articles');
@@ -234,7 +273,7 @@ describe('GET /api/categories', () => {
   });
 
   it('returns categories array', async () => {
-    const res = await request(app).get('/api/categories');
+    const res = await supertest(app).get('/api/categories');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('categories');
@@ -248,7 +287,7 @@ describe('GET /api/categories', () => {
       { category: null },
     ]);
 
-    const res = await request(app).get('/api/categories');
+    const res = await supertest(app).get('/api/categories');
 
     expect(res.body.categories).not.toContain(null);
   });
@@ -271,7 +310,7 @@ describe('GET /api/locations', () => {
   });
 
   it('returns locations array', async () => {
-    const res = await request(app).get('/api/locations');
+    const res = await supertest(app).get('/api/locations');
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('locations');
@@ -285,7 +324,7 @@ describe('GET /api/locations', () => {
       { location: null },
     ]);
 
-    const res = await request(app).get('/api/locations');
+    const res = await supertest(app).get('/api/locations');
 
     expect(res.body.locations).not.toContain(null);
   });

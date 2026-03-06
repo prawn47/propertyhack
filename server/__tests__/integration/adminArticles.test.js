@@ -1,23 +1,70 @@
-import express from 'express';
-import request from 'supertest';
+/**
+ * Admin articles route integration tests.
+ *
+ * Server source files use CJS (require). vi.mock('jsonwebtoken') cannot
+ * intercept CJS require() calls. Instead we bypass the auth middleware
+ * entirely in the test app and inject req.user directly, which is what
+ * the real middleware would do after a valid token.
+ */
+import { createRequire } from 'module';
 
-// JWT mock so we can issue test tokens without real secrets
-vi.mock('jsonwebtoken', async () => {
-  const actual = await vi.importActual('jsonwebtoken');
-  return {
-    ...actual,
-    verify: vi.fn((token) => {
-      if (token === 'valid-admin-token') return { userId: 'admin-user-1' };
-      const err = new Error('invalid token');
-      err.name = 'JsonWebTokenError';
-      throw err;
-    }),
-    sign: vi.fn(() => 'mock-token'),
-  };
+const _require = createRequire(import.meta.url);
+
+vi.hoisted(() => {
+  process.env.JWT_ACCESS_SECRET = 'test-access-secret';
 });
 
-import adminArticlesRoutes from '../../routes/admin/articles';
-import { authenticateToken, requireSuperAdmin } from '../../middleware/auth';
+// ── App builders ──────────────────────────────────────────────────────────────
+
+let express, supertest, adminArticlesRoutes;
+
+const adminUser = {
+  id: 'admin-user-1',
+  email: 'admin@test.com',
+  superAdmin: true,
+  createdAt: new Date().toISOString(),
+};
+
+// Minimal auth middleware that mirrors the real guard behaviour in tests:
+// - no token → 401
+// - 'valid-admin-token' → inject adminUser and continue
+// - anything else → 401
+function mockAuthMiddleware(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Access token required' });
+  if (token !== 'valid-admin-token') return res.status(401).json({ error: 'Invalid access token' });
+  req.user = adminUser;
+  next();
+}
+
+function mockRequireSuperAdmin(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+  if (!req.user.superAdmin) return res.status(403).json({ error: 'Super admin access required' });
+  next();
+}
+
+function buildApp(mockPrisma) {
+  const app = express();
+  app.use(express.json());
+  app.use((req, res, next) => {
+    req.prisma = mockPrisma;
+    next();
+  });
+  app.use('/api/admin', mockAuthMiddleware, mockRequireSuperAdmin);
+  app.use('/api/admin/articles', adminArticlesRoutes);
+  return app;
+}
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
+
+beforeAll(async () => {
+  express = (await import('express')).default;
+  supertest = (await import('supertest')).default;
+  adminArticlesRoutes = _require('../../routes/admin/articles.js');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const sampleArticle = {
   id: 'article-1',
@@ -42,26 +89,6 @@ const sampleArticle = {
   source: { id: 'source-1', name: 'Test Source', type: 'RSS' },
 };
 
-const adminUser = {
-  id: 'admin-user-1',
-  email: 'admin@test.com',
-  superAdmin: true,
-  createdAt: new Date().toISOString(),
-};
-
-function buildApp(mockPrisma) {
-  const app = express();
-  app.use(express.json());
-  app.use((req, res, next) => {
-    req.prisma = mockPrisma;
-    next();
-  });
-  // Mirror the real middleware chain from index.js
-  app.use('/api/admin', authenticateToken, requireSuperAdmin);
-  app.use('/api/admin/articles', adminArticlesRoutes);
-  return app;
-}
-
 describe('Admin articles — auth guard', () => {
   let app;
   let mockPrisma;
@@ -75,12 +102,12 @@ describe('Admin articles — auth guard', () => {
   });
 
   it('returns 401 with no auth token', async () => {
-    const res = await request(app).get('/api/admin/articles');
+    const res = await supertest(app).get('/api/admin/articles');
     expect(res.status).toBe(401);
   });
 
   it('returns 401 with invalid auth token', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/articles')
       .set('Authorization', 'Bearer bad-token');
     expect(res.status).toBe(401);
@@ -103,7 +130,7 @@ describe('GET /api/admin/articles', () => {
   });
 
   it('returns paginated articles list', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/articles')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -119,7 +146,7 @@ describe('GET /api/admin/articles', () => {
     mockPrisma.article.count.mockResolvedValue(100);
     mockPrisma.article.findMany.mockResolvedValue([]);
 
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/articles?page=3&limit=10')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -131,7 +158,7 @@ describe('GET /api/admin/articles', () => {
   });
 
   it('filters by status when provided', async () => {
-    await request(app)
+    await supertest(app)
       .get('/api/admin/articles?status=PUBLISHED')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -140,7 +167,7 @@ describe('GET /api/admin/articles', () => {
   });
 
   it('returns 400 for invalid status value', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .get('/api/admin/articles?status=INVALID')
       .set('Authorization', 'Bearer valid-admin-token');
 
@@ -164,7 +191,7 @@ describe('PUT /api/admin/articles/:id', () => {
   });
 
   it('returns 401 without token', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .put('/api/admin/articles/article-1')
       .send({ title: 'Updated Title' });
 
@@ -172,7 +199,7 @@ describe('PUT /api/admin/articles/:id', () => {
   });
 
   it('updates article fields', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .put('/api/admin/articles/article-1')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({ title: 'Updated Title', category: 'Finance' });
@@ -184,7 +211,7 @@ describe('PUT /api/admin/articles/:id', () => {
   it('returns 404 for non-existent article', async () => {
     mockPrisma.article.findUnique.mockResolvedValue(null);
 
-    const res = await request(app)
+    const res = await supertest(app)
       .put('/api/admin/articles/no-such-id')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({ title: 'Updated Title' });
@@ -194,7 +221,7 @@ describe('PUT /api/admin/articles/:id', () => {
   });
 
   it('returns 400 for invalid status value', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .put('/api/admin/articles/article-1')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({ status: 'INVALID' });
@@ -206,7 +233,7 @@ describe('PUT /api/admin/articles/:id', () => {
     mockPrisma.article.findUnique.mockResolvedValue({ ...sampleArticle, publishedAt: null });
     mockPrisma.article.update.mockResolvedValue({ ...sampleArticle, status: 'PUBLISHED' });
 
-    await request(app)
+    await supertest(app)
       .put('/api/admin/articles/article-1')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({ status: 'PUBLISHED' });
@@ -251,7 +278,7 @@ describe('POST /api/admin/articles/manual', () => {
   });
 
   it('returns 401 without token', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/admin/articles/manual')
       .send({ title: 'Test' });
 
@@ -259,7 +286,7 @@ describe('POST /api/admin/articles/manual', () => {
   });
 
   it('returns 400 when neither url nor title provided', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/admin/articles/manual')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({ shortBlurb: 'no title or url' });
@@ -269,7 +296,7 @@ describe('POST /api/admin/articles/manual', () => {
   });
 
   it('creates article from title input', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/admin/articles/manual')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({
@@ -283,7 +310,7 @@ describe('POST /api/admin/articles/manual', () => {
   });
 
   it('creates article from URL input when no title provided', async () => {
-    const res = await request(app)
+    const res = await supertest(app)
       .post('/api/admin/articles/manual')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({ url: 'https://example.com/article' });
@@ -298,7 +325,7 @@ describe('POST /api/admin/articles/manual', () => {
   it('creates MANUAL ingestion source if none exists', async () => {
     mockPrisma.ingestionSource.findFirst.mockResolvedValue(null);
 
-    await request(app)
+    await supertest(app)
       .post('/api/admin/articles/manual')
       .set('Authorization', 'Bearer valid-admin-token')
       .send({ title: 'Some Article' });
