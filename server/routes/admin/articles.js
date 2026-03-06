@@ -1,9 +1,286 @@
 const express = require('express');
+const { body, query, param, validationResult } = require('express-validator');
+const { generateSlug } = require('../../utils/slug');
+
 const router = express.Router();
 
-// Stub routes - to be implemented
-router.get('/', (req, res) => {
-  res.json({ articles: [], message: 'Admin articles endpoint - not yet implemented' });
-});
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: 'Validation failed', details: errors.array() });
+  }
+  next();
+};
+
+const VALID_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
+
+// GET / — List articles with pagination and filters
+router.get(
+  '/',
+  [
+    query('page').optional().isInt({ min: 1 }).toInt(),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('status').optional().isIn(VALID_STATUSES),
+    query('category').optional().isString(),
+    query('sourceId').optional().isString(),
+    query('search').optional().isString(),
+    query('sortBy').optional().isString(),
+    query('sortOrder').optional().isIn(['asc', 'desc']),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const page = req.query.page || 1;
+      const limit = req.query.limit || 20;
+      const skip = (page - 1) * limit;
+      const sortBy = req.query.sortBy || 'createdAt';
+      const sortOrder = req.query.sortOrder || 'desc';
+
+      const where = {};
+      if (req.query.status) where.status = req.query.status;
+      if (req.query.category) where.category = req.query.category;
+      if (req.query.sourceId) where.sourceId = req.query.sourceId;
+      if (req.query.search) {
+        where.title = { contains: req.query.search, mode: 'insensitive' };
+      }
+
+      const [articles, total] = await Promise.all([
+        req.prisma.article.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { [sortBy]: sortOrder },
+          include: {
+            source: { select: { id: true, name: true, type: true } },
+          },
+        }),
+        req.prisma.article.count({ where }),
+      ]);
+
+      res.json({
+        articles,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      });
+    } catch (error) {
+      console.error('List articles error:', error);
+      res.status(500).json({ error: 'Failed to list articles' });
+    }
+  }
+);
+
+// POST /manual — Manual article entry (before /:id to avoid conflict)
+router.post(
+  '/manual',
+  [
+    body('url').optional().isURL(),
+    body('title').optional().isString().notEmpty(),
+    body('shortBlurb').optional().isString(),
+    body('longSummary').optional().isString(),
+    body('sourceUrl').optional().isURL(),
+    body('category').optional().isString(),
+    body('market').optional().isString(),
+    body('imageUrl').optional().isURL(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { url, title, shortBlurb, longSummary, sourceUrl, category, market, imageUrl } = req.body;
+
+      if (!url && !title) {
+        return res.status(400).json({ error: 'Either url or title is required' });
+      }
+
+      let manualSource = await req.prisma.ingestionSource.findFirst({
+        where: { type: 'MANUAL' },
+      });
+
+      if (!manualSource) {
+        manualSource = await req.prisma.ingestionSource.create({
+          data: {
+            name: 'Manual Entry',
+            type: 'MANUAL',
+            config: {},
+            market: market || 'AU',
+            isActive: true,
+          },
+        });
+      }
+
+      let articleData;
+      if (url && !title) {
+        articleData = {
+          sourceId: manualSource.id,
+          sourceUrl: url,
+          title: '',
+          slug: generateSlug('manual-' + Date.now()),
+          shortBlurb: '',
+          longSummary: '',
+          category: category || 'Uncategorised',
+          market: market || 'AU',
+          status: 'DRAFT',
+        };
+      } else {
+        articleData = {
+          sourceId: manualSource.id,
+          sourceUrl: sourceUrl || url || '',
+          title,
+          slug: generateSlug(title),
+          shortBlurb: shortBlurb || '',
+          longSummary: longSummary || '',
+          category: category || 'Uncategorised',
+          market: market || 'AU',
+          status: 'DRAFT',
+          imageUrl: imageUrl || null,
+        };
+      }
+
+      const article = await req.prisma.article.create({ data: articleData });
+      res.status(201).json(article);
+    } catch (error) {
+      console.error('Manual article creation error:', error);
+      res.status(500).json({ error: 'Failed to create article' });
+    }
+  }
+);
+
+// PUT /bulk — Bulk status change (before /:id to avoid conflict)
+router.put(
+  '/bulk',
+  [
+    body('ids').isArray({ min: 1 }).withMessage('ids must be a non-empty array'),
+    body('ids.*').isString(),
+    body('action').isIn(['publish', 'archive', 'delete']).withMessage('action must be publish, archive, or delete'),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { ids, action } = req.body;
+
+      if (action === 'delete') {
+        const result = await req.prisma.article.deleteMany({ where: { id: { in: ids } } });
+        return res.json({ updated: result.count });
+      }
+
+      const statusMap = { publish: 'PUBLISHED', archive: 'ARCHIVED' };
+      const updateData = { status: statusMap[action] };
+      if (action === 'publish') updateData.publishedAt = new Date();
+
+      const result = await req.prisma.article.updateMany({
+        where: { id: { in: ids } },
+        data: updateData,
+      });
+
+      res.json({ updated: result.count });
+    } catch (error) {
+      console.error('Bulk action error:', error);
+      res.status(500).json({ error: 'Bulk action failed' });
+    }
+  }
+);
+
+// GET /:id — Get single article
+router.get(
+  '/:id',
+  [param('id').isString().notEmpty()],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const article = await req.prisma.article.findUnique({
+        where: { id: req.params.id },
+        include: { source: true },
+      });
+
+      if (!article) return res.status(404).json({ error: 'Article not found' });
+      res.json(article);
+    } catch (error) {
+      console.error('Get article error:', error);
+      res.status(500).json({ error: 'Failed to get article' });
+    }
+  }
+);
+
+// PUT /:id — Update article
+router.put(
+  '/:id',
+  [
+    param('id').isString().notEmpty(),
+    body('title').optional().notEmpty().withMessage('title cannot be empty'),
+    body('status').optional().isIn(VALID_STATUSES).withMessage('Invalid status'),
+    body('shortBlurb').optional().isString(),
+    body('longSummary').optional().isString(),
+    body('category').optional().isString(),
+    body('location').optional().isString(),
+    body('market').optional().isString(),
+    body('isFeatured').optional().isBoolean(),
+    body('imageUrl').optional({ nullable: true }).isURL(),
+    body('imageAltText').optional().isString(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const existing = await req.prisma.article.findUnique({ where: { id: req.params.id } });
+      if (!existing) return res.status(404).json({ error: 'Article not found' });
+
+      const { title, shortBlurb, longSummary, category, location, market, isFeatured, status, imageUrl, imageAltText } = req.body;
+
+      const updateData = {};
+      if (title !== undefined) updateData.title = title;
+      if (shortBlurb !== undefined) updateData.shortBlurb = shortBlurb;
+      if (longSummary !== undefined) updateData.longSummary = longSummary;
+      if (category !== undefined) updateData.category = category;
+      if (location !== undefined) updateData.location = location;
+      if (market !== undefined) updateData.market = market;
+      if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+      if (status !== undefined) {
+        updateData.status = status;
+        if (status === 'PUBLISHED' && !existing.publishedAt) {
+          updateData.publishedAt = new Date();
+        }
+      }
+      if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+      if (imageAltText !== undefined) updateData.imageAltText = imageAltText;
+
+      const needsReembedding =
+        (shortBlurb !== undefined && shortBlurb !== existing.shortBlurb) ||
+        (longSummary !== undefined && longSummary !== existing.longSummary);
+
+      const article = await req.prisma.article.update({
+        where: { id: req.params.id },
+        data: updateData,
+        include: { source: { select: { id: true, name: true, type: true } } },
+      });
+
+      res.json({ ...article, needsReembedding });
+    } catch (error) {
+      console.error('Update article error:', error);
+      res.status(500).json({ error: 'Failed to update article' });
+    }
+  }
+);
+
+// DELETE /:id — Archive article
+router.delete(
+  '/:id',
+  [param('id').isString().notEmpty()],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const existing = await req.prisma.article.findUnique({ where: { id: req.params.id } });
+      if (!existing) return res.status(404).json({ error: 'Article not found' });
+
+      await req.prisma.article.update({
+        where: { id: req.params.id },
+        data: { status: 'ARCHIVED' },
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Archive article error:', error);
+      res.status(500).json({ error: 'Failed to archive article' });
+    }
+  }
+);
 
 module.exports = router;
