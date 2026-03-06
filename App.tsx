@@ -1,106 +1,51 @@
 import React, { useState, useEffect } from 'react';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import Loader from './components/Loader';
-import ArticlesList from './components/admin/ArticlesList';
-import ArticleEditor from './components/admin/ArticleEditor';
 import PublicArticlesGrid from './components/public/PublicArticlesGrid';
-import type { Article, AuthState } from './types';
+import AdminLayout from './components/layout/AdminLayout';
+import ArticleList from './components/admin/ArticleList';
+import ArticleEditor from './components/admin/ArticleEditor';
+import SourceList from './components/admin/SourceList';
+import SourceEditor from './components/admin/SourceEditor';
+import SocialPostList from './components/admin/SocialPostList';
+import IngestionMonitor from './components/admin/IngestionMonitor';
+import type { AuthState } from './types';
 import authService from './services/authService';
 
-const App: React.FC = () => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    isLoading: true,
-  });
-  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
-  const [creatingArticle, setCreatingArticle] = useState(false);
-  const [articlesRefreshTrigger, setArticlesRefreshTrigger] = useState(0);
+function withAdminLayout(Component: React.ComponentType) {
+  return function AdminPage() {
+    return (
+      <AdminLayout>
+        <Component />
+      </AdminLayout>
+    );
+  };
+}
+
+const AdminDashboard = withAdminLayout(IngestionMonitor);
+const AdminArticles = withAdminLayout(ArticleList);
+const AdminArticleEdit = withAdminLayout(ArticleEditor);
+const AdminSources = withAdminLayout(SourceList);
+const AdminSourceEdit = withAdminLayout(SourceEditor);
+const AdminSocial = withAdminLayout(SocialPostList);
+const AdminMonitor = withAdminLayout(IngestionMonitor);
+
+interface AppInnerProps {
+  authState: AuthState;
+  onLogin: (email: string, password: string) => Promise<void>;
+  onLogout: () => Promise<void>;
+}
+
+function AppInner({ authState, onLogin }: AppInnerProps) {
+  const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(false);
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        if (authService.isAuthenticated()) {
-          const storedUser = localStorage.getItem('user');
-          const user = storedUser ? JSON.parse(storedUser) : null;
-          setAuthState({
-            isAuthenticated: true,
-            user,
-            isLoading: false,
-          });
-        } else {
-          setAuthState({
-            isAuthenticated: false,
-            user: null,
-            isLoading: false,
-          });
-        }
-      } catch (error) {
-        console.error('Auth initialization failed:', error);
-        await authService.logout();
-        setAuthState({
-          isAuthenticated: false,
-          user: null,
-          isLoading: false,
-        });
-      }
-    };
-
-    initializeAuth();
-  }, []);
-
-  const handleLogin = async (email: string, password: string) => {
-    try {
-      const response = await authService.login({ email, password });
-      localStorage.setItem('user', JSON.stringify(response.user));
-      setAuthState({
-        isAuthenticated: true,
-        user: response.user,
-        isLoading: false,
-      });
-      setShowLogin(false);
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('user');
-      setAuthState({
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-      });
-      setShowLogin(false);
-    }
-  };
-
-  const handleEditArticle = (article: Article) => {
-    setEditingArticle(article);
-    setCreatingArticle(false);
-  };
-
-  const handleCreateArticle = () => {
-    setEditingArticle(null);
-    setCreatingArticle(true);
-  };
-
-  const handleCloseArticleEditor = () => {
-    setEditingArticle(null);
-    setCreatingArticle(false);
-  };
-
-  const handleArticleSaved = () => {
-    setEditingArticle(null);
-    setCreatingArticle(false);
-    setArticlesRefreshTrigger(prev => prev + 1);
-  };
 
   if (authState.isLoading) {
     return (
@@ -114,7 +59,10 @@ const App: React.FC = () => {
     if (showLogin) {
       return (
         <LoginPage
-          onLogin={handleLogin}
+          onLogin={async (email, password) => {
+            await onLogin(email, password);
+            navigate('/admin');
+          }}
           onBack={() => setShowLogin(false)}
         />
       );
@@ -123,31 +71,72 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-base-200 min-h-screen text-content font-sans">
-      <header className="bg-brand-primary text-white px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">PropertyHack Admin</h1>
-        <button
-          onClick={handleLogout}
-          className="text-sm text-white/70 hover:text-white transition-colors"
-        >
-          Log out
-        </button>
-      </header>
-      <main className="p-4 sm:p-6 lg:p-8">
-        <ArticlesList
-          onEditArticle={handleEditArticle}
-          onCreateNew={handleCreateArticle}
-          refreshTrigger={articlesRefreshTrigger}
-        />
-        {(editingArticle || creatingArticle) && (
-          <ArticleEditor
-            article={editingArticle}
-            onClose={handleCloseArticleEditor}
-            onSaved={handleArticleSaved}
-          />
-        )}
-      </main>
-    </div>
+    <Routes>
+      <Route path="/" element={<PublicArticlesGrid onAdminClick={() => setShowLogin(true)} />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/articles" element={<AdminArticles />} />
+      <Route path="/admin/articles/:id/edit" element={<AdminArticleEdit />} />
+      <Route path="/admin/sources" element={<AdminSources />} />
+      <Route path="/admin/sources/new" element={<AdminSourceEdit />} />
+      <Route path="/admin/sources/:id" element={<AdminSourceEdit />} />
+      <Route path="/admin/social" element={<AdminSocial />} />
+      <Route path="/admin/monitor" element={<AdminMonitor />} />
+      <Route path="*" element={<Navigate to="/admin" replace />} />
+    </Routes>
+  );
+}
+
+const App: React.FC = () => {
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    user: null,
+    isLoading: true,
+  });
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        if (authService.isAuthenticated()) {
+          const storedUser = localStorage.getItem('user');
+          const user = storedUser ? JSON.parse(storedUser) : null;
+          setAuthState({ isAuthenticated: true, user, isLoading: false });
+        } else {
+          setAuthState({ isAuthenticated: false, user: null, isLoading: false });
+        }
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        await authService.logout();
+        setAuthState({ isAuthenticated: false, user: null, isLoading: false });
+      }
+    };
+    initializeAuth();
+  }, []);
+
+  const handleLogin = async (email: string, password: string) => {
+    const response = await authService.login({ email, password });
+    localStorage.setItem('user', JSON.stringify(response.user));
+    setAuthState({ isAuthenticated: true, user: response.user, isLoading: false });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // ignore
+    } finally {
+      localStorage.removeItem('user');
+      setAuthState({ isAuthenticated: false, user: null, isLoading: false });
+    }
+  };
+
+  return (
+    <BrowserRouter>
+      <AppInner
+        authState={authState}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+      />
+    </BrowserRouter>
   );
 };
 
