@@ -8,7 +8,7 @@ import {
 } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import Loader from './components/Loader';
-import PublicArticlesGrid from './components/public/PublicArticlesGrid';
+import HomePage from './components/public/HomePage';
 import AdminLayout from './components/layout/AdminLayout';
 import ArticleList from './components/admin/ArticleList';
 import ArticleEditor from './components/admin/ArticleEditor';
@@ -67,12 +67,12 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         />
       );
     }
-    return <PublicArticlesGrid onAdminClick={() => setShowLogin(true)} />;
+    return <HomePage onAdminClick={() => setShowLogin(true)} />;
   }
 
   return (
     <Routes>
-      <Route path="/" element={<PublicArticlesGrid onAdminClick={() => setShowLogin(true)} />} />
+      <Route path="/" element={<HomePage onAdminClick={() => setShowLogin(true)} />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/admin/articles" element={<AdminArticles />} />
       <Route path="/admin/articles/:id/edit" element={<AdminArticleEdit />} />
