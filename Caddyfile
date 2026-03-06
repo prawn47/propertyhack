@@ -1,0 +1,13 @@
+propertyhack.com {
+    handle /api/* {
+        reverse_proxy express:3001
+    }
+    handle /health {
+        reverse_proxy express:3001
+    }
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
+}

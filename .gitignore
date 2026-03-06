@@ -12,6 +12,7 @@ server/.env
 # Build outputs
 dist/
 build/
+frontend-dist/
 
 # Logs
 backend.log
