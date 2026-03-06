@@ -1,3 +1,5 @@
+const rssFetcher = require('./rssFetcher');
+
 function notImplemented(sourceType) {
   return async function () {
     throw new Error(`Fetcher not implemented: ${sourceType}`);
@@ -5,7 +7,7 @@ function notImplemented(sourceType) {
 }
 
 const fetchers = {
-  RSS: notImplemented('RSS'),
+  RSS: rssFetcher.fetch,
   NEWSAPI_ORG: notImplemented('NEWSAPI_ORG'),
   NEWSAPI_AI: notImplemented('NEWSAPI_AI'),
   PERPLEXITY: notImplemented('PERPLEXITY'),
