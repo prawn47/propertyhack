@@ -1,5 +1,6 @@
 const rssFetcher = require('./rssFetcher');
 const newsApiOrgFetcher = require('./newsApiOrgFetcher');
+const manualFetcher = require('./manualFetcher');
 
 function notImplemented(sourceType) {
   return async function () {
@@ -15,7 +16,7 @@ const fetchers = {
   NEWSLETTER: notImplemented('NEWSLETTER'),
   SCRAPER: notImplemented('SCRAPER'),
   SOCIAL: notImplemented('SOCIAL'),
-  MANUAL: notImplemented('MANUAL'),
+  MANUAL: manualFetcher.fetch,
 };
 
 function getFetcher(sourceType) {
