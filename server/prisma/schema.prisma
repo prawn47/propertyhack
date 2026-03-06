@@ -1,329 +1,178 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum SourceType {
+  RSS
+  NEWSAPI_ORG
+  NEWSAPI_AI
+  PERPLEXITY
+  NEWSLETTER
+  SCRAPER
+  SOCIAL
+  MANUAL
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SocialPostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+enum IngestionLogStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String   @map("password_hash")
-  emailVerified Boolean  @default(false) @map("email_verified")
-  superAdmin    Boolean  @default(false) @map("super_admin")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // LinkedIn OAuth fields
-  linkedinId          String?   @map("linkedin_id")
-  linkedinAccessToken String?   @map("linkedin_access_token")
-  linkedinTokenExpiry DateTime? @map("linkedin_token_expiry")
-  linkedinConnected   Boolean   @default(false) @map("linkedin_connected")
-
-  // OTP fields
-  otpCode       String?   @map("otp_code")
-  otpExpiry     DateTime? @map("otp_expiry")
-
-  // Subscription fields
-  subscriptionTier    String    @default("free") @map("subscription_tier") // "free", "pro", "enterprise"
-  stripeCustomerId    String?   @map("stripe_customer_id")
-  stripeSubscriptionId String?  @map("stripe_subscription_id")
-  subscriptionStatus  String    @default("trial") @map("subscription_status") // "trial", "active", "cancelled", "expired"
-  trialEndsAt         DateTime? @map("trial_ends_at")
-  subscriptionEndsAt  DateTime? @map("subscription_ends_at")
-  
-  // Usage tracking (for free tier limits)
-  monthlyPostCount    Int       @default(0) @map("monthly_post_count")
-  lastPostCountReset  DateTime  @default(now()) @map("last_post_count_reset")
-
-  // Admin fields for Property Hack
-  role            String    @default("admin") // "admin", "super_admin"
-  displayName     String?   @map("display_name")
-
-  // Relations
-  settings      UserSettings?
-  draftPosts    DraftPost[]
-  publishedPosts PublishedPost[]
-  scheduledPosts ScheduledPost[]
-  newsArticles  NewsArticle[]
-  emailResponses EmailResponse[]
-  articles      Article[]  // Property Hack articles
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  displayName  String?  @map("display_name")
+  superAdmin   Boolean  @default(false) @map("super_admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("users")
 }
 
-model UserSettings {
-  id                String   @id @default(cuid())
-  userId            String   @unique @map("user_id")
-  toneOfVoice       String   @map("tone_of_voice")
-  industry          String
-  position          String
-  audience          String
-  postGoal          String   @map("post_goal")
-  keywords          String
-  contentExamples   String   @map("content_examples") // JSON string array
-  timeZone          String   @map("time_zone")
-  preferredTime     String   @map("preferred_time")
-  profilePictureUrl String?  @map("profile_picture_url")
-  englishVariant    String   @map("english_variant")
-  
-  // News preferences
-  newsCategories    String   @default("[]") @map("news_categories") // JSON array of category URIs
-  newsLanguages     String   @default("[\"eng\"]") @map("news_languages") // JSON array of language codes
-  newsSources       String   @default("[]") @map("news_sources") // JSON array of source URIs
-  newsCountries     String   @default("[]") @map("news_countries") // JSON array of country codes
-  
-  // Email prompt workflow
-  emailPromptEnabled   Boolean   @default(false) @map("email_prompt_enabled")
-  emailPromptCadence   String    @default("weekly") @map("email_prompt_cadence") // "daily", "twice_weekly", "weekly"
-  emailPromptTime      String    @default("09:00") @map("email_prompt_time") // HH:mm format
-  emailPromptDays      String    @default("[1]") @map("email_prompt_days") // JSON array: [1,4] for Mon/Thu
-  lastEmailPromptSent  DateTime? @map("last_email_prompt_sent")
-  
-  // Image generation preferences
-  imageStyle          String    @default("Abstract/Conceptual") @map("image_style") // Preset style or "Custom"
-  customImagePrompt   String?   @map("custom_image_prompt") // Custom prompt when imageStyle is "Custom"
-  
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+model IngestionSource {
+  id           String     @id @default(cuid())
+  name         String
+  type         SourceType
+  config       Json
+  market       String     @default("AU")
+  category     String?
+  schedule     String?
+  isActive     Boolean    @default(true) @map("is_active")
+  lastFetchAt  DateTime?  @map("last_fetch_at")
+  lastError    String?    @map("last_error")
+  errorCount   Int        @default(0) @map("error_count")
+  articleCount Int        @default(0) @map("article_count")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articles Article[]
+  logs     IngestionLog[]
 
-  @@map("user_settings")
+  @@map("ingestion_sources")
 }
 
-model DraftPost {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  title        String
-  text         String
-  imageUrl     String?  @map("image_url")
-  isPublishing Boolean  @default(false) @map("is_publishing")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model Article {
+  id              String                       @id @default(cuid())
+  sourceId        String                       @map("source_id")
+  sourceUrl       String                       @map("source_url")
+  title           String
+  slug            String                       @unique
+  shortBlurb      String                       @map("short_blurb")
+  longSummary     String                       @map("long_summary")
+  originalContent String?                      @map("original_content")
+  imageUrl        String?                      @map("image_url")
+  imageAltText    String?                      @map("image_alt_text")
+  category        String
+  location        String?
+  market          String                       @default("AU")
+  status          ArticleStatus                @default(DRAFT)
+  isFeatured      Boolean                      @default(false) @map("is_featured")
+  viewCount       Int                          @default(0) @map("view_count")
+  publishedAt     DateTime?                    @map("published_at")
+  metadata        Json?
+  embedding       Unsupported("vector(1536)")?
+  createdAt       DateTime                     @default(now()) @map("created_at")
+  updatedAt       DateTime                     @updatedAt @map("updated_at")
 
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source      IngestionSource @relation(fields: [sourceId], references: [id])
+  socialPosts SocialPost[]
 
-  @@index([userId])
-  @@index([createdAt])
-  @@map("draft_posts")
-}
-
-model PublishedPost {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  title       String
-  text        String
-  imageUrl    String?  @map("image_url")
-  publishedAt String   @map("published_at") // Store as string to match current format
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-  @@map("published_posts")
-}
-
-model ScheduledPost {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  title       String
-  text        String
-  imageUrl    String?  @map("image_url")
-  scheduledFor DateTime @map("scheduled_for")
-  status      String   @default("scheduled") // "scheduled" | "published" | "cancelled" | "failed"
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([scheduledFor])
+  @@index([sourceUrl])
   @@index([status])
-  @@map("scheduled_posts")
+  @@index([market])
+  @@index([category])
+  @@index([publishedAt])
+  @@map("articles")
 }
 
-model PromptTemplate {
-  id          String   @id @default(cuid())
-  name        String   @unique // e.g. "post_generation", "image_generation", "idea_generation"
-  description String
-  template    String   // The system prompt with {{variable}} placeholders
-  variables   String   // JSON array of variable names that map to UserSettings fields
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+model SocialPost {
+  id              String           @id @default(cuid())
+  content         String
+  imageUrl        String?          @map("image_url")
+  platforms       String[]
+  articleId       String?          @map("article_id")
+  status          SocialPostStatus @default(DRAFT)
+  scheduledFor    DateTime?        @map("scheduled_for")
+  publishedAt     DateTime?        @map("published_at")
+  platformResults Json?            @map("platform_results")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
-  @@map("prompt_templates")
+  article Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+
+  @@map("social_posts")
 }
 
-model NewsArticle {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  title       String
-  summary     String
-  content     String?  // Full article text if available
-  url         String
-  source      String   // Publication name
-  publishedAt DateTime? @map("published_at") // Article publish date
-  fetchedAt   DateTime @default(now()) @map("fetched_at") // When we fetched it
-  category    String?  // e.g., "technology", "business", "finance"
-  relevanceScore Float? @map("relevance_score") // 0-1 score of relevance to user
-  isRead      Boolean  @default(false) @map("is_read")
-  
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model IngestionLog {
+  id            String             @id @default(cuid())
+  sourceId      String             @map("source_id")
+  status        IngestionLogStatus
+  articlesFound Int                @default(0) @map("articles_found")
+  articlesNew   Int                @default(0) @map("articles_new")
+  errorMessage  String?            @map("error_message")
+  duration      Int                @default(0)
+  createdAt     DateTime           @default(now()) @map("created_at")
 
-  @@index([userId])
-  @@index([fetchedAt])
-  @@index([isRead])
-  @@map("news_articles")
+  source IngestionSource @relation(fields: [sourceId], references: [id])
+
+  @@map("ingestion_logs")
 }
-
-model EmailResponse {
-  id              String    @id @default(cuid())
-  userId          String    @map("user_id")
-  promptEmailId   String    @map("prompt_email_id") // Resend email ID for tracking
-  replyContent    String    @map("reply_content") // User's email reply text
-  draftPostId     String?   @map("draft_post_id") // Associated draft post created
-  followUpEmailId String?   @map("follow_up_email_id") // Resend email ID for follow-up
-  status          String    @default("pending") // "pending", "draft_created", "completed"
-  receivedAt      DateTime  @default(now()) @map("received_at")
-  processedAt     DateTime? @map("processed_at")
-  
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([receivedAt])
-  @@index([status])
-  @@map("email_responses")
-}
-
-model SystemPrompt {
-  id          String   @id @default(cuid())
-  name        String   @unique // e.g. "super_admin_rules", "news_comment_generation"
-  description String
-  content     String   // The actual prompt/rules text
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@map("system_prompts")
-}
-
-// ============================================
-// PROPERTY HACK MODELS
-// ============================================
 
 model Market {
-  id          String   @id @default(cuid())
-  code        String   @unique // "AU", "US", "UK", "CA"
-  name        String   // "Australia", "United States", "United Kingdom", "Canada"
-  currency    String   // "AUD", "USD", "GBP", "CAD"
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  currency  String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("markets")
 }
 
 model ArticleCategory {
-  id          String    @id @default(cuid())
-  name        String    // "Market Analysis", "Investment Tips", "Policy Changes"
-  slug        String    @unique
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
   description String?
-  market      String    // "ALL" or specific market code ("AU", "US", etc.)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  
-  // Relations
-  articles    Article[]
+  market      String
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("article_categories")
 }
 
-model ArticleSource {
-  id          String    @id @default(cuid())
-  name        String    @unique // "Domain", "realestate.com.au", "Property Observer"
-  url         String    // Base URL
-  logoUrl     String?   @map("logo_url")
-  
-  // Feed configuration
-  feedType    String    // "rss", "api", "manual"
-  feedUrl     String?   @map("feed_url") // RSS feed URL or API endpoint
-  apiKey      String?   @map("api_key")  // For API sources
-  
-  // Settings
-  isActive    Boolean   @default(true) @map("is_active")
-  autoImport  Boolean   @default(false) @map("auto_import") // Auto-import or require approval
-  market      String    // Primary market: "AU", "US", "UK", "CA"
-  
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  
-  // Relations
-  articles    Article[]
+model SystemPrompt {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  content     String
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@map("article_sources")
-}
-
-model Article {
-  id                String    @id @default(cuid())
-  title             String
-  slug              String    @unique // URL-friendly: "why-sydney-property-prices-soaring"
-  summary           String    // AI-generated rewrite/summary
-  content           String?   // Full content if available
-  sourceUrl         String    @map("source_url") // Original article URL
-  sourceName        String    @map("source_name") // e.g., "Domain", "realestate.com.au"
-  sourceLogoUrl     String?   @map("source_logo_url") // Source publication logo
-  
-  // SEO fields
-  metaDescription   String    @map("meta_description")
-  focusKeywords     String    @map("focus_keywords") // JSON array: ["sydney property", "housing market"]
-  ogImage           String?   @map("og_image") // Open Graph image (can be different from main image)
-  
-  // Image with alt text
-  imageUrl          String?   @map("image_url")
-  imageAltText      String?   @map("image_alt_text") // Descriptive alt text for SEO
-  
-  // Market
-  market            String    // "AU", "US", "UK", "CA"
-  
-  // Status
-  status            String    @default("draft") // "draft", "published", "archived"
-  publishedAt       DateTime? @map("published_at")
-  
-  // Engagement
-  viewCount         Int       @default(0) @map("view_count")
-  featured          Boolean   @default(false) // Featured articles get larger tiles
-  
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  
-  // Relations
-  authorId          String    @map("author_id")
-  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
-  sourceId          String?   @map("source_id")
-  source            ArticleSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
-  
-  categoryId        String?   @map("category_id")
-  category          ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  
-  @@index([market])
-  @@index([status])
-  @@index([publishedAt])
-  @@index([featured])
-  @@index([authorId])
-  @@map("articles")
+  @@map("system_prompts")
 }
