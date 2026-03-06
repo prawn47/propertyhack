@@ -110,3 +110,6 @@ server/prisma/dev.db*
 # Test files
 test-functionality.cjs
 test-frontend-gemini.js
+
+# Dolt database files (added by bd init)
+.dolt/
