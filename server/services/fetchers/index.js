@@ -3,6 +3,7 @@ const newsApiOrgFetcher = require('./newsApiOrgFetcher');
 const newsApiAiFetcher = require('./newsApiAiFetcher');
 const perplexityFetcher = require('./perplexityFetcher');
 const manualFetcher = require('./manualFetcher');
+const scraperFetcher = require('./scraperFetcher');
 
 function notImplemented(sourceType) {
   return async function () {
@@ -16,7 +17,7 @@ const fetchers = {
   NEWSAPI_AI: newsApiAiFetcher.fetch,
   PERPLEXITY: perplexityFetcher.fetch,
   NEWSLETTER: notImplemented('NEWSLETTER'),
-  SCRAPER: notImplemented('SCRAPER'),
+  SCRAPER: scraperFetcher.fetch,
   SOCIAL: notImplemented('SOCIAL'),
   MANUAL: manualFetcher.fetch,
 };
