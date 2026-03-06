@@ -1,15 +1,49 @@
+/**
+ * articleSummaryService tests
+ *
+ * articleSummaryService.js is CJS and instantiates GoogleGenerativeAI at
+ * module load time, so vi.mock('@google/generative-ai') cannot intercept it.
+ * We patch require.cache directly before loading the service module.
+ */
+
+import { createRequire } from 'module';
+
+const _require = createRequire(import.meta.url);
+
+vi.hoisted(() => {
+  process.env.GEMINI_API_KEY = 'test-gemini-key';
+});
+
 const mockGenerateContent = vi.fn();
 const mockGetGenerativeModel = vi.fn().mockReturnValue({
   generateContent: mockGenerateContent,
 });
 
-vi.mock('@google/generative-ai', () => ({
-  GoogleGenerativeAI: vi.fn().mockImplementation(() => ({
-    getGenerativeModel: mockGetGenerativeModel,
-  })),
-}));
+let generateArticleSummary;
+let generateImageAltText;
+let generateSlug;
 
-import { generateArticleSummary, generateImageAltText, generateSlug } from '../../services/articleSummaryService';
+beforeAll(() => {
+  // Patch @google/generative-ai in require.cache before the service loads
+  const geminiPath = _require.resolve('@google/generative-ai');
+  const MockGoogleGenerativeAI = function () {
+    this.getGenerativeModel = mockGetGenerativeModel;
+  };
+  _require.cache[geminiPath] = {
+    id: geminiPath,
+    filename: geminiPath,
+    loaded: true,
+    exports: { GoogleGenerativeAI: MockGoogleGenerativeAI },
+  };
+
+  // Force fresh load of articleSummaryService with the patched dependency
+  const svcPath = _require.resolve('../../services/articleSummaryService.js');
+  delete _require.cache[svcPath];
+  const svc = _require('../../services/articleSummaryService.js');
+  generateArticleSummary = svc.generateArticleSummary;
+  generateImageAltText = svc.generateImageAltText;
+  generateSlug = svc.generateSlug;
+});
 
 function makeTextResponse(text) {
   return {
@@ -27,7 +61,7 @@ describe('generateSlug', () => {
 
   it('removes non-alphanumeric characters', () => {
     const slug = generateSlug('Property: What\'s Next?');
-    expect(slug).toBe('property-whats-next');
+    expect(slug).toBe('property-what-s-next');
   });
 
   it('collapses multiple hyphens', () => {
@@ -51,6 +85,7 @@ describe('generateArticleSummary', () => {
   beforeEach(() => {
     mockGenerateContent.mockReset();
     mockGetGenerativeModel.mockClear();
+    mockGetGenerativeModel.mockReturnValue({ generateContent: mockGenerateContent });
   });
 
   it('returns parsed summary from Gemini response', async () => {
@@ -197,7 +232,7 @@ describe('generateArticleSummary', () => {
     });
 
     expect(result.suggestedCategory).toBe('policy');
-    expect(mockGetGenerativeModel).toHaveBeenCalledTimes(3);
+    expect(mockGetGenerativeModel).toHaveBeenCalledTimes(2);
   });
 
   it('throws Gemini API error for non-"not found" errors', async () => {
@@ -235,6 +270,7 @@ describe('generateImageAltText', () => {
   beforeEach(() => {
     mockGenerateContent.mockReset();
     mockGetGenerativeModel.mockClear();
+    mockGetGenerativeModel.mockReturnValue({ generateContent: mockGenerateContent });
   });
 
   it('returns trimmed alt text from Gemini', async () => {

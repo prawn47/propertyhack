@@ -1,16 +1,44 @@
-const mockEmbeddingsCreate = vi.fn();
+/**
+ * embeddingService tests
+ *
+ * embeddingService.js is CJS and instantiates `new OpenAI()` at module load
+ * time, so vi.mock('openai') cannot intercept it. We patch require.cache
+ * directly (same pattern as vectorSearch.test.js) so the mock is in place
+ * before the service module is first loaded.
+ */
 
-vi.mock('openai', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      embeddings: {
-        create: mockEmbeddingsCreate,
-      },
-    })),
-  };
+import { createRequire } from 'module';
+
+const _require = createRequire(import.meta.url);
+
+vi.hoisted(() => {
+  process.env.OPENAI_API_KEY = 'test-openai-key';
 });
 
-import { generateEmbedding } from '../../services/embeddingService';
+const mockEmbeddingsCreate = vi.fn();
+
+let generateEmbedding;
+
+beforeAll(() => {
+  // Patch openai in require.cache before embeddingService loads
+  const openaiPath = _require.resolve('openai');
+  const MockOpenAI = function () {
+    this.embeddings = { create: mockEmbeddingsCreate };
+  };
+  MockOpenAI.default = MockOpenAI;
+  _require.cache[openaiPath] = {
+    id: openaiPath,
+    filename: openaiPath,
+    loaded: true,
+    exports: MockOpenAI,
+  };
+
+  // Force fresh load of embeddingService so it picks up the patched openai
+  const svcPath = _require.resolve('../../services/embeddingService.js');
+  delete _require.cache[svcPath];
+  const svc = _require('../../services/embeddingService.js');
+  generateEmbedding = svc.generateEmbedding;
+});
 
 describe('generateEmbedding', () => {
   const originalEnv = process.env;
