@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const adminArticlesRoutes = require('./routes/admin/articles');
 const adminMetaRoutes = require('./routes/admin/meta');
 const adminNewsFetchRoutes = require('./routes/admin/newsFetch');
+const adminSocialPostsRoutes = require('./routes/admin/socialPosts');
 const publicArticlesRoutes = require('./routes/public/articles');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { articleProcessingWorker } = require('./workers/articleProcessingWorker');
@@ -72,6 +73,7 @@ app.use('/api/admin', authenticateToken, requireSuperAdmin);
 app.use('/api/admin/articles', adminArticlesRoutes);
 app.use('/api/admin/meta', adminMetaRoutes);
 app.use('/api/admin/news', adminNewsFetchRoutes);
+app.use('/api/admin/social-posts', adminSocialPostsRoutes);
 app.use('/api/public/articles', publicArticlesRoutes);
 
 app.use((err, req, res, next) => {

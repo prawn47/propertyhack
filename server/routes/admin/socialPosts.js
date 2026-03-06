@@ -1,0 +1,267 @@
+const express = require('express');
+const { body, query, param, validationResult } = require('express-validator');
+
+const router = express.Router();
+
+const VALID_PLATFORMS = ['twitter', 'facebook', 'linkedin', 'instagram'];
+const EDITABLE_STATUSES = ['DRAFT', 'SCHEDULED'];
+
+function handleValidationErrors(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ error: 'Validation error', details: errors.array() });
+    return true;
+  }
+  return false;
+}
+
+// GET / — List social posts with pagination
+router.get(
+  '/',
+  [
+    query('page').optional().isInt({ min: 1 }).toInt(),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('status').optional().isIn(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'FAILED']),
+  ],
+  async (req, res) => {
+    if (handleValidationErrors(req, res)) return;
+
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 20;
+    const skip = (page - 1) * limit;
+    const where = req.query.status ? { status: req.query.status } : {};
+
+    const [posts, total] = await Promise.all([
+      req.prisma.socialPost.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          article: { select: { id: true, title: true, slug: true } },
+        },
+      }),
+      req.prisma.socialPost.count({ where }),
+    ]);
+
+    res.json({
+      posts,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  }
+);
+
+// POST / — Create social post
+router.post(
+  '/',
+  [
+    body('content').notEmpty().withMessage('Content is required'),
+    body('platforms')
+      .isArray({ min: 1 })
+      .withMessage('Platforms must be a non-empty array')
+      .custom((platforms) => {
+        const invalid = platforms.filter((p) => !VALID_PLATFORMS.includes(p));
+        if (invalid.length > 0) {
+          throw new Error(`Invalid platforms: ${invalid.join(', ')}. Valid: ${VALID_PLATFORMS.join(', ')}`);
+        }
+        return true;
+      }),
+    body('imageUrl').optional().isURL().withMessage('imageUrl must be a valid URL'),
+    body('articleId').optional().isString(),
+    body('scheduledFor').optional().isISO8601().withMessage('scheduledFor must be a valid ISO 8601 date'),
+  ],
+  async (req, res) => {
+    if (handleValidationErrors(req, res)) return;
+
+    const { content, imageUrl, platforms, articleId, scheduledFor } = req.body;
+
+    if (articleId) {
+      const article = await req.prisma.article.findUnique({ where: { id: articleId }, select: { id: true } });
+      if (!article) {
+        return res.status(400).json({ error: 'Article not found' });
+      }
+    }
+
+    const status = scheduledFor ? 'SCHEDULED' : 'DRAFT';
+
+    const post = await req.prisma.socialPost.create({
+      data: {
+        content,
+        imageUrl: imageUrl || null,
+        platforms,
+        articleId: articleId || null,
+        status,
+        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+      },
+      include: {
+        article: { select: { id: true, title: true, slug: true } },
+      },
+    });
+
+    res.status(201).json(post);
+  }
+);
+
+// GET /:id — Get single social post
+router.get(
+  '/:id',
+  [param('id').isString().notEmpty()],
+  async (req, res) => {
+    if (handleValidationErrors(req, res)) return;
+
+    const post = await req.prisma.socialPost.findUnique({
+      where: { id: req.params.id },
+      include: {
+        article: { select: { id: true, title: true, slug: true, imageUrl: true, status: true } },
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: 'Social post not found' });
+    }
+
+    res.json(post);
+  }
+);
+
+// PUT /:id — Update social post
+router.put(
+  '/:id',
+  [
+    param('id').isString().notEmpty(),
+    body('content').optional().notEmpty().withMessage('Content cannot be empty'),
+    body('platforms')
+      .optional()
+      .isArray({ min: 1 })
+      .withMessage('Platforms must be a non-empty array')
+      .custom((platforms) => {
+        if (!platforms) return true;
+        const invalid = platforms.filter((p) => !VALID_PLATFORMS.includes(p));
+        if (invalid.length > 0) {
+          throw new Error(`Invalid platforms: ${invalid.join(', ')}`);
+        }
+        return true;
+      }),
+    body('imageUrl').optional({ nullable: true }).custom((v) => {
+      if (v === null || v === '') return true;
+      const url = new URL(v);
+      return !!url;
+    }).withMessage('imageUrl must be a valid URL or null'),
+    body('articleId').optional({ nullable: true }).isString(),
+    body('scheduledFor').optional({ nullable: true }).custom((v) => {
+      if (v === null) return true;
+      if (isNaN(Date.parse(v))) throw new Error('scheduledFor must be a valid ISO 8601 date');
+      return true;
+    }),
+    body('status').optional().isIn(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'FAILED']),
+  ],
+  async (req, res) => {
+    if (handleValidationErrors(req, res)) return;
+
+    const existing = await req.prisma.socialPost.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, status: true },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Social post not found' });
+    }
+
+    if (!EDITABLE_STATUSES.includes(existing.status)) {
+      return res.status(400).json({ error: `Cannot edit a post with status ${existing.status}` });
+    }
+
+    const { content, imageUrl, platforms, articleId, scheduledFor, status } = req.body;
+
+    if (articleId !== undefined && articleId !== null) {
+      const article = await req.prisma.article.findUnique({ where: { id: articleId }, select: { id: true } });
+      if (!article) {
+        return res.status(400).json({ error: 'Article not found' });
+      }
+    }
+
+    const updateData = {};
+    if (content !== undefined) updateData.content = content;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (platforms !== undefined) updateData.platforms = platforms;
+    if (articleId !== undefined) updateData.articleId = articleId;
+    if (scheduledFor !== undefined) updateData.scheduledFor = scheduledFor ? new Date(scheduledFor) : null;
+    if (status !== undefined) updateData.status = status;
+
+    const post = await req.prisma.socialPost.update({
+      where: { id: req.params.id },
+      data: updateData,
+      include: {
+        article: { select: { id: true, title: true, slug: true } },
+      },
+    });
+
+    res.json(post);
+  }
+);
+
+// DELETE /:id — Delete social post
+router.delete(
+  '/:id',
+  [param('id').isString().notEmpty()],
+  async (req, res) => {
+    if (handleValidationErrors(req, res)) return;
+
+    const existing = await req.prisma.socialPost.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, status: true },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Social post not found' });
+    }
+
+    if (!EDITABLE_STATUSES.includes(existing.status)) {
+      return res.status(400).json({ error: `Cannot delete a post with status ${existing.status}` });
+    }
+
+    await req.prisma.socialPost.delete({ where: { id: req.params.id } });
+
+    res.json({ success: true });
+  }
+);
+
+// POST /:id/publish — Publish social post
+router.post(
+  '/:id/publish',
+  [param('id').isString().notEmpty()],
+  async (req, res) => {
+    if (handleValidationErrors(req, res)) return;
+
+    const existing = await req.prisma.socialPost.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, status: true },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Social post not found' });
+    }
+
+    if (!EDITABLE_STATUSES.includes(existing.status)) {
+      return res.status(400).json({ error: `Cannot publish a post with status ${existing.status}` });
+    }
+
+    // TODO T5.2: enqueue to social-publish BullMQ queue for actual platform publishing
+    const post = await req.prisma.socialPost.update({
+      where: { id: req.params.id },
+      data: {
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+      },
+      include: {
+        article: { select: { id: true, title: true, slug: true } },
+      },
+    });
+
+    res.json(post);
+  }
+);
+
+module.exports = router;
