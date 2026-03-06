@@ -1,5 +1,7 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
+const { socialPublishQueue } = require('../../queues/socialPublishQueue');
+const { previewAll } = require('../../services/social');
 
 const router = express.Router();
 
@@ -248,19 +250,35 @@ router.post(
       return res.status(400).json({ error: `Cannot publish a post with status ${existing.status}` });
     }
 
-    // TODO T5.2: enqueue to social-publish BullMQ queue for actual platform publishing
-    const post = await req.prisma.socialPost.update({
-      where: { id: req.params.id },
-      data: {
-        status: 'PUBLISHED',
-        publishedAt: new Date(),
-      },
-      include: {
-        article: { select: { id: true, title: true, slug: true } },
-      },
-    });
+    await socialPublishQueue.add('publish-post', { postId: req.params.id });
 
-    res.json(post);
+    res.json({ queued: true, postId: req.params.id });
+  }
+);
+
+// POST /preview — Preview post on selected platforms
+router.post(
+  '/preview',
+  [
+    body('content').notEmpty().withMessage('Content is required'),
+    body('platforms')
+      .isArray({ min: 1 })
+      .withMessage('Platforms must be a non-empty array')
+      .custom((platforms) => {
+        const invalid = platforms.filter((p) => !VALID_PLATFORMS.includes(p));
+        if (invalid.length > 0) {
+          throw new Error(`Invalid platforms: ${invalid.join(', ')}. Valid: ${VALID_PLATFORMS.join(', ')}`);
+        }
+        return true;
+      }),
+    body('imageUrl').optional().isURL().withMessage('imageUrl must be a valid URL'),
+  ],
+  (req, res) => {
+    if (handleValidationErrors(req, res)) return;
+
+    const { content, imageUrl, platforms } = req.body;
+    const previews = previewAll({ content, imageUrl }, platforms);
+    res.json({ previews });
   }
 );
 
