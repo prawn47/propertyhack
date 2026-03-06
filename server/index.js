@@ -13,8 +13,19 @@ const adminNewsFetchRoutes = require('./routes/admin/newsFetch');
 const adminSocialPostsRoutes = require('./routes/admin/socialPosts');
 const publicArticlesRoutes = require('./routes/public/articles');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
-const { articleProcessingWorker } = require('./workers/articleProcessingWorker');
-const { scheduleDailyNewsFetch } = require('./jobs/dailyNewsFetch');
+const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
+const { articleProcessWorker } = require('./workers/articleProcessWorker');
+const { articleSummariseWorker } = require('./workers/articleSummariseWorker');
+const { articleEmbedWorker } = require('./workers/articleEmbedWorker');
+const { socialPublishWorker } = require('./workers/socialPublishWorker');
+
+const { sourceFetchQueue } = require('./queues/sourceFetchQueue');
+const { articleProcessQueue } = require('./queues/articleProcessQueue');
+const { articleSummariseQueue } = require('./queues/articleSummariseQueue');
+const { articleEmbedQueue } = require('./queues/articleEmbedQueue');
+const { socialPublishQueue } = require('./queues/socialPublishQueue');
+
+const { startScheduler } = require('./jobs/ingestionScheduler');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -67,6 +78,36 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+app.get('/system/queue-status', async (req, res) => {
+  try {
+    const [
+      sourceFetchCounts,
+      articleProcessCounts,
+      articleSummariseCounts,
+      articleEmbedCounts,
+      socialPublishCounts,
+    ] = await Promise.all([
+      sourceFetchQueue.getJobCounts(),
+      articleProcessQueue.getJobCounts(),
+      articleSummariseQueue.getJobCounts(),
+      articleEmbedQueue.getJobCounts(),
+      socialPublishQueue.getJobCounts(),
+    ]);
+
+    res.json({
+      queues: {
+        'source-fetch': sourceFetchCounts,
+        'article-process': articleProcessCounts,
+        'article-summarise': articleSummariseCounts,
+        'article-embed': articleEmbedCounts,
+        'social-publish': socialPublishCounts,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch queue status', message: err.message });
+  }
+});
+
 const noop = (req, res, next) => next();
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
 app.use('/api/admin', authenticateToken, requireSuperAdmin);
@@ -104,28 +145,37 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-scheduleDailyNewsFetch();
+startScheduler();
+
+const allWorkers = [
+  sourceFetchWorker,
+  articleProcessWorker,
+  articleSummariseWorker,
+  articleEmbedWorker,
+  socialPublishWorker,
+];
+
+async function shutdown(signal) {
+  console.log(`${signal} received, shutting down gracefully`);
+  await Promise.all(allWorkers.map((w) => w.close()));
+  await prisma.$disconnect();
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 const PORT = process.env.PORT || 3001;
-
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await articleProcessingWorker.close();
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await articleProcessingWorker.close();
-  await prisma.$disconnect();
-  process.exit(0);
-});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`Queue status: http://localhost:${PORT}/system/queue-status`);
   console.log(`CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3004'}`);
   console.log('BullMQ workers initialized');
-  console.log('  - Article processing worker: processing queue "article-processing"');
+  console.log('  - source-fetch worker (concurrency: 3)');
+  console.log('  - article-process worker (concurrency: 5)');
+  console.log('  - article-summarise worker (concurrency: 2)');
+  console.log('  - article-embed worker (concurrency: 3)');
+  console.log('  - social-publish worker (concurrency: 1)');
 });
