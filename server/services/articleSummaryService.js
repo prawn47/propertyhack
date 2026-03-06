@@ -2,9 +2,6 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/**
- * Generate slug from title
- */
 function generateSlug(title) {
   return title
     .toLowerCase()
@@ -13,92 +10,81 @@ function generateSlug(title) {
     .substring(0, 100);
 }
 
-/**
- * Generate SEO-optimized article summary from source content
- * @param {string} sourceUrl - Original article URL
- * @param {string} sourceContent - Original article text content
- * @param {string[]} focusKeywords - SEO focus keywords
- * @param {string} market - Market code (AU, US, etc.)
- * @returns {Promise<{title: string, slug: string, summary: string, metaDescription: string}>}
- */
-async function generateArticleSummary(sourceUrl, sourceContent, focusKeywords = [], market = 'AU') {
+async function generateArticleSummary(articleContent) {
+  const { title, content, sourceUrl, sourceName } = articleContent;
+
+  const hasContent = content && content.trim().length > 50;
+  const inputText = hasContent
+    ? `Title: ${title}\nSource: ${sourceName || sourceUrl}\nContent:\n${content}`
+    : `Title: ${title}\nSource: ${sourceName || sourceUrl}\n(Full article content not available — summarise from title only)`;
+
+  const prompt = `You are a property news editor for PropertyHack, an Australian property news platform. Your tone is factual and neutral.
+
+Analyse the following article and return a JSON object with these fields:
+- shortBlurb: ~50 words, a concise hook suitable for a news card. Do not exceed 60 words.
+- longSummary: ~300 words, a comprehensive summary covering the key points, facts, and figures. Always attribute the source (${sourceName || sourceUrl}).
+- suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
+- extractedLocation: the primary Australian city and/or state mentioned (e.g. "Sydney, NSW" or "Victoria"), or null if not identifiable
+
+Respond with valid JSON only. Do not wrap in markdown code fences.
+
+ARTICLE:
+${inputText}`;
+
+  let model;
   try {
-    const keywordsStr = focusKeywords.join(', ');
-    
-    const prompt = `You are a professional property news editor for Property Hack, an agenda-free property news platform.
-
-Your task is to create an SEO-optimized summary of a property article for the ${market} market.
-
-ORIGINAL ARTICLE:
-${sourceContent}
-
-FOCUS KEYWORDS: ${keywordsStr || 'None specified - choose relevant property terms'}
-
-Instructions:
-1. Create an engaging, click-worthy title (max 60 characters)
-2. Write a comprehensive summary (300-500 words) that:
-   - Naturally incorporates the focus keywords without making them bold
-   - Maintains objectivity and factual accuracy
-   - Is written in clear, professional language
-   - Includes key statistics, dates, and facts from the original
-   - Uses proper H2/H3 structure for SEO
-   - DO NOT use <strong> or <b> tags for keywords - keep all text regular weight
-3. Create a meta description (150-160 characters) optimized for search engines
-4. The tone should be professional yet accessible
-5. IMPORTANT: Always attribute the source and make it clear this is a summary
-
-Format your response as JSON:
-{
-  "title": "Engaging title here",
-  "summary": "Full summary with proper HTML formatting (use <h2>, <h3>, <p>, <ul>, <li> tags but NOT <strong> or <b>)",
-  "metaDescription": "SEO meta description"
-}`;
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-    
-    const fullPrompt = `You are an expert property news editor and SEO specialist. Always respond with valid JSON only.\n\n${prompt}`;
-    
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Extract JSON from response (sometimes Gemini wraps it in markdown)
-    let jsonText = text;
-    if (text.includes('```json')) {
-      jsonText = text.match(/```json\n([\s\S]*?)\n```/)[1];
-    } else if (text.includes('```')) {
-      jsonText = text.match(/```\n([\s\S]*?)\n```/)[1];
-    }
-    
-    const parsed = JSON.parse(jsonText);
-    
-    // Generate slug from title
-    const slug = generateSlug(parsed.title);
-    
-    return {
-      title: parsed.title,
-      slug,
-      summary: parsed.summary,
-      metaDescription: parsed.metaDescription,
-    };
-  } catch (error) {
-    console.error('Failed to generate article summary:', error);
-    throw new Error(`Summary generation failed: ${error.message}`);
+    model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+  } catch {
+    model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
   }
+
+  let text;
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    text = response.text();
+  } catch (error) {
+    // Try fallback model if exp variant fails
+    if (error.message && error.message.includes('not found')) {
+      const fallback = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const result = await fallback.generateContent(prompt);
+      const response = await result.response;
+      text = response.text();
+    } else {
+      throw new Error(`Gemini API error during summarisation: ${error.message}`);
+    }
+  }
+
+  // Strip markdown fences if present
+  let jsonText = text.trim();
+  if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (error) {
+    throw new Error(`Failed to parse Gemini response as JSON: ${error.message}. Raw: ${jsonText.substring(0, 200)}`);
+  }
+
+  const validCategories = ['property-market', 'residential', 'commercial', 'investment', 'development', 'policy', 'finance', 'uncategorized'];
+  const suggestedCategory = validCategories.includes(parsed.suggestedCategory)
+    ? parsed.suggestedCategory
+    : 'uncategorized';
+
+  return {
+    shortBlurb: parsed.shortBlurb || '',
+    longSummary: parsed.longSummary || '',
+    suggestedCategory,
+    extractedLocation: parsed.extractedLocation || null,
+  };
 }
 
-/**
- * Generate alt text for article image
- * @param {string} articleTitle - Article title
- * @param {string} articleSummary - Article summary
- * @param {string[]} focusKeywords - Focus keywords
- * @returns {Promise<string>}
- */
 async function generateImageAltText(articleTitle, articleSummary, focusKeywords = []) {
-  try {
-    const keywordsStr = focusKeywords.join(', ');
-    
-    const prompt = `Generate descriptive, SEO-friendly alt text for an article image.
+  const keywordsStr = focusKeywords.join(', ');
+
+  const prompt = `Generate descriptive, SEO-friendly alt text for an article image.
 
 Article Title: ${articleTitle}
 Article Summary: ${articleSummary.substring(0, 200)}...
@@ -112,14 +98,13 @@ Create alt text that:
 
 Return ONLY the alt text, nothing else.`;
 
+  try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    
     return text.trim().replace(/^"|"$/g, '');
   } catch (error) {
-    console.error('Failed to generate alt text:', error);
     throw new Error(`Alt text generation failed: ${error.message}`);
   }
 }
