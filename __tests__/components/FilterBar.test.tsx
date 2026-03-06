@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import FilterBar from '../../components/public/FilterBar';
 import type { Filters } from '../../components/public/FilterBar';
@@ -54,12 +54,15 @@ describe('FilterBar', () => {
 
   it('calls onChange after debounce when search input changes', async () => {
     vi.useFakeTimers();
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
-    const { onChange } = renderBar();
+    const onChange = vi.fn();
+    const { container } = render(<FilterBar filters={defaultFilters} onChange={onChange} />);
 
-    await user.type(screen.getByPlaceholderText('Search property news...'), 'sydney');
+    const input = container.querySelector('input[type="search"]') as HTMLInputElement;
+    // Fire native React onChange via fireEvent (avoids userEvent + fakeTimers conflict)
+    const { fireEvent } = await import('@testing-library/react');
+    fireEvent.change(input, { target: { value: 'sydney' } });
+
     expect(onChange).not.toHaveBeenCalled();
-
     vi.advanceTimersByTime(300);
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ search: 'sydney' }));
 
@@ -67,14 +70,18 @@ describe('FilterBar', () => {
   });
 
   it('calls onChange immediately when location dropdown changes', async () => {
-    const user = userEvent.setup();
-    const { onChange } = renderBar();
+    const onChange = vi.fn();
+    const { fireEvent } = await import('@testing-library/react');
 
-    await waitFor(() => {
-      expect(screen.queryAllByRole('option', { name: 'Sydney' }).length).toBeGreaterThan(0);
+    await act(async () => {
+      render(<FilterBar filters={defaultFilters} onChange={onChange} />);
     });
 
-    await user.selectOptions(screen.getByDisplayValue('All Locations'), 'Sydney');
+    // After act, async useEffect (getLocations mock) has resolved and options are rendered
+    const selects = screen.getAllByRole('combobox');
+    const locationSelect = selects[0] as HTMLSelectElement;
+    fireEvent.change(locationSelect, { target: { value: 'Sydney' } });
+
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ location: 'Sydney' }));
   });
 
@@ -88,11 +95,11 @@ describe('FilterBar', () => {
     expect(screen.getByText('Clear filters')).toBeInTheDocument();
   });
 
-  it('clear button resets all filters', async () => {
-    const user = userEvent.setup();
-    const { onChange } = renderBar({ filters: { ...defaultFilters, search: 'test', location: 'Sydney' } });
+  it('clear button resets all filters', () => {
+    const onChange = vi.fn();
+    render(<FilterBar filters={{ ...defaultFilters, search: 'test', location: 'Sydney' }} onChange={onChange} />);
 
-    await user.click(screen.getByText('Clear filters'));
+    screen.getByText('Clear filters').click();
     expect(onChange).toHaveBeenCalledWith({
       search: '',
       location: '',

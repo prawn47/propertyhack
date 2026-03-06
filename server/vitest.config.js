@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['__tests__/**/*.test.js'],
+    root: './server',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
