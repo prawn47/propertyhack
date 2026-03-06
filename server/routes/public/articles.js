@@ -1,120 +1,287 @@
 const express = require('express');
 const router = express.Router();
+const { generateEmbedding } = require('../../services/embeddingService');
 
-/**
- * GET /api/public/articles
- * Fetch published articles for public display (AU market only)
- */
+const ARTICLE_SELECT = {
+  id: true,
+  sourceId: true,
+  sourceUrl: true,
+  title: true,
+  shortBlurb: true,
+  longSummary: true,
+  imageUrl: true,
+  imageAltText: true,
+  slug: true,
+  category: true,
+  location: true,
+  market: true,
+  status: true,
+  isFeatured: true,
+  viewCount: true,
+  publishedAt: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  source: {
+    select: { id: true, name: true, type: true },
+  },
+};
+
+// GET /api/articles
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 20, featured } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const where = {
-      status: 'published',
-      market: 'AU',
-    };
-    
-    // Optional: filter by featured
-    if (featured === 'true') {
-      where.featured = true;
+    const {
+      search,
+      location,
+      category,
+      dateFrom,
+      dateTo,
+      sort = 'newest',
+      page = 1,
+      limit = 20,
+    } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where = { status: 'PUBLISHED' };
+
+    if (location) {
+      where.location = { contains: location, mode: 'insensitive' };
     }
-    
-    // Fetch articles with relations
+    if (category) {
+      where.category = { equals: category, mode: 'insensitive' };
+    }
+    if (dateFrom || dateTo) {
+      where.publishedAt = {};
+      if (dateFrom) where.publishedAt.gte = new Date(dateFrom);
+      if (dateTo) where.publishedAt.lte = new Date(dateTo);
+    }
+
+    if (search) {
+      let embedding;
+      try {
+        embedding = await generateEmbedding(search);
+      } catch (err) {
+        console.error('[Articles] Embedding generation failed, falling back to text search:', err.message);
+      }
+
+      if (embedding) {
+        const embeddingStr = `[${embedding.join(',')}]`;
+
+        const filterClauses = [`a.status = 'PUBLISHED'`];
+        const filterValues = [];
+        let paramIdx = 2;
+
+        if (location) {
+          filterClauses.push(`LOWER(a.location) LIKE LOWER($${paramIdx})`);
+          filterValues.push(`%${location}%`);
+          paramIdx++;
+        }
+        if (category) {
+          filterClauses.push(`LOWER(a.category) = LOWER($${paramIdx})`);
+          filterValues.push(category);
+          paramIdx++;
+        }
+        if (dateFrom) {
+          filterClauses.push(`a.published_at >= $${paramIdx}`);
+          filterValues.push(new Date(dateFrom));
+          paramIdx++;
+        }
+        if (dateTo) {
+          filterClauses.push(`a.published_at <= $${paramIdx}`);
+          filterValues.push(new Date(dateTo));
+          paramIdx++;
+        }
+
+        const whereClause = filterClauses.join(' AND ');
+
+        // Count query: rebuild filter clauses without $1 (embedding not needed for count)
+        const countClauses = [`a.status = 'PUBLISHED'`, `a.embedding IS NOT NULL`];
+        const countValues = [];
+        let countIdx = 1;
+        if (location) {
+          countClauses.push(`LOWER(a.location) LIKE LOWER($${countIdx})`);
+          countValues.push(`%${location}%`);
+          countIdx++;
+        }
+        if (category) {
+          countClauses.push(`LOWER(a.category) = LOWER($${countIdx})`);
+          countValues.push(category);
+          countIdx++;
+        }
+        if (dateFrom) {
+          countClauses.push(`a.published_at >= $${countIdx}`);
+          countValues.push(new Date(dateFrom));
+          countIdx++;
+        }
+        if (dateTo) {
+          countClauses.push(`a.published_at <= $${countIdx}`);
+          countValues.push(new Date(dateTo));
+          countIdx++;
+        }
+        const countResult = await req.prisma.$queryRawUnsafe(
+          `SELECT COUNT(*)::int as count FROM articles a WHERE ${countClauses.join(' AND ')}`,
+          ...countValues
+        );
+        const total = countResult[0]?.count ?? 0;
+
+        const articles = await req.prisma.$queryRawUnsafe(
+          `SELECT
+            a.id, a.source_id as "sourceId", a.source_url as "sourceUrl",
+            a.title, a.short_blurb as "shortBlurb", a.long_summary as "longSummary",
+            a.image_url as "imageUrl", a.image_alt_text as "imageAltText",
+            a.slug, a.category, a.location, a.market, a.status,
+            a.is_featured as "isFeatured", a.view_count as "viewCount",
+            a.published_at as "publishedAt", a.metadata,
+            a.created_at as "createdAt", a.updated_at as "updatedAt",
+            s.id as "source.id", s.name as "source.name", s.type as "source.type",
+            1 - (a.embedding <=> $1::vector) as similarity
+          FROM articles a
+          LEFT JOIN ingestion_sources s ON s.id = a.source_id
+          WHERE ${whereClause} AND a.embedding IS NOT NULL
+          ORDER BY a.embedding <=> $1::vector
+          LIMIT ${limitNum} OFFSET ${skip}`,
+          embeddingStr,
+          ...filterValues
+        );
+
+        const shaped = articles.map((row) => ({
+          id: row.id,
+          sourceId: row.sourceId,
+          sourceUrl: row.sourceUrl,
+          title: row.title,
+          shortBlurb: row.shortBlurb,
+          longSummary: row.longSummary,
+          imageUrl: row.imageUrl,
+          imageAltText: row.imageAltText,
+          slug: row.slug,
+          category: row.category,
+          location: row.location,
+          market: row.market,
+          status: row.status,
+          isFeatured: row['isFeatured'],
+          viewCount: row['viewCount'],
+          publishedAt: row['publishedAt'],
+          metadata: row.metadata,
+          createdAt: row['createdAt'],
+          updatedAt: row['updatedAt'],
+          similarity: row.similarity,
+          source: {
+            id: row['source.id'],
+            name: row['source.name'],
+            type: row['source.type'],
+          },
+        }));
+
+        return res.json({
+          articles: shaped,
+          total,
+          page: pageNum,
+          totalPages: Math.ceil(total / limitNum),
+        });
+      }
+
+      // Fallback: keyword search on title/blurb if embedding failed
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { shortBlurb: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const orderBy = sort === 'newest' ? [{ isFeatured: 'desc' }, { publishedAt: 'desc' }] : [{ publishedAt: 'desc' }];
+
     const [articles, total] = await Promise.all([
       req.prisma.article.findMany({
         where,
-        include: {
-          category: true,
-          source: true,
-          author: {
-            select: {
-              id: true,
-              email: true,
-              displayName: true,
-            },
-          },
-        },
-        orderBy: [
-          { featured: 'desc' }, // Featured articles first
-          { publishedAt: 'desc' }, // Then by date
-        ],
+        select: ARTICLE_SELECT,
+        orderBy,
         skip,
-        take: parseInt(limit),
+        take: limitNum,
       }),
       req.prisma.article.count({ where }),
     ]);
-    
-    // Parse focusKeywords from JSON string
-    const articlesWithParsedKeywords = articles.map(article => ({
-      ...article,
-      focusKeywords: article.focusKeywords ? JSON.parse(article.focusKeywords) : [],
-    }));
-    
-    res.json({
-      articles: articlesWithParsedKeywords,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-      },
+
+    return res.json({
+      articles,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
     });
-    
   } catch (error) {
-    console.error('[Public Articles] Error:', error);
+    console.error('[Articles] Error:', error);
     res.status(500).json({ error: 'Failed to fetch articles' });
   }
 });
 
-/**
- * GET /api/public/articles/:slug
- * Fetch single article by slug
- */
+// GET /api/articles/:slug/related
+router.get('/:slug/related', async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const article = await req.prisma.$queryRaw`
+      SELECT id, embedding::text IS NOT NULL as has_embedding
+      FROM articles
+      WHERE slug = ${slug} AND status = 'PUBLISHED'
+      LIMIT 1
+    `;
+
+    if (!article.length) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const articleId = article[0].id;
+
+    const related = await req.prisma.$queryRaw`
+      SELECT
+        a.id, a.source_id as "sourceId", a.source_url as "sourceUrl",
+        a.title, a.short_blurb as "shortBlurb", a.long_summary as "longSummary",
+        a.image_url as "imageUrl", a.image_alt_text as "imageAltText",
+        a.slug, a.category, a.location, a.market, a.status,
+        a.is_featured as "isFeatured", a.view_count as "viewCount",
+        a.published_at as "publishedAt", a.metadata,
+        a.created_at as "createdAt", a.updated_at as "updatedAt"
+      FROM articles a
+      WHERE
+        a.status = 'PUBLISHED'
+        AND a.id != ${articleId}
+        AND a.embedding IS NOT NULL
+      ORDER BY a.embedding <=> (
+        SELECT embedding FROM articles WHERE id = ${articleId}
+      )
+      LIMIT 5
+    `;
+
+    return res.json({ articles: related });
+  } catch (error) {
+    console.error('[Related Articles] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch related articles' });
+  }
+});
+
+// GET /api/articles/:slug
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    
+
     const article = await req.prisma.article.findUnique({
       where: { slug },
-      include: {
-        category: true,
-        source: true,
-        author: {
-          select: {
-            id: true,
-            email: true,
-            displayName: true,
-          },
-        },
-      },
+      select: ARTICLE_SELECT,
     });
-    
-    if (!article) {
+
+    if (!article || article.status !== 'PUBLISHED') {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
-    // Only allow published articles
-    if (article.status !== 'published') {
-      return res.status(404).json({ error: 'Article not found' });
-    }
-    
-    // Increment view count
+
     await req.prisma.article.update({
       where: { id: article.id },
       data: { viewCount: { increment: 1 } },
     });
-    
-    // Parse focusKeywords
-    const articleWithParsedKeywords = {
-      ...article,
-      focusKeywords: article.focusKeywords ? JSON.parse(article.focusKeywords) : [],
-    };
-    
-    res.json(articleWithParsedKeywords);
-    
+
+    return res.json(article);
   } catch (error) {
-    console.error('[Public Article Detail] Error:', error);
+    console.error('[Article Detail] Error:', error);
     res.status(500).json({ error: 'Failed to fetch article' });
   }
 });
