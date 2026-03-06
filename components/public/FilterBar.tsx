@@ -13,6 +13,8 @@ export interface Filters {
 interface FilterBarProps {
   filters: Filters;
   onChange: (filters: Filters) => void;
+  detectedLocation?: string | null;
+  locationLoading?: boolean;
 }
 
 const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
@@ -22,7 +24,7 @@ const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
   { value: 'month', label: 'This Month' },
 ];
 
-const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange }) => {
+const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocation, locationLoading }) => {
   const [categories, setCategories] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -47,6 +49,9 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange }) => {
 
   const hasActiveFilters =
     filters.search || filters.location || filters.category || filters.dateRange !== 'all';
+
+  const showDetectedPill =
+    !locationLoading && detectedLocation && filters.location === detectedLocation;
 
   const clearFilters = () => {
     setSearchInput('');
@@ -131,6 +136,25 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange }) => {
             </button>
           )}
         </div>
+
+        {/* Detected location pill */}
+        {showDetectedPill && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full bg-brand-gold/10 text-brand-gold border border-brand-gold/30">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Using your location: {detectedLocation}
+            </span>
+            <button
+              onClick={() => handleSelect('location', '')}
+              className="text-xs text-content-secondary hover:text-content underline transition-colors"
+            >
+              Change
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
