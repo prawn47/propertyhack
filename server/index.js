@@ -12,6 +12,7 @@ const adminArticlesRoutes = require('./routes/admin/articles');
 const adminMetaRoutes = require('./routes/admin/meta');
 const adminNewsFetchRoutes = require('./routes/admin/newsFetch');
 const adminSocialPostsRoutes = require('./routes/admin/socialPosts');
+const adminDashboardRoutes = require('./routes/admin/dashboard');
 const publicArticlesRoutes = require('./routes/public/articles');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
@@ -117,6 +118,7 @@ app.use('/api/admin/articles', adminArticlesRoutes);
 app.use('/api/admin/meta', adminMetaRoutes);
 app.use('/api/admin/news', adminNewsFetchRoutes);
 app.use('/api/admin/social-posts', adminSocialPostsRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/public/articles', publicArticlesRoutes);
 
 app.use((err, req, res, next) => {
