@@ -3,8 +3,8 @@ const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
-async function createAdminUser() {
-  const email = 'admin@propertyhack.com';
+async function createDanAdmin() {
+  const email = 'dan@microrocket.com';
   const password = 'admin123';
   
   try {
@@ -32,24 +32,9 @@ async function createAdminUser() {
         emailVerified: true,
         superAdmin: true,
         role: 'super_admin',
-        displayName: 'Admin User',
-      }
-    });
-    
-    // Create default settings
-    await prisma.userSettings.create({
-      data: {
-        userId: user.id,
-        toneOfVoice: 'Professional',
-        industry: 'Property',
-        position: 'Admin',
-        audience: 'Property investors and buyers',
-        postGoal: 'Inform',
-        keywords: '["property", "real estate", "housing"]',
-        contentExamples: '[]',
-        timeZone: 'Australia/Sydney',
-        preferredTime: '09:00',
-        englishVariant: 'Australian',
+        displayName: 'Dan',
+        subscriptionTier: 'pro',
+        subscriptionStatus: 'active'
       }
     });
     
@@ -57,7 +42,7 @@ async function createAdminUser() {
     console.log('\nLogin credentials:');
     console.log('Email:', email);
     console.log('Password:', password);
-    console.log('\nAccess the app at: http://localhost:3004');
+    console.log('User ID:', user.id);
   } catch (error) {
     console.error('❌ Error creating user:', error);
   } finally {
@@ -65,4 +50,4 @@ async function createAdminUser() {
   }
 }
 
-createAdminUser();
+createDanAdmin();

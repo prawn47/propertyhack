@@ -26,19 +26,14 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
-    "express-session": "^1.18.2",
     "express-validator": "^7.3.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
     "openai": "^6.6.0",
-    "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0",
-    "passport-linkedin-oauth2": "^2.0.0",
     "prisma": "^6.18.0",
-    "resend": "^6.4.0",
-    "stripe": "^19.2.0"
+    "resend": "^6.4.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",

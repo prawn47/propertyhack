@@ -1,6 +1,6 @@
 # PropertyHack
 
-Repurposed from QUORD codebase for property-related application development.
+Property news aggregation platform for Australia. Collects property news from multiple sources, AI-summarises articles, and serves them in a clean, fast, location-aware news feed.
 
 ## Run Locally
 

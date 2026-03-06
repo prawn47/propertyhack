@@ -5,11 +5,6 @@ export interface User {
   emailVerified: boolean;
   superAdmin: boolean;
   createdAt: string;
-  profilePictureUrl?: string;
-  linkedinId?: string;
-  linkedinAccessToken?: string;
-  linkedinTokenExpiry?: string;
-  linkedinConnected: boolean;
 }
 
 export interface UserSettings {
