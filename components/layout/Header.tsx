@@ -1,8 +1,26 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onSearch?: (query: string) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    if (onSearch) {
+      onSearch(q);
+    } else {
+      navigate(`/?search=${encodeURIComponent(q)}`);
+    }
+    setMobileSearchOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-brand-primary text-white shadow-medium">
@@ -12,7 +30,7 @@ const Header: React.FC = () => {
           <span className="text-brand-gold font-bold text-lg tracking-tight">PropertyHack</span>
         </Link>
 
-        <div className="flex-1 max-w-xl hidden sm:block">
+        <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden sm:block">
           <div className="relative">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -26,11 +44,13 @@ const Header: React.FC = () => {
             </svg>
             <input
               type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search property news..."
               className="w-full bg-white/10 border border-white/20 rounded-lg pl-9 pr-4 py-1.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-brand-gold focus:bg-white/15 transition-colors"
             />
           </div>
-        </div>
+        </form>
 
         <button
           onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
@@ -51,14 +71,16 @@ const Header: React.FC = () => {
       </div>
 
       {mobileSearchOpen && (
-        <div className="sm:hidden px-4 pb-3">
+        <form onSubmit={handleSearch} className="sm:hidden px-4 pb-3">
           <input
             type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search property news..."
             autoFocus
             className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-brand-gold focus:bg-white/15 transition-colors"
           />
-        </div>
+        </form>
       )}
     </header>
   );

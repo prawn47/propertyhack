@@ -199,6 +199,9 @@ const ArticleDetail: React.FC = () => {
                     src={article.imageUrl}
                     alt={article.imageAltText || article.title}
                     className="w-full h-full object-cover"
+                    fetchPriority="high"
+                    width={960}
+                    height={384}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

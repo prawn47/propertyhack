@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 import FilterBar from './FilterBar';
@@ -15,8 +16,18 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 const HomePage: React.FC = () => {
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
+  const [filters, setFilters] = useState<Filters>({ ...DEFAULT_FILTERS, search: initialSearch });
   const { location: detectedLocation, loading: locationLoading } = useLocationDetection();
+
+  // Sync URL ?search= param into filters when it changes (e.g. Header search from another page)
+  useEffect(() => {
+    const q = searchParams.get('search') || '';
+    if (q !== filters.search) {
+      setFilters((prev) => ({ ...prev, search: q }));
+    }
+  }, [searchParams]);
 
   // Once detection resolves, apply detected location as default (only if user hasn't already set one)
   useEffect(() => {
@@ -27,6 +38,12 @@ const HomePage: React.FC = () => {
 
   const handleFiltersChange = (newFilters: Filters) => {
     setFilters(newFilters);
+    // Sync search to URL params
+    if (newFilters.search) {
+      setSearchParams({ search: newFilters.search }, { replace: true });
+    } else if (searchParams.has('search')) {
+      setSearchParams({}, { replace: true });
+    }
     // Sync location changes back to the detection hook so they persist
     if (newFilters.location !== filters.location) {
       const stored = newFilters.location;

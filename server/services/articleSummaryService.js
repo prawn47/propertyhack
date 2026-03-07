@@ -18,13 +18,13 @@ async function generateArticleSummary(articleContent) {
     ? `Title: ${title}\nSource: ${sourceName || sourceUrl}\nContent:\n${content}`
     : `Title: ${title}\nSource: ${sourceName || sourceUrl}\n(Full article content not available — summarise from title only)`;
 
-  const prompt = `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is factual and neutral.
+  const prompt = `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is authoritative, factual, and data-driven.
 
 Analyse the following article and return a JSON object with these fields:
 
 - isPropertyRelated: boolean — true ONLY if the article is directly about property, real estate, housing, construction, mortgages, interest rates affecting housing, property investment, urban planning, property development, home buying/selling, rental markets, or housing policy. Return false for general news, sports, politics (unless directly about housing policy), entertainment, celebrities, etc.
-- shortBlurb: ~50 words, a concise hook suitable for a news card. Do not exceed 60 words. Leave empty string if not property related.
-- longSummary: ~300 words, a comprehensive summary covering the key points, facts, and figures. Always attribute the source (${sourceName || sourceUrl}). Leave empty string if not property related.
+- shortBlurb: ~50 words, a concise hook suitable for a news card. Include a specific data point (percentage, dollar amount, or trend figure) if available in the source material. Do not exceed 60 words. Leave empty string if not property related.
+- longSummary: ~300 words, a comprehensive summary. IMPORTANT for search engine visibility: include specific statistics, percentages, dates, and dollar figures from the article. Use clear section structure with key findings first. Always attribute the source (${sourceName || sourceUrl}). Write in a definitive, expert tone as if you are the authority on this topic. Leave empty string if not property related.
 - suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
 - extractedLocation: the primary city/state/region mentioned (e.g. "Sydney, NSW", "London", "New York", "Toronto"), or null if not identifiable
 - markets: an array of market codes this article is relevant to. Use ONLY these codes: "AU", "US", "UK", "CA", "ALL". Use "ALL" for content relevant globally (e.g. universal home-buying tips, decorating/landscaping advice, general investment strategy, global housing trends). An article can belong to multiple specific markets (e.g. ["AU", "UK"]) if it compares or discusses both. Most articles will have exactly one market code.

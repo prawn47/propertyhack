@@ -1,13 +1,48 @@
 propertyhack.com {
+    # API routes → Express
     handle /api/* {
         reverse_proxy express:3001
     }
     handle /health {
         reverse_proxy express:3001
     }
+
+    # Sitemaps, RSS feed, robots.txt → Express
+    handle /sitemap*.xml {
+        reverse_proxy express:3001
+    }
+    handle /feed.xml {
+        reverse_proxy express:3001
+    }
+
+    # Static images served by Express
+    handle /images/* {
+        reverse_proxy express:3001
+    }
+
+    # All other requests → try static files first, then Express for crawler SSR
     handle {
         root * /srv
-        try_files {path} /index.html
-        file_server
+
+        # Serve static assets directly (JS, CSS, images, fonts)
+        @static path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.map
+        handle @static {
+            file_server {
+                precompressed br gzip
+            }
+        }
+
+        # For HTML requests, try Express first (for crawler SSR), fall back to SPA
+        @notStatic not path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.map
+        handle @notStatic {
+            reverse_proxy express:3001 {
+                @notFound status 404
+                handle_response @notFound {
+                    root * /srv
+                    rewrite * /index.html
+                    file_server
+                }
+            }
+        }
     }
 }

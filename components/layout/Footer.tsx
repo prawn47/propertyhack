@@ -17,26 +17,57 @@ const Footer: React.FC = () => {
   }, [navigate]);
 
   return (
-    <footer className="bg-brand-primary text-white/50 py-6 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
-        <span className="flex items-center gap-2">
-          <img
-            src="/ph-logo.jpg"
-            alt="PropertyHack"
-            className="h-6 w-6 rounded cursor-pointer select-none"
-            onClick={handleLogoClick}
-            draggable={false}
-          />
-          <span className="text-white/70 font-medium">PropertyHack</span>
-          {' '}&copy; {year}
-        </span>
-        <div className="flex items-center gap-4">
-          <Link to="/privacy" className="hover:text-white transition-colors">
-            Privacy
-          </Link>
-          <Link to="/terms" className="hover:text-white transition-colors">
-            Terms
-          </Link>
+    <footer className="bg-brand-primary text-white/50 py-8 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Location links for SEO */}
+        <div className="mb-6 pb-6 border-b border-white/10">
+          <h3 className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-3">Property News by Location</h3>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {[
+              { slug: 'sydney', name: 'Sydney' },
+              { slug: 'melbourne', name: 'Melbourne' },
+              { slug: 'brisbane', name: 'Brisbane' },
+              { slug: 'perth', name: 'Perth' },
+              { slug: 'adelaide', name: 'Adelaide' },
+              { slug: 'canberra', name: 'Canberra' },
+              { slug: 'hobart', name: 'Hobart' },
+              { slug: 'darwin', name: 'Darwin' },
+              { slug: 'gold-coast', name: 'Gold Coast' },
+            ].map((loc) => (
+              <Link
+                key={loc.slug}
+                to={`/property-news/${loc.slug}`}
+                className="text-sm text-white/40 hover:text-brand-gold transition-colors"
+              >
+                {loc.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+          <span className="flex items-center gap-2">
+            <img
+              src="/ph-logo.jpg"
+              alt="PropertyHack"
+              className="h-6 w-6 rounded cursor-pointer select-none"
+              onClick={handleLogoClick}
+              draggable={false}
+            />
+            <span className="text-white/70 font-medium">PropertyHack</span>
+            {' '}&copy; {year}
+          </span>
+          <div className="flex items-center gap-4">
+            <Link to="/about" className="hover:text-white transition-colors">
+              About
+            </Link>
+            <Link to="/contact" className="hover:text-white transition-colors">
+              Contact
+            </Link>
+            <a href="/feed.xml" className="hover:text-white transition-colors" rel="alternate" type="application/rss+xml">
+              RSS
+            </a>
+          </div>
         </div>
       </div>
     </footer>
