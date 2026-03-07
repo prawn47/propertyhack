@@ -1,8 +1,32 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { PrismaClient } = require('@prisma/client');
 
+const prisma = new PrismaClient();
 const IMAGES_DIR = path.join(__dirname, '../public/images/articles');
+
+let cachedPromptTemplate = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getPromptTemplate() {
+  const now = Date.now();
+  if (cachedPromptTemplate && (now - cacheTimestamp) < CACHE_TTL) {
+    return cachedPromptTemplate;
+  }
+  try {
+    const record = await prisma.systemPrompt.findUnique({ where: { name: 'image-generation' } });
+    if (record && record.isActive) {
+      cachedPromptTemplate = record.content;
+      cacheTimestamp = now;
+      return cachedPromptTemplate;
+    }
+  } catch (err) {
+    console.warn('[imageGen] Could not load prompt from DB:', err.message);
+  }
+  return null;
+}
 
 const CATEGORY_ELEMENTS = {
   residential: 'suburban houses with neat gardens, a quiet tree-lined street, warm front porches, and a welcoming neighbourhood scene',
@@ -15,8 +39,16 @@ const CATEGORY_ELEMENTS = {
   uncategorized: 'a clean suburban streetscape with mixed property types, open sky, and calm neighbourhood details',
 };
 
-function buildImagePrompt(title, shortBlurb, category) {
+async function buildImagePrompt(title, shortBlurb, category) {
   const elements = CATEGORY_ELEMENTS[category] || CATEGORY_ELEMENTS.uncategorized;
+
+  const dbTemplate = await getPromptTemplate();
+  if (dbTemplate) {
+    return dbTemplate
+      .replace('{category_elements}', elements)
+      .replace('{title}', title)
+      .replace('{shortBlurb}', shortBlurb || '');
+  }
 
   return [
     `Generate a flat geometric editorial illustration for a property news article thumbnail.`,
@@ -51,7 +83,7 @@ async function generateArticleImage(title, shortBlurb, category, slug) {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const prompt = buildImagePrompt(title, shortBlurb, category);
+  const prompt = await buildImagePrompt(title, shortBlurb, category);
   let imageData = null;
   let mimeType = 'image/png';
 
