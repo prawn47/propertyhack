@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const { generateSlug } = require('../../utils/slug');
+const { generateSocialPosts } = require('../../services/socialPostGenerationService');
 
 const router = express.Router();
 
@@ -279,6 +280,60 @@ router.delete(
     } catch (error) {
       console.error('Archive article error:', error);
       res.status(500).json({ error: 'Failed to archive article' });
+    }
+  }
+);
+
+const VALID_PLATFORMS = ['twitter', 'facebook', 'linkedin', 'instagram'];
+
+// POST /:id/generate-social-posts — AI-generate social posts for an article
+router.post(
+  '/:id/generate-social-posts',
+  [
+    param('id').isString().notEmpty(),
+    body('platforms').optional().isArray(),
+    body('platforms.*').optional().isIn(VALID_PLATFORMS),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const platforms = req.body.platforms && req.body.platforms.length > 0
+        ? req.body.platforms
+        : VALID_PLATFORMS;
+
+      const article = await req.prisma.article.findUnique({
+        where: { id: req.params.id },
+        select: { id: true, title: true, shortBlurb: true, longSummary: true, sourceUrl: true, category: true, imageUrl: true },
+      });
+
+      if (!article) return res.status(404).json({ error: 'Article not found' });
+
+      const generated = await generateSocialPosts(article, platforms);
+
+      if (!generated) {
+        return res.status(500).json({ error: 'Social post generation failed — AI service unavailable' });
+      }
+
+      const createPromises = platforms
+        .filter((platform) => generated[platform])
+        .map((platform) =>
+          req.prisma.socialPost.create({
+            data: {
+              content: generated[platform],
+              platforms: [platform],
+              articleId: article.id,
+              imageUrl: article.imageUrl || null,
+              status: 'DRAFT',
+            },
+          })
+        );
+
+      const posts = await Promise.all(createPromises);
+
+      res.status(201).json({ posts });
+    } catch (error) {
+      console.error('Generate social posts error:', error);
+      res.status(500).json({ error: 'Failed to generate social posts' });
     }
   }
 );

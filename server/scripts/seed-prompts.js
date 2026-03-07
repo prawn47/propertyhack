@@ -31,6 +31,28 @@ ARTICLE:
 {content}`,
     isActive: true,
   },
+  {
+    name: 'social-generation',
+    description: 'Prompt template for AI social media post generation. Available variables: {title}, {shortBlurb}, {longSummary}, {sourceUrl}, {category}, {platforms}',
+    content: `Generate social media posts for the following Australian property news article. Return a JSON object with keys for each requested platform.
+
+Article title: {title}
+Summary: {shortBlurb}
+Full context: {longSummary}
+Article URL: {sourceUrl}
+Category: {category}
+
+Generate posts for: {platforms}
+
+Platform requirements:
+- twitter: Max 280 characters total (including URL and hashtags). Punchy, newsworthy. 2-3 relevant property/real estate hashtags. Must include article URL.
+- facebook: 1-2 short paragraphs. Conversational, shareable tone. Question or hook to drive engagement. Article URL at end.
+- linkedin: Professional, industry-insight tone. 1-2 paragraphs targeting property professionals and investors. Article URL at end.
+- instagram: Engaging caption with relevant emojis. 5-8 property/real estate hashtags at end. Say "Link in bio" instead of including URL.
+
+Only generate posts for the platforms listed in {platforms}. Return ONLY valid JSON.`,
+    isActive: true,
+  },
 ];
 
 async function main() {

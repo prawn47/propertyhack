@@ -96,14 +96,6 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
         }
       />
       <Route
-        path="/admin/monitor"
-        element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><IngestionMonitor /></AdminPage>
-          </RequireAuth>
-        }
-      />
-      <Route
         path="/admin/articles"
         element={
           <RequireAuth authState={authState}>

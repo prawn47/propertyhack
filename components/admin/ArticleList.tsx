@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getArticles,
   bulkAction,
+  generateSocialPosts,
   Article,
   ArticleListParams,
 } from '../../services/adminArticleService';
@@ -59,6 +60,7 @@ const ArticleList: React.FC = () => {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -108,6 +110,18 @@ const ArticleList: React.FC = () => {
       setSelected(new Set());
     } else {
       setSelected(new Set(articles.map(a => a.id)));
+    }
+  };
+
+  const handleGenerateSocial = async (articleId: string) => {
+    setGeneratingId(articleId);
+    try {
+      await generateSocialPosts(articleId);
+      navigate('/admin/social');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to generate social posts');
+    } finally {
+      setGeneratingId(null);
     }
   };
 
@@ -240,6 +254,8 @@ const ArticleList: React.FC = () => {
                     onEdit={() => navigate(`/admin/articles/${article.id}/edit`)}
                     onReload={load}
                     setError={setError}
+                    onGenerateSocial={() => handleGenerateSocial(article.id)}
+                    generatingId={generatingId}
                   />
                 ))}
               </tbody>
@@ -310,9 +326,11 @@ interface ArticleRowProps {
   onEdit: () => void;
   onReload: () => void;
   setError: (msg: string) => void;
+  onGenerateSocial: () => void;
+  generatingId: string | null;
 }
 
-const ArticleRow: React.FC<ArticleRowProps> = ({ article, selected, onToggle, onEdit }) => {
+const ArticleRow: React.FC<ArticleRowProps> = ({ article, selected, onToggle, onEdit, onGenerateSocial, generatingId }) => {
   return (
     <tr className={selected ? 'bg-yellow-50' : 'hover:bg-base-200/50'}>
       <td className="px-3 py-2.5">
@@ -354,12 +372,31 @@ const ArticleRow: React.FC<ArticleRowProps> = ({ article, selected, onToggle, on
         {article.viewCount}
       </td>
       <td className="px-3 py-2.5">
-        <button
-          onClick={onEdit}
-          className="text-xs px-2 py-1 bg-brand-gold text-brand-primary rounded font-medium hover:opacity-90"
-        >
-          Edit
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onEdit}
+            className="text-xs px-2 py-1 bg-brand-gold text-brand-primary rounded font-medium hover:opacity-90"
+          >
+            Edit
+          </button>
+          <button
+            onClick={onGenerateSocial}
+            disabled={generatingId === article.id}
+            className="p-1.5 rounded text-content-secondary hover:text-brand-gold hover:bg-base-200 transition-colors disabled:opacity-50"
+            title="Generate Social Posts"
+          >
+            {generatingId === article.id ? (
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            )}
+          </button>
+        </div>
       </td>
     </tr>
   );

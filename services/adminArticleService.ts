@@ -128,3 +128,13 @@ export async function bulkAction(ids: string[], action: 'publish' | 'archive' | 
     body: JSON.stringify({ ids, action }),
   });
 }
+
+export async function generateSocialPosts(articleId: string, platforms?: string[]): Promise<any> {
+  const body: any = {};
+  if (platforms) body.platforms = platforms;
+  return request(`${BASE}/${articleId}/generate-social-posts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
