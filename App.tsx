@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import {
   BrowserRouter,
   Routes,
@@ -228,13 +229,15 @@ const App: React.FC = () => {
   };
 
   return (
-    <BrowserRouter>
-      <AppInner
-        authState={authState}
-        onLogin={handleLogin}
-        onLogout={handleLogout}
-      />
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AppInner
+          authState={authState}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+        />
+      </BrowserRouter>
+    </HelmetProvider>
   );
 };
 

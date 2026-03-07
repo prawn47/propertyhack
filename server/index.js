@@ -19,6 +19,8 @@ const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
+const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
+const sitemapRoutes = require('./routes/sitemap');
 const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
 const { articleProcessWorker } = require('./workers/articleProcessWorker');
 const { articleSummariseWorker } = require('./workers/articleSummariseWorker');
@@ -141,6 +143,13 @@ app.use('/api/locations', publicLocationsRoutes);
 app.use('/api/public/articles', publicArticlesRoutes);
 // Webhooks (no auth, validated by x-webhook-secret header)
 app.use('/api/webhooks/newsletter', webhookNewsletterRoutes);
+
+// Sitemaps & RSS (public, no auth)
+app.use(sitemapRoutes);
+
+// Crawler SSR middleware — serves dynamic meta tags to search engine bots
+const indexHtmlPath = path.join(__dirname, '..', 'frontend-dist', 'index.html');
+app.use(createCrawlerSsrMiddleware(indexHtmlPath));
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
