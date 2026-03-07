@@ -50,12 +50,12 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocati
   return (
     <div className="sticky top-14 z-20 bg-base-100 border-b border-base-300 shadow-soft">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Location */}
           <select
             value={filters.location}
             onChange={(e) => handleSelect('location', e.target.value)}
-            className="py-1.5 px-2 text-xs bg-base-200 border border-base-300 rounded-lg text-content focus:outline-none focus:border-brand-gold transition-colors cursor-pointer"
+            className="py-1.5 px-2 text-xs bg-base-200 border border-base-300 rounded-lg text-content focus:outline-none focus:border-brand-gold transition-colors cursor-pointer max-w-[45%]"
           >
             <option value="">All Locations</option>
             {locations.map((loc) => (
@@ -67,7 +67,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocati
           <select
             value={filters.category}
             onChange={(e) => handleSelect('category', e.target.value)}
-            className="py-1.5 px-2 text-xs bg-base-200 border border-base-300 rounded-lg text-content focus:outline-none focus:border-brand-gold transition-colors cursor-pointer"
+            className="py-1.5 px-2 text-xs bg-base-200 border border-base-300 rounded-lg text-content focus:outline-none focus:border-brand-gold transition-colors cursor-pointer max-w-[45%]"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -76,7 +76,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocati
           </select>
 
           {/* Date range */}
-          <div className="flex items-center gap-1 bg-base-200 border border-base-300 rounded-lg p-0.5">
+          <div className="flex flex-wrap items-center gap-1 bg-base-200 border border-base-300 rounded-lg p-0.5">
             {DATE_RANGE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
