@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getPublicArticle } from '../../services/publicArticleService';
 import type { PublicArticle } from '../../services/publicArticleService';
 import RelatedArticles from './RelatedArticles';
+import SeoHead, { SITE_URL } from '../shared/SeoHead';
+import Breadcrumbs from '../shared/Breadcrumbs';
 import Loader from '../Loader';
 
 function formatDate(dateStr: string | null): string {
@@ -135,8 +137,58 @@ const ArticleDetail: React.FC = () => {
       )}
 
       {!loading && article && (
+        <>
+        <SeoHead
+          title={article.title}
+          description={article.shortBlurb || article.longSummary?.substring(0, 160)}
+          canonicalUrl={`/articles/${article.slug}`}
+          ogType="article"
+          ogImage={article.imageUrl?.startsWith('http') ? article.imageUrl : article.imageUrl ? `${SITE_URL}${article.imageUrl}` : undefined}
+          ogImageAlt={article.imageAltText || article.title}
+          article={{
+            publishedTime: article.publishedAt || article.createdAt,
+            modifiedTime: article.updatedAt,
+            section: article.category,
+          }}
+          jsonLd={[
+            {
+              '@context': 'https://schema.org',
+              '@type': 'NewsArticle',
+              headline: article.title,
+              description: article.shortBlurb,
+              image: article.imageUrl || `${SITE_URL}/ph-logo.jpg`,
+              datePublished: article.publishedAt || article.createdAt,
+              dateModified: article.updatedAt,
+              author: { '@type': 'Organization', name: 'PropertyHack' },
+              publisher: {
+                '@type': 'Organization',
+                name: 'PropertyHack',
+                logo: { '@type': 'ImageObject', url: `${SITE_URL}/ph-logo.jpg` },
+              },
+              mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/articles/${article.slug}` },
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+                ...(article.location ? [{ '@type': 'ListItem', position: 2, name: article.location, item: `${SITE_URL}/property-news/${article.location.toLowerCase().replace(/\s+/g, '-')}` }] : []),
+                ...(article.category ? [{ '@type': 'ListItem', position: article.location ? 3 : 2, name: article.category, item: `${SITE_URL}/category/${article.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}` }] : []),
+                { '@type': 'ListItem', position: (article.location ? 2 : 1) + (article.category ? 1 : 0) + 1, name: article.title },
+              ],
+            },
+          ]}
+        />
         <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
+            <Breadcrumbs
+              items={[
+                { label: 'Home', href: '/' },
+                ...(article.location ? [{ label: article.location, href: `/property-news/${article.location.toLowerCase().replace(/\s+/g, '-')}` }] : []),
+                ...(article.category ? [{ label: article.category, href: `/category/${article.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}` }] : []),
+                { label: article.title },
+              ]}
+            />
             {/* Article card */}
             <article className="bg-base-100 rounded-2xl shadow-medium overflow-hidden">
 
@@ -276,8 +328,29 @@ const ArticleDetail: React.FC = () => {
 
             {/* Related articles */}
             <RelatedArticles slug={slug!} />
+
+            {/* Cross-links */}
+            <div className="mt-8 flex flex-wrap gap-3">
+              {article.location && (
+                <Link
+                  to={`/property-news/${article.location.toLowerCase().replace(/\s+/g, '-')}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-brand-gold/10 text-brand-primary border border-brand-gold/30 hover:bg-brand-gold/20 transition-colors"
+                >
+                  More {article.location} property news →
+                </Link>
+              )}
+              {article.category && (
+                <Link
+                  to={`/category/${article.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-base-200 text-content-secondary border border-base-300 hover:border-brand-gold hover:text-brand-gold transition-colors"
+                >
+                  More {article.category} →
+                </Link>
+              )}
+            </div>
           </div>
         </main>
+        </>
       )}
 
       {/* Footer */}

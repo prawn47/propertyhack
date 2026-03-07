@@ -3,6 +3,7 @@ import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 import FilterBar from './FilterBar';
 import ArticleFeed from './ArticleFeed';
+import SeoHead, { SITE_URL } from '../shared/SeoHead';
 import type { Filters } from './FilterBar';
 import { useLocationDetection } from '../../hooks/useLocationDetection';
 
@@ -41,6 +42,21 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col">
+      <SeoHead
+        canonicalUrl="/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'PropertyHack',
+          url: SITE_URL,
+          description: 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/?search={search_term_string}` },
+            'query-input': 'required name=search_term_string',
+          },
+        }}
+      />
       <Header />
       <FilterBar
         filters={filters}
@@ -49,6 +65,7 @@ const HomePage: React.FC = () => {
         locationLoading={locationLoading}
       />
       <main className="flex-1">
+        <h1 className="sr-only">Australian Property News & Market Updates</h1>
         <ArticleFeed filters={filters} />
       </main>
       <Footer />
