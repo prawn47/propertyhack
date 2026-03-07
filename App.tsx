@@ -12,6 +12,11 @@ import LoginPage from './components/LoginPage';
 import Loader from './components/Loader';
 import HomePage from './components/public/HomePage';
 import ArticleDetail from './components/public/ArticleDetail';
+import LocationPage from './components/public/LocationPage';
+import CategoryPage from './components/public/CategoryPage';
+import AboutPage from './components/public/AboutPage';
+import ContactPage from './components/public/ContactPage';
+import NotFoundPage from './components/public/NotFoundPage';
 import AdminLayout from './components/layout/AdminLayout';
 import ArticleList from './components/admin/ArticleList';
 import ArticleEditor from './components/admin/ArticleEditor';
@@ -71,6 +76,10 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
       {/* Public routes */}
       <Route path="/" element={<HomePage />} />
       <Route path="/articles/:slug" element={<ArticleDetail />} />
+      <Route path="/property-news/:location" element={<LocationPage />} />
+      <Route path="/category/:slug" element={<CategoryPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route
         path="/login"
         element={
@@ -187,7 +196,7 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
       />
 
       {/* 404 catch-all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

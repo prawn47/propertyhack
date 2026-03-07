@@ -21,6 +21,7 @@ const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
 const sitemapRoutes = require('./routes/sitemap');
+const feedRoutes = require('./routes/feed');
 const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
 const { articleProcessWorker } = require('./workers/articleProcessWorker');
 const { articleSummariseWorker } = require('./workers/articleSummariseWorker');
@@ -146,6 +147,21 @@ app.use('/api/webhooks/newsletter', webhookNewsletterRoutes);
 
 // Sitemaps & RSS (public, no auth)
 app.use(sitemapRoutes);
+app.use(feedRoutes);
+
+// Public location SEO endpoint
+app.get('/api/locations/:slug/seo', async (req, res) => {
+  try {
+    const data = await prisma.locationSeo.findUnique({
+      where: { slug: req.params.slug },
+      select: { metaTitle: true, metaDescription: true, h1Title: true, introContent: true, focusKeywords: true },
+    });
+    if (!data) return res.status(404).json({ error: 'Not found' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Crawler SSR middleware — serves dynamic meta tags to search engine bots
 const indexHtmlPath = path.join(__dirname, '..', 'frontend-dist', 'index.html');
