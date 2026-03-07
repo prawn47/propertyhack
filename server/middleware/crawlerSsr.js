@@ -69,7 +69,7 @@ function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd,
 }
 
 function buildArticleJsonLd(article) {
-  return {
+  const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     headline: article.title,
@@ -88,6 +88,15 @@ function buildArticleJsonLd(article) {
       '@id': `${SITE_URL}/articles/${article.slug}`,
     },
   };
+  // Reference original source for proper attribution
+  const sourceUrl = article.sourceUrl || article.metadata?.originalUrl;
+  if (sourceUrl) {
+    jsonLd.isBasedOn = {
+      '@type': 'NewsArticle',
+      url: sourceUrl,
+    };
+  }
+  return jsonLd;
 }
 
 function buildWebsiteJsonLd() {
@@ -126,7 +135,7 @@ async function getMetaForUrl(url, prisma) {
       select: {
         title: true, shortBlurb: true, longSummary: true,
         imageUrl: true, imageAltText: true, slug: true,
-        category: true, location: true,
+        category: true, location: true, sourceUrl: true, metadata: true,
         publishedAt: true, updatedAt: true,
       },
     });

@@ -166,6 +166,7 @@ const ArticleDetail: React.FC = () => {
                 logo: { '@type': 'ImageObject', url: `${SITE_URL}/ph-logo.jpg` },
               },
               mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/articles/${article.slug}` },
+              ...(article.metadata?.originalUrl ? { isBasedOn: { '@type': 'NewsArticle', url: article.metadata.originalUrl } } : {}),
             },
             {
               '@context': 'https://schema.org',

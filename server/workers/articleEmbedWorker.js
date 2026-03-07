@@ -2,6 +2,7 @@ const { Worker } = require('bullmq')
 const { connection } = require('../queues/connection')
 const { PrismaClient } = require('@prisma/client')
 const { generateEmbedding } = require('../services/embeddingService')
+const { pingIndexNow } = require('../services/indexNowService')
 
 const prisma = new PrismaClient()
 
@@ -10,7 +11,7 @@ const articleEmbedWorker = new Worker('article-embed', async (job) => {
 
   const article = await prisma.article.findUnique({
     where: { id: articleId },
-    select: { id: true, title: true, shortBlurb: true, longSummary: true }
+    select: { id: true, title: true, shortBlurb: true, longSummary: true, slug: true }
   })
 
   if (!article) {
@@ -40,6 +41,12 @@ const articleEmbedWorker = new Worker('article-embed', async (job) => {
   })
 
   console.log(`[article-embed] Article ${articleId} published`)
+
+  // Ping IndexNow (Bing/Perplexity) for faster crawl pickup
+  if (article.slug) {
+    pingIndexNow(article.slug).catch(() => {});
+  }
+
   return { embedded: textContent.trim().length > 0, articleId }
 }, {
   connection,
