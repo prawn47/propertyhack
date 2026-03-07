@@ -1,6 +1,6 @@
 const { Worker } = require('bullmq');
 const { connection } = require('../queues/connection');
-const { articleEmbedQueue } = require('../queues/articleEmbedQueue');
+const { articleImageQueue } = require('../queues/articleImageQueue');
 const { generateArticleSummary } = require('../services/articleSummaryService');
 const { PrismaClient } = require('@prisma/client');
 
@@ -71,7 +71,7 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
     },
   });
 
-  await articleEmbedQueue.add('embed-article', { articleId });
+  await articleImageQueue.add('image-article', { articleId });
 
   const flags = [categorySlug, ...summary.markets, summary.isEvergreen ? 'evergreen' : 'news'].join(', ');
   console.log(`[article-summarise] Completed: ${articleId} → ${flags}`);

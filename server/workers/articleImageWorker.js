@@ -1,0 +1,78 @@
+const { Worker } = require('bullmq');
+const { connection } = require('../queues/connection');
+const { articleEmbedQueue } = require('../queues/articleEmbedQueue');
+const { generateArticleImage } = require('../services/imageGenerationService');
+const { generateImageAltText } = require('../services/articleSummaryService');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+
+const articleImageWorker = new Worker('article-image', async (job) => {
+  const { articleId } = job.data;
+  console.log(`[article-image] Processing article: ${articleId}`);
+
+  const article = await prisma.article.findUnique({
+    where: { id: articleId },
+    select: {
+      id: true,
+      title: true,
+      shortBlurb: true,
+      category: true,
+      slug: true,
+    },
+  });
+
+  if (!article) {
+    throw new Error(`Article not found: ${articleId}`);
+  }
+
+  const updateData = {};
+
+  const imageResult = await generateArticleImage(
+    article.title,
+    article.shortBlurb,
+    article.category,
+    article.slug,
+  );
+
+  if (imageResult) {
+    updateData.imageUrl = imageResult.publicPath;
+    console.log(`[article-image] Image generated for article ${articleId}: ${imageResult.publicPath}`);
+
+    try {
+      const altText = await generateImageAltText(article.title, article.shortBlurb || '', []);
+      updateData.imageAltText = altText;
+      console.log(`[article-image] Alt text generated for article ${articleId}`);
+    } catch (err) {
+      console.warn(`[article-image] Alt text generation failed for ${articleId}: ${err.message}`);
+    }
+  } else {
+    console.log(`[article-image] Image generation returned null for article ${articleId} — skipping`);
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await prisma.article.update({
+      where: { id: articleId },
+      data: updateData,
+    });
+  }
+
+  await articleEmbedQueue.add('embed-article', { articleId });
+
+  console.log(`[article-image] Completed: ${articleId}`);
+  return { articleId, hasImage: !!imageResult };
+}, {
+  connection,
+  concurrency: 1,
+  lockDuration: 120000,
+});
+
+articleImageWorker.on('completed', (job) => {
+  console.log(`[article-image] Job ${job.id} completed`);
+});
+
+articleImageWorker.on('failed', (job, err) => {
+  console.error(`[article-image] Job ${job.id} failed:`, err.message);
+});
+
+module.exports = { articleImageWorker };

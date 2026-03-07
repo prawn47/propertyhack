@@ -22,12 +22,14 @@ const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
 const { articleProcessWorker } = require('./workers/articleProcessWorker');
 const { articleSummariseWorker } = require('./workers/articleSummariseWorker');
+const { articleImageWorker } = require('./workers/articleImageWorker');
 const { articleEmbedWorker } = require('./workers/articleEmbedWorker');
 const { socialPublishWorker } = require('./workers/socialPublishWorker');
 
 const { sourceFetchQueue } = require('./queues/sourceFetchQueue');
 const { articleProcessQueue } = require('./queues/articleProcessQueue');
 const { articleSummariseQueue } = require('./queues/articleSummariseQueue');
+const { articleImageQueue } = require('./queues/articleImageQueue');
 const { articleEmbedQueue } = require('./queues/articleEmbedQueue');
 const { socialPublishQueue } = require('./queues/socialPublishQueue');
 
@@ -95,12 +97,14 @@ app.get('/system/queue-status', async (req, res) => {
       sourceFetchCounts,
       articleProcessCounts,
       articleSummariseCounts,
+      articleImageCounts,
       articleEmbedCounts,
       socialPublishCounts,
     ] = await Promise.all([
       sourceFetchQueue.getJobCounts(),
       articleProcessQueue.getJobCounts(),
       articleSummariseQueue.getJobCounts(),
+      articleImageQueue.getJobCounts(),
       articleEmbedQueue.getJobCounts(),
       socialPublishQueue.getJobCounts(),
     ]);
@@ -110,6 +114,7 @@ app.get('/system/queue-status', async (req, res) => {
         'source-fetch': sourceFetchCounts,
         'article-process': articleProcessCounts,
         'article-summarise': articleSummariseCounts,
+        'article-image': articleImageCounts,
         'article-embed': articleEmbedCounts,
         'social-publish': socialPublishCounts,
       },
@@ -170,6 +175,7 @@ const allWorkers = [
   sourceFetchWorker,
   articleProcessWorker,
   articleSummariseWorker,
+  articleImageWorker,
   articleEmbedWorker,
   socialPublishWorker,
 ];
@@ -195,6 +201,7 @@ app.listen(PORT, () => {
   console.log('  - source-fetch worker (concurrency: 3)');
   console.log('  - article-process worker (concurrency: 5)');
   console.log('  - article-summarise worker (concurrency: 2)');
+  console.log('  - article-image worker (concurrency: 1)');
   console.log('  - article-embed worker (concurrency: 3)');
   console.log('  - social-publish worker (concurrency: 1)');
 });
