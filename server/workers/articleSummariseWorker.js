@@ -25,12 +25,21 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
     throw new Error(`Article not found: ${articleId}`);
   }
 
+  // Small delay between Gemini calls to avoid burst rate limits
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
   const summary = await generateArticleSummary({
     title: article.title,
     content: article.originalContent,
     sourceUrl: article.sourceUrl,
     sourceName: article.source?.name,
   });
+
+  if (!summary.isPropertyRelated) {
+    console.log(`[article-summarise] Rejecting non-property article: ${articleId} "${article.title}"`);
+    await prisma.article.delete({ where: { id: articleId } });
+    return { articleId, rejected: true };
+  }
 
   // Match suggestedCategory slug to ArticleCategory table
   let categorySlug = summary.suggestedCategory;
@@ -44,6 +53,9 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
     categorySlug = fallback ? 'uncategorized' : categorySlug;
   }
 
+  // Primary market = first in list (or first non-ALL)
+  const primaryMarket = summary.markets.find(m => m !== 'ALL') || summary.markets[0] || 'AU';
+
   await prisma.article.update({
     where: { id: articleId },
     data: {
@@ -51,16 +63,24 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
       longSummary: summary.longSummary,
       category: categorySlug,
       location: summary.extractedLocation,
+      market: primaryMarket,
+      markets: summary.markets,
+      isEvergreen: summary.isEvergreen,
+      status: 'PUBLISHED',
+      publishedAt: new Date(),
     },
   });
 
   await articleEmbedQueue.add('embed-article', { articleId });
 
-  console.log(`[article-summarise] Completed article: ${articleId} → category: ${categorySlug}`);
-  return { articleId, category: categorySlug };
+  const flags = [categorySlug, ...summary.markets, summary.isEvergreen ? 'evergreen' : 'news'].join(', ');
+  console.log(`[article-summarise] Completed: ${articleId} → ${flags}`);
+  return { articleId, category: categorySlug, markets: summary.markets, isEvergreen: summary.isEvergreen };
 }, {
   connection,
-  concurrency: 2,
+  concurrency: 1,
+  lockDuration: 120000,
+  stalledInterval: 120000,
 });
 
 articleSummariseWorker.on('completed', (job) => {

@@ -15,6 +15,8 @@ const ARTICLE_SELECT = {
   category: true,
   location: true,
   market: true,
+  markets: true,
+  isEvergreen: true,
   status: true,
   isFeatured: true,
   viewCount: true,

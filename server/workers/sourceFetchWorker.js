@@ -21,8 +21,7 @@ const sourceFetchWorker = new Worker('source-fetch', async (job) => {
   for (const article of rawArticles) {
     await articleProcessQueue.add('process-article', {
       sourceId,
-      sourceType,
-      ...article,
+      article,
     });
   }
 

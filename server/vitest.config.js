@@ -8,6 +8,7 @@ export default defineConfig({
     pool: 'forks',
     deps: {
       interopDefault: true,
+      inline: true,
     },
     coverage: {
       provider: 'v8',

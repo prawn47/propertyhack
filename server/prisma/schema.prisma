@@ -87,6 +87,8 @@ model Article {
   category        String
   location        String?
   market          String                       @default("AU")
+  markets         String[]                     @default(["AU"])
+  isEvergreen     Boolean                      @default(false) @map("is_evergreen")
   status          ArticleStatus                @default(DRAFT)
   isFeatured      Boolean                      @default(false) @map("is_featured")
   viewCount       Int                          @default(0) @map("view_count")
@@ -102,6 +104,8 @@ model Article {
   @@index([sourceUrl])
   @@index([status])
   @@index([market])
+  @@index([markets])
+  @@index([isEvergreen])
   @@index([category])
   @@index([publishedAt])
   @@map("articles")

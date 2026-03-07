@@ -18,41 +18,43 @@ async function generateArticleSummary(articleContent) {
     ? `Title: ${title}\nSource: ${sourceName || sourceUrl}\nContent:\n${content}`
     : `Title: ${title}\nSource: ${sourceName || sourceUrl}\n(Full article content not available — summarise from title only)`;
 
-  const prompt = `You are a property news editor for PropertyHack, an Australian property news platform. Your tone is factual and neutral.
+  const prompt = `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is factual and neutral.
 
 Analyse the following article and return a JSON object with these fields:
-- shortBlurb: ~50 words, a concise hook suitable for a news card. Do not exceed 60 words.
-- longSummary: ~300 words, a comprehensive summary covering the key points, facts, and figures. Always attribute the source (${sourceName || sourceUrl}).
+
+- isPropertyRelated: boolean — true ONLY if the article is directly about property, real estate, housing, construction, mortgages, interest rates affecting housing, property investment, urban planning, property development, home buying/selling, rental markets, or housing policy. Return false for general news, sports, politics (unless directly about housing policy), entertainment, celebrities, etc.
+- shortBlurb: ~50 words, a concise hook suitable for a news card. Do not exceed 60 words. Leave empty string if not property related.
+- longSummary: ~300 words, a comprehensive summary covering the key points, facts, and figures. Always attribute the source (${sourceName || sourceUrl}). Leave empty string if not property related.
 - suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
-- extractedLocation: the primary Australian city and/or state mentioned (e.g. "Sydney, NSW" or "Victoria"), or null if not identifiable
+- extractedLocation: the primary city/state/region mentioned (e.g. "Sydney, NSW", "London", "New York", "Toronto"), or null if not identifiable
+- markets: an array of market codes this article is relevant to. Use ONLY these codes: "AU", "US", "UK", "CA", "ALL". Use "ALL" for content relevant globally (e.g. universal home-buying tips, decorating/landscaping advice, general investment strategy, global housing trends). An article can belong to multiple specific markets (e.g. ["AU", "UK"]) if it compares or discusses both. Most articles will have exactly one market code.
+- isEvergreen: boolean — true if the content is timeless advice, tips, guides, or educational content that remains useful regardless of when it was published (e.g. "10 tips to sell your home faster", "how to choose an investment property", "landscaping ideas to boost value"). false for time-sensitive news, market reports, auction results, policy announcements, or anything tied to a specific date/event.
 
 Respond with valid JSON only. Do not wrap in markdown code fences.
 
 ARTICLE:
 ${inputText}`;
 
-  let model;
-  try {
-    model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-  } catch {
-    model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-  }
-
+  const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
   let text;
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    text = response.text();
-  } catch (error) {
-    // Try fallback model if exp variant fails
-    if (error.message && error.message.includes('not found')) {
-      const fallback = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const result = await fallback.generateContent(prompt);
+  let lastError;
+
+  for (const modelName of modelNames) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       text = response.text();
-    } else {
-      throw new Error(`Gemini API error during summarisation: ${error.message}`);
+      break;
+    } catch (error) {
+      lastError = error;
+      console.log(`[summary] ${modelName} failed: ${error.message.substring(0, 80)}`);
+      continue;
     }
+  }
+
+  if (!text) {
+    throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`);
   }
 
   // Strip markdown fences if present
@@ -73,11 +75,20 @@ ${inputText}`;
     ? parsed.suggestedCategory
     : 'uncategorized';
 
+  const validMarkets = ['AU', 'US', 'UK', 'CA', 'ALL'];
+  const markets = Array.isArray(parsed.markets)
+    ? parsed.markets.filter(m => validMarkets.includes(m))
+    : ['AU'];
+  if (markets.length === 0) markets.push('AU');
+
   return {
+    isPropertyRelated: parsed.isPropertyRelated !== false,
     shortBlurb: parsed.shortBlurb || '',
     longSummary: parsed.longSummary || '',
     suggestedCategory,
     extractedLocation: parsed.extractedLocation || null,
+    markets,
+    isEvergreen: parsed.isEvergreen === true,
   };
 }
 
