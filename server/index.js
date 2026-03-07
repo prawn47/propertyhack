@@ -1,4 +1,6 @@
 require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -33,6 +35,9 @@ const { startScheduler } = require('./jobs/ingestionScheduler');
 
 const app = express();
 const prisma = new PrismaClient();
+
+const imgDir = path.join(__dirname, 'public/images/articles');
+if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
 
 app.use(helmet());
 app.use(cors({
@@ -72,6 +77,8 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 app.use((req, res, next) => {
   req.prisma = prisma;
