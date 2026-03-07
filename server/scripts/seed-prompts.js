@@ -7,7 +7,7 @@ const prompts = [
   {
     name: 'image-generation',
     description: 'Prompt template for AI-generated article thumbnail images. Available variables: {category_elements}, {title}, {shortBlurb}',
-    content: 'Generate a photorealistic editorial photograph for a property news article thumbnail. Visual subject: {category_elements}. Photography style: professional editorial photography, natural lighting, shallow depth of field where appropriate. High production value, like a premium real estate magazine cover shot. Colour treatment: warm and natural tones with rich contrast. No heavy filters or artificial colour grading. Composition: wide 16:9 landscape format. Strong focal point. Cinematic framing. IMPORTANT: No text, letters, numbers, watermarks, or labels anywhere in the image. No people\'s faces. Mood: aspirational, premium, trustworthy. Article context (use for thematic inspiration only): {title}. {shortBlurb}',
+    content: 'Editorial photograph for a property news article. Subject: {category_elements}. Shot on Canon EOS R5 with 24-70mm f/2.8 lens. Natural available light, warm white balance around 5500K. Warm golden-amber undertones throughout. Kodak Portra 400 colour tones — slightly warm highlights, natural skin-like warmth on surfaces. Subtle film grain texture, natural vignette at edges. Slight bokeh on background elements. Wide 16:9 landscape composition with a clear focal point and environmental context. No text, no letters, no numbers, no watermarks, no labels anywhere. No close-up faces. The image should look like it was taken by a professional photographer on assignment, not computer-generated. Article context (for thematic inspiration only): {title}. {shortBlurb}',
     isActive: true,
   },
   {

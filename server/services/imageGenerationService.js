@@ -29,14 +29,14 @@ async function getPromptTemplate() {
 }
 
 const CATEGORY_ELEMENTS = {
-  residential: 'a beautiful suburban street with modern Australian homes, manicured lawns, and warm golden-hour lighting',
-  commercial: 'a sleek modern commercial building with glass facades reflecting a city skyline at twilight',
-  investment: 'an aerial view of a thriving neighbourhood with mixed property types, rooftops and tree-lined streets',
-  development: 'an active construction site with a modern residential building taking shape, cranes silhouetted against a sunset sky',
-  finance: 'a polished mahogany desk with property documents, a calculator, house keys, and a small model home, shot with shallow depth of field',
-  policy: 'an imposing government or civic building with classical columns, shot from a low angle with dramatic clouds',
-  'property-market': 'a bustling property auction scene or an elegant open-home inspection with natural light flooding through windows',
-  uncategorized: 'a stunning aerial photograph of an Australian suburban neighbourhood with diverse housing and lush greenery',
+  residential: 'a suburban street with modern Australian homes and established gardens, late afternoon light casting long shadows across the footpath',
+  commercial: 'a modern commercial building with glass facades reflecting warm sky tones, pedestrians walking past at street level',
+  investment: 'a neighbourhood with mixed property types viewed from a slight elevation, rooftops and tree-lined streets with natural light',
+  development: 'a construction site with a residential building taking shape, building materials in foreground, workers in hard hats at a distance',
+  finance: 'a desk with property documents, house keys and a small model home on brushed timber, natural window light from the side',
+  policy: 'a civic building with sandstone columns, shot from street level with passing foot traffic, overcast natural light',
+  'property-market': 'an open-home inspection with natural light through sash windows, polished timber floors and a small crowd browsing',
+  uncategorized: 'an Australian suburban neighbourhood from a gentle elevation, diverse housing styles with mature eucalyptus trees and warm afternoon light',
 };
 
 async function buildImagePrompt(title, shortBlurb, category) {
@@ -51,14 +51,15 @@ async function buildImagePrompt(title, shortBlurb, category) {
   }
 
   return [
-    `Generate a photorealistic editorial photograph for a property news article thumbnail.`,
-    `Visual subject: ${elements}.`,
-    `Photography style: professional editorial photography, natural lighting, shallow depth of field where appropriate. High production value, like a premium real estate magazine cover shot.`,
-    `Colour treatment: warm and natural tones with rich contrast. No heavy filters or artificial colour grading.`,
-    `Composition: wide 16:9 landscape format. Strong focal point. Cinematic framing.`,
-    `IMPORTANT: No text, letters, numbers, watermarks, or labels anywhere in the image. No people's faces.`,
-    `Mood: aspirational, premium, trustworthy.`,
-    `Article context (use for thematic inspiration only): ${title}. ${shortBlurb || ''}`.trim(),
+    `Editorial photograph for a property news article.`,
+    `Subject: ${elements}.`,
+    `Shot on Canon EOS R5 with 24-70mm f/2.8 lens. Natural available light, warm white balance around 5500K.`,
+    `Warm golden-amber undertones throughout. Kodak Portra 400 colour tones — slightly warm highlights, natural skin-like warmth on surfaces.`,
+    `Subtle film grain texture, natural vignette at edges. Slight bokeh on background elements.`,
+    `Wide 16:9 landscape composition with a clear focal point and environmental context.`,
+    `No text, no letters, no numbers, no watermarks, no labels anywhere. No close-up faces.`,
+    `The image should look like it was taken by a professional photographer on assignment, not computer-generated.`,
+    `Article context (for thematic inspiration only): ${title}. ${shortBlurb || ''}`.trim(),
   ].join(' ');
 }
 
