@@ -1,14 +1,13 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
-  const location = useLocation();
-  const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
     <header className="sticky top-0 z-30 bg-brand-primary text-white shadow-medium">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+          <img src="/ph-logo.jpg" alt="PropertyHack" className="h-8 w-8 rounded-lg" />
           <span className="text-brand-gold font-bold text-lg tracking-tight">PropertyHack</span>
         </Link>
 
@@ -33,14 +32,6 @@ const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          {!isAdminPage && (
-            <Link
-              to="/login"
-              className="text-sm text-white/70 hover:text-brand-gold transition-colors"
-            >
-              Admin
-            </Link>
-          )}
         </div>
       </div>
     </header>

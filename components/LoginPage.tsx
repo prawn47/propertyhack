@@ -37,7 +37,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
               ← Back to Home
             </button>
           )}
-          <div className="flex items-center justify-center space-x-4 mb-3">
+          <div className="flex flex-col items-center justify-center mb-3">
+            <img src="/ph-logo.jpg" alt="PropertyHack" className="h-16 w-16 rounded-xl mb-3" />
             <h1 className="text-3xl font-bold text-content">PropertyHack</h1>
           </div>
           <p className="text-content-secondary mt-2">Admin sign in</p>

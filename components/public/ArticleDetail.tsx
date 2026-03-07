@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getPublicArticle } from '../../services/publicArticleService';
 import type { PublicArticle } from '../../services/publicArticleService';
@@ -52,6 +52,17 @@ const ArticleDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const footerClickTimestamps = useRef<number[]>([]);
+
+  const handleFooterLogoClick = useCallback(() => {
+    const now = Date.now();
+    footerClickTimestamps.current = footerClickTimestamps.current.filter(t => now - t < 2000);
+    footerClickTimestamps.current.push(now);
+    if (footerClickTimestamps.current.length >= 3) {
+      footerClickTimestamps.current = [];
+      navigate('/login');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (!slug) return;
@@ -99,12 +110,6 @@ const ArticleDetail: React.FC = () => {
           <div className="flex items-center gap-4">
             <Link to="/" className="text-sm text-content-secondary hover:text-brand-gold transition-colors">
               ← All Articles
-            </Link>
-            <Link
-              to="/login"
-              className="text-sm text-content-secondary hover:text-brand-gold transition-colors"
-            >
-              Admin
             </Link>
           </div>
         </div>
@@ -278,7 +283,14 @@ const ArticleDetail: React.FC = () => {
       {/* Footer */}
       <footer className="bg-brand-primary text-white/50 py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
-          <span>
+          <span className="flex items-center gap-2">
+            <img
+              src="/ph-logo.jpg"
+              alt="PropertyHack"
+              className="h-6 w-6 rounded cursor-pointer select-none"
+              onClick={handleFooterLogoClick}
+              draggable={false}
+            />
             <span className="text-white/70 font-medium">PropertyHack</span>
             {' '}&copy; {new Date().getFullYear()}
           </span>
