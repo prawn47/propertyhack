@@ -29,37 +29,73 @@ async function getPromptTemplate() {
 }
 
 const CATEGORY_ELEMENTS = {
-  residential: 'a suburban street with modern Australian homes and established gardens, late afternoon light casting long shadows across the footpath',
-  commercial: 'a modern commercial building with glass facades reflecting warm sky tones, pedestrians walking past at street level',
-  investment: 'a neighbourhood with mixed property types viewed from a slight elevation, rooftops and tree-lined streets with natural light',
-  development: 'a construction site with a residential building taking shape, building materials in foreground, workers in hard hats at a distance',
-  finance: 'a desk with property documents, house keys and a small model home on brushed timber, natural window light from the side',
-  policy: 'a civic building with sandstone columns, shot from street level with passing foot traffic, overcast natural light',
-  'property-market': 'an open-home inspection with natural light through sash windows, polished timber floors and a small crowd browsing',
-  uncategorized: 'an Australian suburban neighbourhood from a gentle elevation, diverse housing styles with mature eucalyptus trees and warm afternoon light',
+  residential: 'a suburban street with Australian homes and established gardens, natural daylight',
+  commercial: 'a commercial building with glass facades, pedestrians at street level',
+  investment: 'a neighbourhood with mixed property types, rooftops and tree-lined streets',
+  development: 'a construction site with a residential building taking shape, building materials in foreground',
+  finance: 'a desk with property documents, house keys and a small model home, natural window light',
+  policy: 'a civic building with sandstone columns, street level view with foot traffic',
+  'property-market': 'an open-home inspection with natural light through windows, polished timber floors',
+  uncategorized: 'an Australian suburban neighbourhood, diverse housing styles with mature trees',
 };
+
+// 5 distinct photographer styles — randomly selected per image for variety
+const PHOTO_STYLES = [
+  {
+    camera: 'Nikon FM2, 50mm f/1.4 lens',
+    film: 'Kodak Gold 200',
+    look: 'slight warm cast, visible film grain in shadows, natural colour saturation',
+  },
+  {
+    camera: 'Canon AE-1, 35mm f/2.8 lens',
+    film: 'Fuji Superia 400',
+    look: 'cool-neutral tones with gentle green shift in shadows, fine grain texture',
+  },
+  {
+    camera: 'Pentax K1000, 28mm f/2.8 lens',
+    film: 'Kodak Portra 160',
+    look: 'soft pastel highlights, muted warm tones, creamy bokeh on background',
+  },
+  {
+    camera: 'Olympus OM-1, 50mm f/1.8 lens',
+    film: 'Kodak Ektar 100',
+    look: 'rich natural colours, sharp detail, slight warm shift in highlights',
+  },
+  {
+    camera: 'Minolta X-700, 45mm f/2 lens',
+    film: 'Agfa Vista 200',
+    look: 'punchy midtones, slight amber warmth, organic grain pattern',
+  },
+];
+
+function getRandomStyle() {
+  return PHOTO_STYLES[Math.floor(Math.random() * PHOTO_STYLES.length)];
+}
 
 async function buildImagePrompt(title, shortBlurb, category) {
   const elements = CATEGORY_ELEMENTS[category] || CATEGORY_ELEMENTS.uncategorized;
+  const style = getRandomStyle();
 
   const dbTemplate = await getPromptTemplate();
   if (dbTemplate) {
     return dbTemplate
       .replace('{category_elements}', elements)
       .replace('{title}', title)
-      .replace('{shortBlurb}', shortBlurb || '');
+      .replace('{shortBlurb}', shortBlurb || '')
+      .replace('{camera}', style.camera)
+      .replace('{film}', style.film)
+      .replace('{look}', style.look);
   }
 
   return [
-    `Editorial photograph for a property news article.`,
+    `Photograph for a property news article.`,
     `Subject: ${elements}.`,
-    `Shot on Canon EOS R5 with 24-70mm f/2.8 lens. Natural available light, warm white balance around 5500K.`,
-    `Warm golden-amber undertones throughout. Kodak Portra 400 colour tones — slightly warm highlights, natural skin-like warmth on surfaces.`,
-    `Subtle film grain texture, natural vignette at edges. Slight bokeh on background elements.`,
-    `Wide 16:9 landscape composition with a clear focal point and environmental context.`,
-    `No text, no letters, no numbers, no watermarks, no labels anywhere. No close-up faces.`,
-    `The image should look like it was taken by a professional photographer on assignment, not computer-generated.`,
-    `Article context (for thematic inspiration only): ${title}. ${shortBlurb || ''}`.trim(),
+    `Shot on ${style.camera}. ${style.film} film stock.`,
+    `${style.look}.`,
+    `Wide 16:9 landscape composition, off-centre subject, environmental context.`,
+    `No text, no numbers, no watermarks, no labels. No close-up faces.`,
+    `This should look like a real photograph from a 1990s property magazine, not computer-generated.`,
+    `Article context: ${title}. ${shortBlurb || ''}`.trim(),
   ].join(' ');
 }
 
