@@ -9,11 +9,12 @@ async function main() {
   const imageQueue = new Queue('article-image', { connection });
 
   try {
+    const forceAll = process.argv.includes('--all');
+    const where = forceAll
+      ? { status: 'PUBLISHED' }
+      : { status: 'PUBLISHED', imageUrl: null };
     const articles = await prisma.article.findMany({
-      where: {
-        status: 'PUBLISHED',
-        imageUrl: null,
-      },
+      where,
       select: { id: true },
     });
 
