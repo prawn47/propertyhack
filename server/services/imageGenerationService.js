@@ -29,14 +29,14 @@ async function getPromptTemplate() {
 }
 
 const CATEGORY_ELEMENTS = {
-  residential: 'suburban houses with neat gardens, a quiet tree-lined street, warm front porches, and a welcoming neighbourhood scene',
-  commercial: 'modern office buildings with glass facades, an urban city skyline, retail storefronts, and clean architectural lines',
-  investment: 'abstract geometric shapes suggesting growth and stability, stacked property silhouettes, subtle upward-trending lines, and a sense of financial momentum',
-  development: 'a construction site with a crane, architectural blueprints laid flat, scaffolding around a rising structure, and hard-hat motifs',
-  finance: 'a stylised bank building, abstract mortgage documents, interest rate percentage symbols, and geometric financial motifs',
-  policy: 'a government building with columns, abstract city planning grids, policy document silhouettes, and civic architectural details',
-  'property-market': 'an auction paddle raised at a property auction, for-sale signs on a street, and abstract market graph lines',
-  uncategorized: 'a clean suburban streetscape with mixed property types, open sky, and calm neighbourhood details',
+  residential: 'a beautiful suburban street with modern Australian homes, manicured lawns, and warm golden-hour lighting',
+  commercial: 'a sleek modern commercial building with glass facades reflecting a city skyline at twilight',
+  investment: 'an aerial view of a thriving neighbourhood with mixed property types, rooftops and tree-lined streets',
+  development: 'an active construction site with a modern residential building taking shape, cranes silhouetted against a sunset sky',
+  finance: 'a polished mahogany desk with property documents, a calculator, house keys, and a small model home, shot with shallow depth of field',
+  policy: 'an imposing government or civic building with classical columns, shot from a low angle with dramatic clouds',
+  'property-market': 'a bustling property auction scene or an elegant open-home inspection with natural light flooding through windows',
+  uncategorized: 'a stunning aerial photograph of an Australian suburban neighbourhood with diverse housing and lush greenery',
 };
 
 async function buildImagePrompt(title, shortBlurb, category) {
@@ -51,13 +51,14 @@ async function buildImagePrompt(title, shortBlurb, category) {
   }
 
   return [
-    `Generate a flat geometric editorial illustration for a property news article thumbnail.`,
+    `Generate a photorealistic editorial photograph for a property news article thumbnail.`,
     `Visual subject: ${elements}.`,
-    `Colour palette: cream (#f0f0f0) background, charcoal (#2b2b2b) shapes, and subtle gold (#d4b038) accents on key focal elements. Warm and neutral overall.`,
-    `Style: clean flat design, minimal detail, bold simple shapes, editorial graphic art reminiscent of print magazine illustration. No gradients. No photorealism. No people's faces. No text, letters, numbers, or labels anywhere in the image.`,
-    `Composition: wide 16:9 landscape format. Clear focal point centred or slightly left. Generous negative space on the right third for text overlay.`,
-    `Mood: calm, trustworthy, informative. Conveys the topic without being literal or busy.`,
-    `Article context (do NOT illustrate literally, use only for thematic tone): ${title}. ${shortBlurb || ''}`.trim(),
+    `Photography style: professional editorial photography, natural lighting, shallow depth of field where appropriate. High production value, like a premium real estate magazine cover shot.`,
+    `Colour treatment: warm and natural tones with rich contrast. No heavy filters or artificial colour grading.`,
+    `Composition: wide 16:9 landscape format. Strong focal point. Cinematic framing.`,
+    `IMPORTANT: No text, letters, numbers, watermarks, or labels anywhere in the image. No people's faces.`,
+    `Mood: aspirational, premium, trustworthy.`,
+    `Article context (use for thematic inspiration only): ${title}. ${shortBlurb || ''}`.trim(),
   ].join(' ');
 }
 
