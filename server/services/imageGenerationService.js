@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const IMAGES_DIR = path.join(__dirname, '../public/images/articles');
 
@@ -18,7 +19,7 @@ function buildImagePrompt(title, shortBlurb, category) {
   const elements = CATEGORY_ELEMENTS[category] || CATEGORY_ELEMENTS.uncategorized;
 
   return [
-    `Flat geometric editorial illustration for a property news article thumbnail.`,
+    `Generate a flat geometric editorial illustration for a property news article thumbnail.`,
     `Visual subject: ${elements}.`,
     `Colour palette: cream (#f0f0f0) background, charcoal (#2b2b2b) shapes, and subtle gold (#d4b038) accents on key focal elements. Warm and neutral overall.`,
     `Style: clean flat design, minimal detail, bold simple shapes, editorial graphic art reminiscent of print magazine illustration. No gradients. No photorealism. No people's faces. No text, letters, numbers, or labels anywhere in the image.`,
@@ -36,69 +37,74 @@ function generateSlug(title) {
     .substring(0, 80);
 }
 
-async function generateArticleImage(title, shortBlurb, category) {
+// Model fallback chain for image generation
+const IMAGE_MODELS = [
+  'gemini-2.0-flash-exp-image-generation',
+  'gemini-2.5-flash-image',
+];
+
+async function generateArticleImage(title, shortBlurb, category, slug) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn('[imageGen] GEMINI_API_KEY not set — skipping image generation');
     return null;
   }
 
+  const genAI = new GoogleGenerativeAI(apiKey);
   const prompt = buildImagePrompt(title, shortBlurb, category);
-  const model = 'imagen-3.0-generate-002';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`;
+  let imageData = null;
+  let mimeType = 'image/png';
 
-  let responseData;
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        instances: [{ prompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: '16:9',
-          outputMimeType: 'image/png',
-        },
-      }),
-    });
+  for (const modelName of IMAGE_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+      });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[imageGen] API error ${response.status}: ${errText.substring(0, 200)}`);
-      return null;
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const parts = response.candidates?.[0]?.content?.parts || [];
+
+      for (const part of parts) {
+        if (part.inlineData) {
+          imageData = Buffer.from(part.inlineData.data, 'base64');
+          mimeType = part.inlineData.mimeType || 'image/png';
+          break;
+        }
+      }
+
+      if (imageData) {
+        console.log(`[imageGen] Generated image using ${modelName}`);
+        break;
+      }
+    } catch (error) {
+      console.log(`[imageGen] ${modelName} failed: ${error.message.substring(0, 100)}`);
+      continue;
     }
+  }
 
-    responseData = await response.json();
-  } catch (err) {
-    console.error(`[imageGen] Request failed: ${err.message}`);
+  if (!imageData) {
+    console.warn('[imageGen] All image models failed — skipping');
     return null;
   }
 
-  const prediction = responseData?.predictions?.[0];
-  if (!prediction?.bytesBase64Encoded) {
-    console.error('[imageGen] No image data in response');
-    return null;
-  }
-
-  const imageBuffer = Buffer.from(prediction.bytesBase64Encoded, 'base64');
-  const mimeType = prediction.mimeType || 'image/png';
-
-  const slug = generateSlug(title);
+  const fileSlug = slug || generateSlug(title);
   const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
-  const filename = `${slug}-${Date.now()}.${ext}`;
+  const filename = `${fileSlug}-${Date.now()}.${ext}`;
   const filePath = path.join(IMAGES_DIR, filename);
 
   try {
     await fs.mkdir(IMAGES_DIR, { recursive: true });
-    await fs.writeFile(filePath, imageBuffer);
-    console.log(`[imageGen] Saved: ${filename}`);
+    await fs.writeFile(filePath, imageData);
+    console.log(`[imageGen] Saved: ${filename} (${(imageData.length / 1024).toFixed(0)}KB)`);
   } catch (err) {
     console.error(`[imageGen] Failed to save image: ${err.message}`);
     return null;
   }
 
   return {
-    imageData: imageBuffer,
+    imageData,
     mimeType,
     filename,
     publicPath: `/images/articles/${filename}`,
