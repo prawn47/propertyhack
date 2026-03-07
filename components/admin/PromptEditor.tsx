@@ -39,17 +39,29 @@ const PromptEditor: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    let cancelled = false;
     getPrompt(id)
       .then((p) => {
+        if (cancelled) return;
         setPrompt(p);
         setContent(p.content);
         setDescription(p.description);
         setIsActive(p.isActive);
       })
-      .catch(() => showToast('Failed to load prompt', 'error'))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (cancelled) return;
+        console.error('[PromptEditor] Failed to load prompt:', e);
+        showToast('Failed to load prompt', 'error');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [id]);
 
   const handleSave = async (e: React.FormEvent) => {

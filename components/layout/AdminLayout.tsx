@@ -67,9 +67,10 @@ const navItems: NavItem[] = [
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+  onLogout?: () => void;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -81,6 +82,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       // ignore
     } finally {
       localStorage.removeItem('user');
+      if (onLogout) onLogout();
       navigate('/login');
     }
   };

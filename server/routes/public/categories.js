@@ -4,14 +4,13 @@ const router = express.Router();
 // GET /api/categories
 router.get('/', async (req, res) => {
   try {
-    const result = await req.prisma.article.findMany({
-      where: { status: 'PUBLISHED', category: { not: null } },
-      select: { category: true },
-      distinct: ['category'],
-      orderBy: { category: 'asc' },
-    });
+    const result = await req.prisma.$queryRaw`
+      SELECT DISTINCT category FROM articles
+      WHERE status = 'PUBLISHED' AND category IS NOT NULL
+      ORDER BY category ASC
+    `;
 
-    const categories = result.map((r) => r.category).filter(Boolean);
+    const categories = result.map((r) => r.category);
 
     return res.json({ categories });
   } catch (error) {

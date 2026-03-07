@@ -24,8 +24,8 @@ import PromptEditor from './components/admin/PromptEditor';
 import type { AuthState } from './types';
 import authService from './services/authService';
 
-function AdminPage({ children }: { children: React.ReactNode }) {
-  return <AdminLayout>{children}</AdminLayout>;
+function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
+  return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
 }
 
 interface RequireAuthProps {
@@ -51,9 +51,10 @@ function RequireAuth({ authState, children }: RequireAuthProps) {
 interface AppInnerProps {
   authState: AuthState;
   onLogin: (email: string, password: string) => Promise<void>;
+  onLogout: () => void;
 }
 
-function AppInner({ authState, onLogin }: AppInnerProps) {
+function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
   const navigate = useNavigate();
 
   if (authState.isLoading) {
@@ -90,7 +91,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><IngestionMonitor /></AdminPage>
+            <AdminPage onLogout={onLogout}><IngestionMonitor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -98,7 +99,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/monitor"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><IngestionMonitor /></AdminPage>
+            <AdminPage onLogout={onLogout}><IngestionMonitor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -106,7 +107,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/articles"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><ArticleList /></AdminPage>
+            <AdminPage onLogout={onLogout}><ArticleList /></AdminPage>
           </RequireAuth>
         }
       />
@@ -114,7 +115,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/articles/new"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><ArticleEditor /></AdminPage>
+            <AdminPage onLogout={onLogout}><ArticleEditor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -122,7 +123,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/articles/:id/edit"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><ArticleEditor /></AdminPage>
+            <AdminPage onLogout={onLogout}><ArticleEditor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -130,7 +131,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/sources"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><SourceList /></AdminPage>
+            <AdminPage onLogout={onLogout}><SourceList /></AdminPage>
           </RequireAuth>
         }
       />
@@ -138,7 +139,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/sources/new"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><SourceEditor /></AdminPage>
+            <AdminPage onLogout={onLogout}><SourceEditor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -146,7 +147,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/sources/:id/edit"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><SourceEditor /></AdminPage>
+            <AdminPage onLogout={onLogout}><SourceEditor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -154,7 +155,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/social"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><SocialPostList /></AdminPage>
+            <AdminPage onLogout={onLogout}><SocialPostList /></AdminPage>
           </RequireAuth>
         }
       />
@@ -162,7 +163,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/social/new"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><SocialPostEditor /></AdminPage>
+            <AdminPage onLogout={onLogout}><SocialPostEditor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -170,7 +171,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/social/:id/edit"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><SocialPostEditor /></AdminPage>
+            <AdminPage onLogout={onLogout}><SocialPostEditor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -179,7 +180,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/prompts"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><PromptList /></AdminPage>
+            <AdminPage onLogout={onLogout}><PromptList /></AdminPage>
           </RequireAuth>
         }
       />
@@ -187,7 +188,7 @@ function AppInner({ authState, onLogin }: AppInnerProps) {
         path="/admin/prompts/:id/edit"
         element={
           <RequireAuth authState={authState}>
-            <AdminPage><PromptEditor /></AdminPage>
+            <AdminPage onLogout={onLogout}><PromptEditor /></AdminPage>
           </RequireAuth>
         }
       />
@@ -230,11 +231,16 @@ const App: React.FC = () => {
     setAuthState({ isAuthenticated: true, user: response.user, isLoading: false });
   };
 
+  const handleLogout = () => {
+    setAuthState({ isAuthenticated: false, user: null, isLoading: false });
+  };
+
   return (
     <BrowserRouter>
       <AppInner
         authState={authState}
         onLogin={handleLogin}
+        onLogout={handleLogout}
       />
     </BrowserRouter>
   );

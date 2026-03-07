@@ -41,25 +41,37 @@ const ArticleEditor: React.FC = () => {
   const [imageAltText, setImageAltText] = useState('');
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
+    let cancelled = false;
     getArticle(id)
       .then(data => {
+        if (cancelled) return;
         setArticle(data);
         setTitle(data.title);
-        setShortBlurb(data.shortBlurb);
-        setLongSummary(data.longSummary);
-        setCategory(data.category);
+        setShortBlurb(data.shortBlurb ?? '');
+        setLongSummary(data.longSummary ?? '');
+        setCategory(data.category ?? '');
         setLocation(data.location || '');
-        setMarket(data.market);
-        setStatus(data.status);
-        setIsFeatured(data.isFeatured);
+        setMarket(data.market ?? 'AU');
+        setStatus(data.status ?? 'DRAFT');
+        setIsFeatured(data.isFeatured ?? false);
         setImageUrl(data.imageUrl || '');
         setImageAltText(data.imageAltText || '');
       })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch(e => {
+        if (cancelled) return;
+        console.error('[ArticleEditor] Failed to load article:', e);
+        setError(e.message ?? 'Failed to load article');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [id]);
 
   const blurbWordCount = shortBlurb.trim() ? shortBlurb.trim().split(/\s+/).length : 0;
