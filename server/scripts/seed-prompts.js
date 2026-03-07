@@ -1,0 +1,60 @@
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+
+const prompts = [
+  {
+    name: 'image-generation',
+    description: 'Prompt template for AI-generated article thumbnail images. Available variables: {category_elements}, {title}, {shortBlurb}',
+    content: 'Generate a flat geometric editorial illustration for a property news article thumbnail. Visual subject: {category_elements}. Colour palette: cream (#f0f0f0) background, charcoal (#2b2b2b) shapes, and subtle gold (#d4b038) accents on key focal elements. Warm and neutral overall. Style: clean flat design, minimal detail, bold simple shapes, editorial graphic art reminiscent of print magazine illustration. No gradients. No photorealism. No people\'s faces. No text, letters, numbers, or labels anywhere in the image. Composition: wide 16:9 landscape format. Clear focal point centred or slightly left. Generous negative space on the right third for text overlay. Mood: calm, trustworthy, informative. Conveys the topic without being literal or busy. Article context (do NOT illustrate literally, use only for thematic tone): {title}. {shortBlurb}',
+    isActive: true,
+  },
+  {
+    name: 'article-summarisation',
+    description: 'Prompt template for AI article summarisation. Available variables: {title}, {sourceName}, {content}',
+    content: `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is factual and neutral.
+
+Analyse the following article and return a JSON object with these fields:
+
+- isPropertyRelated: boolean — true ONLY if the article is directly about property, real estate, housing, construction, mortgages, interest rates affecting housing, property investment, urban planning, property development, home buying/selling, rental markets, or housing policy. Return false for general news, sports, politics (unless directly about housing policy), entertainment, celebrities, etc.
+- shortBlurb: ~50 words, a concise hook suitable for a news card. Do not exceed 60 words. Leave empty string if not property related.
+- longSummary: ~300 words, a comprehensive summary covering the key points, facts, and figures. Always attribute the source ({sourceName}). Leave empty string if not property related.
+- suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
+- extractedLocation: the primary city/state/region mentioned (e.g. "Sydney, NSW", "London", "New York", "Toronto"), or null if not identifiable
+- markets: an array of market codes this article is relevant to. Use ONLY these codes: "AU", "US", "UK", "CA", "ALL". Use "ALL" for content relevant globally (e.g. universal home-buying tips, decorating/landscaping advice, general investment strategy, global housing trends). An article can belong to multiple specific markets (e.g. ["AU", "UK"]) if it compares or discusses both. Most articles will have exactly one market code.
+- isEvergreen: boolean — true if the content is timeless advice, tips, guides, or educational content that remains useful regardless of when it was published (e.g. "10 tips to sell your home faster", "how to choose an investment property", "landscaping ideas to boost value"). false for time-sensitive news, market reports, auction results, policy announcements, or anything tied to a specific date/event.
+
+Respond with valid JSON only. Do not wrap in markdown code fences.
+
+ARTICLE:
+{content}`,
+    isActive: true,
+  },
+];
+
+async function main() {
+  console.log('Seeding system prompts...');
+
+  for (const promptData of prompts) {
+    const existing = await prisma.systemPrompt.findUnique({
+      where: { name: promptData.name },
+    });
+
+    if (existing) {
+      console.log(`  [skip] '${promptData.name}' already exists`);
+    } else {
+      await prisma.systemPrompt.create({ data: promptData });
+      console.log(`  [created] '${promptData.name}'`);
+    }
+  }
+
+  console.log('Done.');
+}
+
+main()
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

@@ -130,6 +130,7 @@ app.use('/api/admin', authenticateToken, requireSuperAdmin);
 app.use('/api/admin/sources', adminSourcesRoutes);
 app.use('/api/admin/articles', adminArticlesRoutes);
 app.use('/api/admin/meta', adminMetaRoutes);
+app.use('/api/admin/prompts', adminMetaRoutes);
 app.use('/api/admin/social-posts', adminSocialPostsRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 // Spec-required public API paths
