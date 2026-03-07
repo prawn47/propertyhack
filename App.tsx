@@ -27,6 +27,7 @@ import SocialPostEditor from './components/admin/SocialPostEditor';
 import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
+import SeoSettings from './components/admin/SeoSettings';
 import type { AuthState } from './types';
 import authService from './services/authService';
 
@@ -191,6 +192,15 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
         element={
           <RequireAuth authState={authState}>
             <AdminPage onLogout={onLogout}><PromptEditor /></AdminPage>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/admin/seo"
+        element={
+          <RequireAuth authState={authState}>
+            <AdminPage onLogout={onLogout}><SeoSettings /></AdminPage>
           </RequireAuth>
         }
       />
