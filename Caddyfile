@@ -1,4 +1,6 @@
 propertyhack.com {
+    trusted_proxies cloudflare
+
     # API routes → Express
     handle /api/* {
         reverse_proxy express:3001
