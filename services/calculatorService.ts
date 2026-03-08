@@ -4,7 +4,9 @@ export type CalculatorType =
   | 'rental-yield'
   | 'borrowing-power'
   | 'rent-vs-buy'
-  | 'uk-transfer-tax';
+  | 'uk-transfer-tax'
+  | 'ca-transfer-tax'
+  | 'nz-buying-costs';
 
 export async function calculate(
   type: CalculatorType,

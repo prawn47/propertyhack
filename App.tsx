@@ -50,6 +50,8 @@ import ProfilePage from './components/user/ProfilePage';
 import RentVsBuyCalculator from './components/calculators/RentVsBuyCalculator';
 import BorrowingPowerCalculator from './components/calculators/BorrowingPowerCalculator';
 import UkTransferTaxCalculator from './components/calculators/UkTransferTaxCalculator';
+import CaTransferTaxCalculator from './components/calculators/CaTransferTaxCalculator';
+import NzBuyingCostsCalculator from './components/calculators/NzBuyingCostsCalculator';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -180,6 +182,8 @@ function AppInner() {
         <Route path="tools/borrowing-power-calculator" element={<BorrowingPowerCalculator />} />
         <Route path="tools/rental-yield-calculator" element={<RentalYieldCalculator />} />
         <Route path="tools/uk/stamp-duty-calculator" element={<UkTransferTaxCalculator />} />
+        <Route path="tools/land-transfer-tax-calculator" element={<CaTransferTaxCalculator />} />
+        <Route path="tools/nz/buying-costs-calculator" element={<NzBuyingCostsCalculator />} />
       </Route>
 
       {/* Auth routes */}
