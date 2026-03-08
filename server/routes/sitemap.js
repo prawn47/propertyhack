@@ -43,6 +43,12 @@ router.get('/sitemap-pages.xml', cached('pages', async (req) => {
     { loc: '/', priority: '1.0', changefreq: 'hourly' },
     { loc: '/about', priority: '0.5', changefreq: 'monthly' },
     { loc: '/contact', priority: '0.3', changefreq: 'monthly' },
+    { loc: '/tools', priority: '0.7', changefreq: 'monthly' },
+    { loc: '/tools/mortgage-calculator', priority: '0.8', changefreq: 'monthly' },
+    { loc: '/tools/stamp-duty-calculator', priority: '0.8', changefreq: 'monthly' },
+    { loc: '/tools/rental-yield-calculator', priority: '0.8', changefreq: 'monthly' },
+    { loc: '/tools/borrowing-power-calculator', priority: '0.8', changefreq: 'monthly' },
+    { loc: '/tools/rent-vs-buy-calculator', priority: '0.8', changefreq: 'monthly' },
   ];
 
   for (const loc of LOCATIONS) {
