@@ -1,9 +1,8 @@
 const twitter = require('./twitterAdapter');
 const facebook = require('./facebookAdapter');
-const linkedin = require('./linkedinAdapter');
 const instagram = require('./instagramAdapter');
 
-const adapters = { twitter, facebook, linkedin, instagram };
+const adapters = { twitter, facebook, instagram };
 
 function getAdapter(platform) {
   const adapter = adapters[platform];
