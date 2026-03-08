@@ -19,23 +19,28 @@ import ResultCard from './shared/ResultCard';
 import ShareButton from './shared/ShareButton';
 import SaveScenarioButton from './shared/SaveScenarioButton';
 import ExpandableSection from './shared/ExpandableSection';
+import Header from '../layout/Header';
+import Footer from '../layout/Footer';
 
 interface RentVsBuyInputs extends Record<string, unknown> {
   purchasePrice: number;
   weeklyRent: number;
-  deposit: number;
-  interestRate: number;
+  availableDeposit: number;
+  mortgageRate: number;
   loanTermYears: number;
   propertyGrowthRate: number;
-  annualRentIncrease: number;
+  rentIncreaseRate: number;
   investmentReturnRate: number;
 }
 
-interface MilestoneRow {
+interface SnapshotRow {
   year: number;
   buyNetPosition: number;
   rentNetPosition: number;
-  difference: number;
+  propertyValue: number;
+  loanBalance: number;
+  investmentValue: number;
+  annualRent: number;
 }
 
 interface ChartPoint {
@@ -45,29 +50,28 @@ interface ChartPoint {
 }
 
 interface RentVsBuyOutputs {
-  breakevenYear: number | null;
+  breakEvenYear: number | null;
   summaryStatement: string;
-  milestones: MilestoneRow[];
+  snapshots: SnapshotRow[];
   chartData: ChartPoint[];
   yearlyBreakdown: Array<{
     year: number;
     propertyValue: number;
-    remainingLoan: number;
-    buyNetPosition: number;
+    loanBalance: number;
+    buyEquity: number;
     annualRent: number;
-    rentInvestmentValue: number;
-    rentNetPosition: number;
+    investmentValue: number;
   }>;
 }
 
 const DEFAULT_INPUTS: RentVsBuyInputs = {
   purchasePrice: 80000000,
   weeklyRent: 60000,
-  deposit: 16000000,
-  interestRate: 6.5,
+  availableDeposit: 16000000,
+  mortgageRate: 6.5,
   loanTermYears: 30,
   propertyGrowthRate: 5,
-  annualRentIncrease: 3,
+  rentIncreaseRate: 3,
   investmentReturnRate: 7,
 };
 
@@ -121,14 +125,14 @@ const RentVsBuyCalculator: React.FC = () => {
   const typedOutputs = outputs as RentVsBuyOutputs | null;
 
   const headlineValue = typedOutputs
-    ? typedOutputs.breakevenYear
-      ? `Year ${typedOutputs.breakevenYear}`
+    ? typedOutputs.breakEvenYear
+      ? `Year ${typedOutputs.breakEvenYear}`
       : 'Never'
     : '—';
 
   const breakevenSubtitle = typedOutputs
-    ? typedOutputs.breakevenYear
-      ? `Buying becomes financially advantageous after ${typedOutputs.breakevenYear} years`
+    ? typedOutputs.breakEvenYear
+      ? `Buying becomes financially advantageous after ${typedOutputs.breakEvenYear} years`
       : 'Renting + investing outperforms buying over 30 years'
     : undefined;
 
@@ -164,7 +168,8 @@ const RentVsBuyCalculator: React.FC = () => {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-base-200 flex flex-col">
+      <Header />
       <Helmet>
         <title>Rent vs Buy Calculator | PropertyHack</title>
         <meta
@@ -234,8 +239,8 @@ const RentVsBuyCalculator: React.FC = () => {
 
                 <CurrencyInput
                   label="Deposit"
-                  value={inputs.deposit}
-                  onChange={(v) => setInput('deposit', v)}
+                  value={inputs.availableDeposit}
+                  onChange={(v) => setInput('availableDeposit', v)}
                   min={0}
                   hint="Upfront deposit amount"
                 />
@@ -250,8 +255,8 @@ const RentVsBuyCalculator: React.FC = () => {
 
                 <PercentageInput
                   label="Mortgage Interest Rate"
-                  value={inputs.interestRate}
-                  onChange={(v) => setInput('interestRate', v)}
+                  value={inputs.mortgageRate}
+                  onChange={(v) => setInput('mortgageRate', v)}
                   min={0.1}
                   max={20}
                   step={0.01}
@@ -279,8 +284,8 @@ const RentVsBuyCalculator: React.FC = () => {
                   />
                   <PercentageInput
                     label="Annual Rent Increase"
-                    value={inputs.annualRentIncrease}
-                    onChange={(v) => setInput('annualRentIncrease', v)}
+                    value={inputs.rentIncreaseRate}
+                    onChange={(v) => setInput('rentIncreaseRate', v)}
                     min={0}
                     max={20}
                     step={0.1}
@@ -351,7 +356,7 @@ const RentVsBuyCalculator: React.FC = () => {
                   )}
 
                   {/* Milestones table */}
-                  {typedOutputs.milestones?.length > 0 && (
+                  {typedOutputs.snapshots?.length > 0 && (
                     <div className="bg-base-100 rounded-xl shadow-soft p-5">
                       <h2 className="text-sm font-semibold text-brand-primary mb-4">
                         Net Position at Key Milestones
@@ -375,8 +380,9 @@ const RentVsBuyCalculator: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {typedOutputs.milestones.map((row) => {
-                              const buyAhead = row.difference > 0;
+                            {typedOutputs.snapshots.map((row) => {
+                              const difference = row.buyNetPosition - row.rentNetPosition;
+                              const buyAhead = difference > 0;
                               return (
                                 <tr
                                   key={row.year}
@@ -397,7 +403,7 @@ const RentVsBuyCalculator: React.FC = () => {
                                     }`}
                                   >
                                     {buyAhead ? '+' : ''}
-                                    {formatDollars(row.difference)}
+                                    {formatDollars(difference)}
                                     <span className="text-xs ml-1 opacity-75">
                                       {buyAhead ? 'buy ahead' : 'rent ahead'}
                                     </span>
@@ -504,10 +510,10 @@ const RentVsBuyCalculator: React.FC = () => {
                                 >
                                   <td className="py-2 px-2 font-medium text-brand-primary">{row.year}</td>
                                   <td className="py-2 px-2 text-right text-content">{formatDollars(row.propertyValue)}</td>
-                                  <td className="py-2 px-2 text-right text-content">{formatDollars(row.remainingLoan)}</td>
-                                  <td className="py-2 px-2 text-right text-content">{formatDollars(row.buyNetPosition)}</td>
+                                  <td className="py-2 px-2 text-right text-content">{formatDollars(row.loanBalance)}</td>
+                                  <td className="py-2 px-2 text-right text-content">{formatDollars(row.buyEquity)}</td>
                                   <td className="py-2 px-2 text-right text-content">{formatDollars(row.annualRent)}</td>
-                                  <td className="py-2 px-2 text-right text-content">{formatDollars(row.rentInvestmentValue)}</td>
+                                  <td className="py-2 px-2 text-right text-content">{formatDollars(row.investmentValue)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -548,7 +554,8 @@ const RentVsBuyCalculator: React.FC = () => {
           </div>
         </div>
       </div>
-    </>
+      <Footer />
+    </div>
   );
 };
 
