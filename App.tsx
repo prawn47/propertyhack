@@ -49,6 +49,7 @@ import ScenarioDashboard from './components/user/ScenarioDashboard';
 import ProfilePage from './components/user/ProfilePage';
 import RentVsBuyCalculator from './components/calculators/RentVsBuyCalculator';
 import BorrowingPowerCalculator from './components/calculators/BorrowingPowerCalculator';
+import UsTransferTaxCalculator from './components/calculators/UsTransferTaxCalculator';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -178,6 +179,7 @@ function AppInner() {
         <Route path="tools/rent-vs-buy-calculator" element={<RentVsBuyCalculator />} />
         <Route path="tools/borrowing-power-calculator" element={<BorrowingPowerCalculator />} />
         <Route path="tools/rental-yield-calculator" element={<RentalYieldCalculator />} />
+        <Route path="tools/us/transfer-tax-calculator" element={<UsTransferTaxCalculator />} />
       </Route>
 
       {/* Auth routes */}
