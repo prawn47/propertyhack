@@ -28,6 +28,7 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
+import ScenarioDashboard from './components/user/ScenarioDashboard';
 import type { AuthState } from './types';
 import authService from './services/authService';
 
@@ -94,6 +95,16 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
               }}
             />
           )
+        }
+      />
+
+      {/* User routes — require auth */}
+      <Route
+        path="/profile/scenarios"
+        element={
+          <RequireAuth authState={authState}>
+            <ScenarioDashboard />
+          </RequireAuth>
         }
       />
 
