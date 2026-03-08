@@ -45,6 +45,28 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
+        {/* Tools links for SEO */}
+        <div className="mb-6 pb-6 border-b border-white/10">
+          <h3 className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-3">Property Tools</h3>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {[
+              { path: '/tools/mortgage-calculator', name: 'Mortgage Calculator' },
+              { path: '/tools/stamp-duty-calculator', name: 'Stamp Duty Calculator' },
+              { path: '/tools/rental-yield-calculator', name: 'Rental Yield Calculator' },
+              { path: '/tools/borrowing-power-calculator', name: 'Borrowing Power Calculator' },
+              { path: '/tools/rent-vs-buy-calculator', name: 'Rent vs Buy Calculator' },
+            ].map((tool) => (
+              <Link
+                key={tool.path}
+                to={tool.path}
+                className="text-sm text-white/40 hover:text-brand-gold transition-colors"
+              >
+                {tool.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
           <span className="flex items-center gap-2">
             <img
