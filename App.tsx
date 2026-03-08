@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import {
   BrowserRouter,
@@ -8,6 +8,7 @@ import {
   useNavigate,
   useLocation,
 } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './components/LoginPage';
 import Loader from './components/Loader';
 import HomePage from './components/public/HomePage';
@@ -28,49 +29,58 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
-import type { AuthState } from './types';
-import authService from './services/authService';
+import RegisterPage from './components/auth/RegisterPage';
+import VerifyEmailPage from './components/auth/VerifyEmailPage';
+import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
+import GoogleAuthCallback from './components/auth/GoogleAuthCallback';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
 }
 
-interface RequireAuthProps {
-  authState: AuthState;
-  children: React.ReactNode;
+function LoadingScreen() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-base-200">
+      <Loader className="h-10 w-10 text-brand-primary" />
+    </div>
+  );
 }
 
-function RequireAuth({ authState, children }: RequireAuthProps) {
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  if (authState.isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-base-200">
-        <Loader className="h-10 w-10 text-brand-primary" />
-      </div>
-    );
-  }
-  if (!authState.isAuthenticated) {
+
+  if (isLoading) return <LoadingScreen />;
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   return <>{children}</>;
 }
 
-interface AppInnerProps {
-  authState: AuthState;
-  onLogin: (email: string, password: string) => Promise<void>;
-  onLogout: () => void;
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return <LoadingScreen />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
 }
 
-function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
+function AppInner() {
+  const { isAuthenticated, isAdmin, isLoading, login, logout } = useAuth();
   const navigate = useNavigate();
 
-  if (authState.isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-base-200">
-        <Loader className="h-10 w-10 text-brand-primary" />
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingScreen />;
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <Routes>
@@ -81,127 +91,133 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
+
+      {/* Auth routes */}
       <Route
         path="/login"
         element={
-          authState.isAuthenticated ? (
-            <Navigate to="/admin" replace />
+          isAuthenticated ? (
+            <Navigate to={isAdmin ? '/admin' : '/'} replace />
           ) : (
             <LoginPage
               onLogin={async (email, password) => {
-                await onLogin(email, password);
-                navigate('/admin');
+                await login(email, password);
+                const from = (window.history.state?.usr?.from as { pathname?: string })?.pathname;
+                navigate(from || (isAdmin ? '/admin' : '/'));
               }}
             />
           )
         }
       />
+      <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
 
-      {/* Admin routes — require auth */}
+      {/* Admin routes — require admin role */}
       <Route
         path="/admin"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><IngestionMonitor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><IngestionMonitor /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/articles"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><ArticleList /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><ArticleList /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/articles/new"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><ArticleEditor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><ArticleEditor /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/articles/:id/edit"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><ArticleEditor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><ArticleEditor /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/sources"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><SourceList /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SourceList /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/sources/new"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><SourceEditor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SourceEditor /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/sources/:id/edit"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><SourceEditor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SourceEditor /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/social"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><SocialPostList /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SocialPostList /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/social/new"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><SocialPostEditor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SocialPostEditor /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/social/:id/edit"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><SocialPostEditor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SocialPostEditor /></AdminPage>
+          </RequireAdmin>
         }
       />
-
       <Route
         path="/admin/prompts"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><PromptList /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><PromptList /></AdminPage>
+          </RequireAdmin>
         }
       />
       <Route
         path="/admin/prompts/:id/edit"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><PromptEditor /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><PromptEditor /></AdminPage>
+          </RequireAdmin>
         }
       />
-
       <Route
         path="/admin/seo"
         element={
-          <RequireAuth authState={authState}>
-            <AdminPage onLogout={onLogout}><SeoSettings /></AdminPage>
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SeoSettings /></AdminPage>
+          </RequireAdmin>
         }
       />
 
@@ -212,49 +228,12 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
 }
 
 const App: React.FC = () => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    isLoading: true,
-  });
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        if (authService.isAuthenticated()) {
-          const storedUser = localStorage.getItem('user');
-          const user = storedUser ? JSON.parse(storedUser) : null;
-          setAuthState({ isAuthenticated: true, user, isLoading: false });
-        } else {
-          setAuthState({ isAuthenticated: false, user: null, isLoading: false });
-        }
-      } catch (error) {
-        console.error('Auth initialization failed:', error);
-        await authService.logout();
-        setAuthState({ isAuthenticated: false, user: null, isLoading: false });
-      }
-    };
-    initializeAuth();
-  }, []);
-
-  const handleLogin = async (email: string, password: string) => {
-    const response = await authService.login({ email, password });
-    localStorage.setItem('user', JSON.stringify(response.user));
-    setAuthState({ isAuthenticated: true, user: response.user, isLoading: false });
-  };
-
-  const handleLogout = () => {
-    setAuthState({ isAuthenticated: false, user: null, isLoading: false });
-  };
-
   return (
     <HelmetProvider>
       <BrowserRouter>
-        <AppInner
-          authState={authState}
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-        />
+        <AuthProvider>
+          <AppInner />
+        </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>
   );

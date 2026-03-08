@@ -1,35 +1,38 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
-interface LoginPageProps {
-  onLogin?: (email: string, password: string) => Promise<void>;
-  onBack?: () => void;
-}
+const RegisterPage: React.FC = () => {
+  const { register, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
-  const { login, loginWithGoogle } = useAuth();
-  const location = useLocation();
-  const successMessage = (location.state as { message?: string })?.message;
-
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newsletterOptIn, setNewsletterOptIn] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      if (onLogin) {
-        await onLogin(email, password);
-      } else {
-        await login(email, password);
-      }
+      await register({ email, password, displayName: displayName || undefined, newsletterOptIn });
+      navigate('/verify-email', { state: { email } });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);
     }
@@ -37,30 +40,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="inline-flex items-center text-sm text-content-secondary hover:text-brand-accent transition-colors mb-4"
-            >
-              ← Back to Home
-            </button>
-          )}
           <div className="flex flex-col items-center justify-center mb-3">
             <img src="/ph-logo.jpg" alt="PropertyHack" className="h-16 w-16 rounded-xl mb-3" />
             <h1 className="text-3xl font-bold text-content">PropertyHack</h1>
           </div>
-          <p className="text-content-secondary mt-2">Sign in to your account</p>
+          <p className="text-content-secondary mt-2">Create your account</p>
         </div>
 
         <div className="bg-base-100 p-8 rounded-xl shadow-soft">
-          {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-green-700">{successMessage}</p>
-            </div>
-          )}
-
           <button
             type="button"
             onClick={loginWithGoogle}
@@ -72,7 +61,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Sign in with Google
+            Sign up with Google
           </button>
 
           <div className="relative mb-6">
@@ -80,11 +69,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
               <div className="w-full border-t border-base-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-base-100 text-content-secondary">or sign in with email</span>
+              <span className="px-3 bg-base-100 text-content-secondary">or sign up with email</span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="displayName" className="block text-sm font-medium text-content-secondary mb-1">
+                Display Name <span className="text-content-secondary font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                id="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="block w-full px-3 py-2 bg-base-200 border border-base-300 rounded-lg text-sm text-content placeholder-content-secondary focus:outline-none focus:border-brand-gold"
+                placeholder="Your name"
+              />
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-content-secondary mb-1">
                 Email Address
@@ -101,14 +104,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-content-secondary">
-                  Password
-                </label>
-                <Link to="/forgot-password" className="text-xs text-brand-gold hover:opacity-80">
-                  Forgot password?
-                </Link>
-              </div>
+              <label htmlFor="password" className="block text-sm font-medium text-content-secondary mb-1">
+                Password
+              </label>
               <input
                 type="password"
                 id="password"
@@ -116,8 +114,36 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="block w-full px-3 py-2 bg-base-200 border border-base-300 rounded-lg text-sm text-content placeholder-content-secondary focus:outline-none focus:border-brand-gold"
-                placeholder="Your password"
+                placeholder="Min. 8 characters"
               />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-content-secondary mb-1">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="block w-full px-3 py-2 bg-base-200 border border-base-300 rounded-lg text-sm text-content placeholder-content-secondary focus:outline-none focus:border-brand-gold"
+                placeholder="Repeat your password"
+              />
+            </div>
+
+            <div className="flex items-start gap-3 pt-1">
+              <input
+                type="checkbox"
+                id="newsletter"
+                checked={newsletterOptIn}
+                onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-base-300 text-brand-gold focus:ring-brand-gold"
+              />
+              <label htmlFor="newsletter" className="text-sm text-content-secondary">
+                Subscribe to our newsletter to stay up to date with Australian property news
+              </label>
             </div>
 
             {error && (
@@ -129,16 +155,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-medium text-brand-primary bg-brand-gold hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-medium text-brand-primary bg-brand-gold hover:opacity-90 transition-opacity disabled:opacity-50 mt-2"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-content-secondary">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-brand-gold hover:opacity-80 font-medium">
-              Sign up
+            Already have an account?{' '}
+            <Link to="/login" className="text-brand-gold hover:opacity-80 font-medium">
+              Sign in
             </Link>
           </p>
         </div>
@@ -147,4 +173,4 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;
