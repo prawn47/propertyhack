@@ -11,6 +11,14 @@ const CRAWLER_USER_AGENTS = [
 
 const SITE_URL = 'https://propertyhack.com.au';
 const SITE_NAME = 'PropertyHack';
+
+const CURRENCY_BY_COUNTRY = {
+  AU: 'AUD',
+  US: 'USD',
+  GB: 'GBP',
+  CA: 'CAD',
+  NZ: 'NZD',
+};
 const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.';
 const DEFAULT_IMAGE = `${SITE_URL}/ph-logo.jpg`;
 
@@ -114,7 +122,9 @@ function buildWebsiteJsonLd() {
   };
 }
 
-async function getMetaForUrl(url, prisma) {
+async function getMetaForUrl(url, prisma, query = {}) {
+  const countryCode = (query.country || 'AU').toUpperCase();
+  const priceCurrency = CURRENCY_BY_COUNTRY[countryCode] || 'AUD';
   // Homepage
   if (url === '/') {
     return buildMetaTags({
@@ -279,7 +289,7 @@ async function getMetaForUrl(url, prisma) {
         description: meta.description,
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'All',
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'AUD' },
+        offers: { '@type': 'Offer', price: '0', priceCurrency },
       };
       const breadcrumbJsonLd = {
         '@context': 'https://schema.org',
@@ -364,7 +374,7 @@ function createCrawlerSsrMiddleware(indexHtmlPath) {
     if (!isCrawler(req.headers['user-agent'])) return next();
 
     try {
-      const metaTags = await getMetaForUrl(req.path, req.prisma);
+      const metaTags = await getMetaForUrl(req.path, req.prisma, req.query);
       if (!metaTags) return next();
 
       // Replace the static <title> and <meta description> with dynamic ones
