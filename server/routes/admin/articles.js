@@ -216,6 +216,8 @@ router.put(
     body('location').optional().isString(),
     body('market').optional().isString(),
     body('isFeatured').optional().isBoolean(),
+    body('isEvergreen').optional().isBoolean(),
+    body('isGlobal').optional().isBoolean(),
     body('imageUrl').optional({ nullable: true }).isURL(),
     body('imageAltText').optional().isString(),
   ],
@@ -225,7 +227,7 @@ router.put(
       const existing = await req.prisma.article.findUnique({ where: { id: req.params.id } });
       if (!existing) return res.status(404).json({ error: 'Article not found' });
 
-      const { title, shortBlurb, longSummary, category, location, market, isFeatured, status, imageUrl, imageAltText } = req.body;
+      const { title, shortBlurb, longSummary, category, location, market, isFeatured, isEvergreen, isGlobal, status, imageUrl, imageAltText } = req.body;
 
       const updateData = {};
       if (title !== undefined) updateData.title = title;
@@ -235,6 +237,8 @@ router.put(
       if (location !== undefined) updateData.location = location;
       if (market !== undefined) updateData.market = market;
       if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+      if (isEvergreen !== undefined) updateData.isEvergreen = isEvergreen;
+      if (isGlobal !== undefined) updateData.isGlobal = isGlobal;
       if (status !== undefined) {
         updateData.status = status;
         if (status === 'PUBLISHED' && !existing.publishedAt) {

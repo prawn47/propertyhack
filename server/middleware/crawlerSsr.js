@@ -49,7 +49,7 @@ function buildHreflangTags(urlPath, articleData) {
   const isArticlePage = urlPath.match(/\/article\/[^/?#]+/);
 
   if (isArticlePage && articleData) {
-    if (!articleData.isEvergreen && articleData.market) {
+    if (!articleData.isEvergreen && !articleData.isGlobal && articleData.market) {
       const marketLower = articleData.market.toLowerCase();
       const hreflang = HREFLANG_MAP[marketLower];
       if (hreflang) {
@@ -202,7 +202,7 @@ async function getMetaForUrl(url, prisma) {
         title: true, shortBlurb: true, longSummary: true,
         imageUrl: true, imageAltText: true, slug: true,
         category: true, location: true, sourceUrl: true, metadata: true,
-        publishedAt: true, updatedAt: true, market: true, isEvergreen: true,
+        publishedAt: true, updatedAt: true, market: true, isEvergreen: true, isGlobal: true,
       },
     });
     if (article) {

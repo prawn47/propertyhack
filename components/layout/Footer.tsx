@@ -1,13 +1,15 @@
 import React, { useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useCountryDetection } from '../../hooks/useCountryDetection';
+import { useCountry } from '../../contexts/CountryContext';
+import { useCountryPath } from '../../hooks/useCountryPath';
 
 const Footer: React.FC = () => {
   const year = new Date().getFullYear();
   const navigate = useNavigate();
   const clickTimestamps = useRef<number[]>([]);
-  const { country } = useCountryDetection();
-  const isAU = country === 'AU';
+  const { country } = useCountry();
+  const countryPath = useCountryPath();
+  const isAU = country?.toUpperCase() === 'AU';
 
   const handleLogoClick = useCallback(() => {
     const now = Date.now();
@@ -32,7 +34,7 @@ const Footer: React.FC = () => {
           ].map((tool) => (
             <Link
               key={tool.path}
-              to={tool.path}
+              to={countryPath(tool.path)}
               className="text-white/40 hover:text-brand-gold transition-colors"
             >
               {tool.name}
@@ -53,10 +55,10 @@ const Footer: React.FC = () => {
             {' '}&copy; {year}
           </span>
           <div className="flex items-center gap-4">
-            <Link to="/about" className="hover:text-white transition-colors">About</Link>
-            <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
-            <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <Link to={countryPath('/about')} className="hover:text-white transition-colors">About</Link>
+            <Link to={countryPath('/contact')} className="hover:text-white transition-colors">Contact</Link>
+            <Link to={countryPath('/terms')} className="hover:text-white transition-colors">Terms</Link>
+            <Link to={countryPath('/privacy')} className="hover:text-white transition-colors">Privacy</Link>
             <a href="/feed.xml" className="hover:text-white transition-colors" rel="alternate" type="application/rss+xml">RSS</a>
           </div>
         </div>

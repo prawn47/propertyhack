@@ -59,7 +59,7 @@ router.get('/:country/sitemap.xml', async (req, res) => {
     req.prisma.article.findMany({
       where: {
         status: 'PUBLISHED',
-        OR: [{ market: marketUpper }, { isEvergreen: true }],
+        OR: [{ market: marketUpper }, { isEvergreen: true }, { isGlobal: true }],
       },
       select: { slug: true, updatedAt: true, publishedAt: true },
       orderBy: { publishedAt: 'desc' },
@@ -117,7 +117,7 @@ router.get('/:country/news-sitemap.xml', async (req, res) => {
     where: {
       status: 'PUBLISHED',
       publishedAt: { gte: cutoff },
-      OR: [{ market: marketUpper }, { isEvergreen: true }],
+      OR: [{ market: marketUpper }, { isEvergreen: true }, { isGlobal: true }],
     },
     select: { slug: true, title: true, publishedAt: true },
     orderBy: { publishedAt: 'desc' },
