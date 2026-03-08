@@ -4,7 +4,6 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['__tests__/**/*.test.js'],
-    root: './server',
     pool: 'forks',
     deps: {
       interopDefault: true,

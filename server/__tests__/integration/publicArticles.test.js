@@ -168,6 +168,221 @@ describe('GET /api/articles', () => {
   });
 });
 
+describe('GET /api/articles — country filter', () => {
+  let app;
+  let mockPrisma;
+
+  const auArticle = {
+    id: 'au-article-1',
+    sourceId: 'source-1',
+    sourceUrl: 'https://example.com/au-article',
+    title: 'Sydney Housing Update',
+    shortBlurb: 'AU market news',
+    longSummary: null,
+    imageUrl: null,
+    imageAltText: null,
+    slug: 'sydney-housing-update',
+    category: 'Market Trends',
+    location: 'Sydney',
+    market: 'AU',
+    markets: ['AU'],
+    isEvergreen: false,
+    status: 'PUBLISHED',
+    isFeatured: false,
+    viewCount: 0,
+    publishedAt: new Date('2026-01-01').toISOString(),
+    metadata: null,
+    createdAt: new Date('2026-01-01').toISOString(),
+    updatedAt: new Date('2026-01-01').toISOString(),
+    source: { id: 'source-1', name: 'AU Source', type: 'RSS' },
+  };
+
+  const usArticle = {
+    id: 'us-article-1',
+    sourceId: 'source-2',
+    sourceUrl: 'https://example.com/us-article',
+    title: 'New York Property News',
+    shortBlurb: 'US market news',
+    longSummary: null,
+    imageUrl: null,
+    imageAltText: null,
+    slug: 'new-york-property-news',
+    category: 'property-market',
+    location: 'new-york',
+    market: 'US',
+    markets: ['US'],
+    isEvergreen: false,
+    status: 'PUBLISHED',
+    isFeatured: false,
+    viewCount: 0,
+    publishedAt: new Date('2026-01-02').toISOString(),
+    metadata: null,
+    createdAt: new Date('2026-01-02').toISOString(),
+    updatedAt: new Date('2026-01-02').toISOString(),
+    source: { id: 'source-2', name: 'US Source', type: 'RSS' },
+  };
+
+  const evergreenArticle = {
+    id: 'evergreen-1',
+    sourceId: 'source-3',
+    sourceUrl: 'https://example.com/evergreen',
+    title: 'How to Buy a Property',
+    shortBlurb: 'Universal guide',
+    longSummary: null,
+    imageUrl: null,
+    imageAltText: null,
+    slug: 'how-to-buy-a-property',
+    category: 'Guides',
+    location: null,
+    market: 'AU',
+    markets: ['AU', 'US', 'UK', 'CA'],
+    isEvergreen: true,
+    status: 'PUBLISHED',
+    isFeatured: false,
+    viewCount: 0,
+    publishedAt: new Date('2026-01-03').toISOString(),
+    metadata: null,
+    createdAt: new Date('2026-01-03').toISOString(),
+    updatedAt: new Date('2026-01-03').toISOString(),
+    source: { id: 'source-3', name: 'General Source', type: 'RSS' },
+  };
+
+  beforeEach(() => {
+    mockGenerateEmbedding.mockReset();
+    mockGenerateEmbedding.mockRejectedValue(new Error('embedding disabled in tests'));
+    mockPrisma = {
+      article: {
+        findMany: vi.fn().mockResolvedValue([auArticle]),
+        count: vi.fn().mockResolvedValue(1),
+        findUnique: vi.fn(),
+        update: vi.fn(),
+      },
+      $queryRaw: vi.fn(),
+      $queryRawUnsafe: vi.fn(),
+    };
+    app = buildApp(mockPrisma);
+  });
+
+  it('filters by country=US: passes OR clause for market=US or isEvergreen', async () => {
+    mockPrisma.article.findMany.mockResolvedValue([usArticle, evergreenArticle]);
+    mockPrisma.article.count.mockResolvedValue(2);
+
+    const res = await supertest(app).get('/api/articles?country=US');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { OR } = findManyCall[0].where;
+    expect(OR).toBeDefined();
+    expect(OR).toContainEqual({ market: 'US' });
+    expect(OR).toContainEqual({ isEvergreen: true });
+  });
+
+  it('filters by country=AU: passes OR clause for market=AU or isEvergreen', async () => {
+    mockPrisma.article.findMany.mockResolvedValue([auArticle, evergreenArticle]);
+    mockPrisma.article.count.mockResolvedValue(2);
+
+    const res = await supertest(app).get('/api/articles?country=AU');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { OR } = findManyCall[0].where;
+    expect(OR).toBeDefined();
+    expect(OR).toContainEqual({ market: 'AU' });
+    expect(OR).toContainEqual({ isEvergreen: true });
+  });
+
+  it('no country param: does not apply country OR filter', async () => {
+    const res = await supertest(app).get('/api/articles');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { OR } = findManyCall[0].where;
+    expect(OR).toBeUndefined();
+  });
+
+  it('country=GLOBAL: does not apply country OR filter', async () => {
+    mockPrisma.article.findMany.mockResolvedValue([auArticle, usArticle, evergreenArticle]);
+    mockPrisma.article.count.mockResolvedValue(3);
+
+    const res = await supertest(app).get('/api/articles?country=GLOBAL');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { OR } = findManyCall[0].where;
+    expect(OR).toBeUndefined();
+  });
+
+  it('country=INVALID: treated as no country filter', async () => {
+    const res = await supertest(app).get('/api/articles?country=INVALID');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { OR } = findManyCall[0].where;
+    expect(OR).toBeUndefined();
+  });
+
+  it('country param is case-insensitive (lowercase au treated as AU)', async () => {
+    const res = await supertest(app).get('/api/articles?country=au');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { OR } = findManyCall[0].where;
+    expect(OR).toBeDefined();
+    expect(OR).toContainEqual({ market: 'AU' });
+  });
+
+  it('country=US combined with location=new-york applies both filters', async () => {
+    mockPrisma.article.findMany.mockResolvedValue([usArticle]);
+    mockPrisma.article.count.mockResolvedValue(1);
+
+    const res = await supertest(app).get('/api/articles?country=US&location=new-york');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { where } = findManyCall[0];
+    expect(where.OR).toContainEqual({ market: 'US' });
+    expect(where.OR).toContainEqual({ isEvergreen: true });
+    expect(where.location).toEqual({ contains: 'new-york', mode: 'insensitive' });
+  });
+
+  it('country=US combined with category=property-market applies both filters', async () => {
+    mockPrisma.article.findMany.mockResolvedValue([usArticle]);
+    mockPrisma.article.count.mockResolvedValue(1);
+
+    const res = await supertest(app).get('/api/articles?country=US&category=property-market');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    const { where } = findManyCall[0];
+    expect(where.OR).toContainEqual({ market: 'US' });
+    expect(where.OR).toContainEqual({ isEvergreen: true });
+    expect(where.category).toEqual({ equals: 'property-market', mode: 'insensitive' });
+  });
+
+  it('evergreen article appears in response regardless of country filter', async () => {
+    mockPrisma.article.findMany.mockResolvedValue([evergreenArticle]);
+    mockPrisma.article.count.mockResolvedValue(1);
+
+    const res = await supertest(app).get('/api/articles?country=US');
+
+    expect(res.status).toBe(200);
+    expect(res.body.articles[0].isEvergreen).toBe(true);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    expect(findManyCall[0].where.OR).toContainEqual({ isEvergreen: true });
+  });
+
+  it('evergreen OR clause appears for AU filter as well', async () => {
+    mockPrisma.article.findMany.mockResolvedValue([evergreenArticle]);
+    mockPrisma.article.count.mockResolvedValue(1);
+
+    const res = await supertest(app).get('/api/articles?country=AU');
+
+    expect(res.status).toBe(200);
+    const [findManyCall] = mockPrisma.article.findMany.mock.calls;
+    expect(findManyCall[0].where.OR).toContainEqual({ isEvergreen: true });
+  });
+});
+
 describe('GET /api/articles/:slug', () => {
   let app;
   let mockPrisma;
