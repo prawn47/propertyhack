@@ -86,11 +86,21 @@ const Footer: React.FC = () => {
             <Link to="/contact" className="hover:text-white transition-colors">
               Contact
             </Link>
+            <Link to="/terms" className="hover:text-white transition-colors">
+              Terms
+            </Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">
+              Privacy
+            </Link>
             <a href="/feed.xml" className="hover:text-white transition-colors" rel="alternate" type="application/rss+xml">
               RSS
             </a>
           </div>
         </div>
+
+        <p className="mt-6 text-center text-xs text-white/30 leading-relaxed max-w-2xl mx-auto">
+          Property Hack acknowledges the Traditional Custodians of the lands on which we work and pays respect to their Elders past and present.
+        </p>
       </div>
     </footer>
   );

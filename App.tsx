@@ -17,6 +17,8 @@ import LocationPage from './components/public/LocationPage';
 import CategoryPage from './components/public/CategoryPage';
 import AboutPage from './components/public/AboutPage';
 import ContactPage from './components/public/ContactPage';
+import TermsPage from './components/public/TermsPage';
+import PrivacyPage from './components/public/PrivacyPage';
 import NotFoundPage from './components/public/NotFoundPage';
 import ToolsIndex from './components/calculators/ToolsIndex';
 import AdminLayout from './components/layout/AdminLayout';
@@ -101,6 +103,8 @@ function AppInner() {
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
 
       {/* Calculator routes */}
       <Route path="/tools" element={<ToolsIndex />} />

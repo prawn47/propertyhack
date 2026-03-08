@@ -325,6 +325,24 @@ async function getMetaForUrl(url, prisma) {
     });
   }
 
+  // Terms page
+  if (url === '/terms') {
+    return buildMetaTags({
+      title: 'Terms of Use — PropertyHack',
+      description: 'Terms and conditions for using PropertyHack, an Australian property news aggregation platform.',
+      url: '/terms',
+    });
+  }
+
+  // Privacy page
+  if (url === '/privacy') {
+    return buildMetaTags({
+      title: 'Privacy Policy — PropertyHack',
+      description: 'Privacy policy for PropertyHack. Learn how we collect, use, and protect your personal information.',
+      url: '/privacy',
+    });
+  }
+
   return null;
 }
 
