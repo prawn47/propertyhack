@@ -18,6 +18,7 @@ const adminSeoRoutes = require('./routes/admin/seo');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
+const scenarioRoutes = require('./routes/public/scenarios');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
@@ -138,6 +139,8 @@ app.use('/api/admin/prompts', adminMetaRoutes);
 app.use('/api/admin/social-posts', adminSocialPostsRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/seo', adminSeoRoutes);
+app.use('/api/scenarios', authenticateToken, scenarioRoutes);
+
 // Spec-required public API paths
 app.use('/api/articles', publicArticlesRoutes);
 app.use('/api/categories', publicCategoriesRoutes);
