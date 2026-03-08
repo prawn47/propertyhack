@@ -3,7 +3,8 @@ export type CalculatorType =
   | 'stamp-duty'
   | 'rental-yield'
   | 'borrowing-power'
-  | 'rent-vs-buy';
+  | 'rent-vs-buy'
+  | 'us-transfer-tax';
 
 export async function calculate(
   type: CalculatorType,
