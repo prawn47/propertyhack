@@ -40,6 +40,7 @@ export interface GetArticlesParams {
   sort?: 'newest' | 'relevance';
   page?: number;
   limit?: number;
+  country?: string;
 }
 
 export interface CategoriesResponse {
@@ -60,6 +61,7 @@ export async function getArticles(params: GetArticlesParams = {}): Promise<Artic
   if (params.sort) query.set('sort', params.sort);
   if (params.page) query.set('page', String(params.page));
   if (params.limit) query.set('limit', String(params.limit));
+  if (params.country) query.set('country', params.country);
 
   const qs = query.toString();
   const url = getApiUrl(`/api/articles${qs ? `?${qs}` : ''}`);
