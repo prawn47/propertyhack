@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -18,6 +18,13 @@ import ExpandableSection from './shared/ExpandableSection';
 import ShareButton from './shared/ShareButton';
 import SaveScenarioButton from './shared/SaveScenarioButton';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useMarketCurrency } from '../../hooks/useMarketCurrency';
+import { useCountry } from '../../contexts/CountryContext';
+
+import marketDefaults from '../../server/config/calculators/marketDefaults.json';
+
+type MarketKey = 'AU' | 'US' | 'UK' | 'CA' | 'NZ';
+const VALID_MARKETS: MarketKey[] = ['AU', 'US', 'UK', 'CA', 'NZ'];
 
 interface MortgageInputs extends Record<string, unknown> {
   propertyPrice: number;
@@ -25,7 +32,8 @@ interface MortgageInputs extends Record<string, unknown> {
   loanTermYears: number;
   interestRate: number;
   repaymentType: 'PI' | 'IO';
-  frequency: 'weekly' | 'fortnightly' | 'monthly';
+  frequency: string;
+  market: string;
 }
 
 interface ChartDataPoint {
@@ -43,39 +51,74 @@ interface YearlyBreakdown {
   balance: number;
 }
 
+interface CmhcPremium {
+  rate: number;
+  ratePercent: string;
+  amountCents: number;
+  note: string;
+}
+
+interface PmiInfo {
+  monthlyLowCents: number;
+  monthlyHighCents: number;
+  note: string;
+}
+
 interface MortgageOutputs extends Record<string, unknown> {
   repaymentAmount: number;
   totalInterest: number;
   totalRepaid: number;
   lvr: number;
+  lvrWarning: boolean;
   lmiWarning: boolean;
   chartData: ChartDataPoint[];
   yearlyBreakdown: YearlyBreakdown[];
+  market: string;
+  terminology: Record<string, string>;
+  lvrLabel: string;
+  lvrThresholdNote: string | null;
+  cmhcPremium: CmhcPremium | null;
+  caAmortizationNote: string | null;
+  pmi: PmiInfo | null;
+  nzLepNote: string | null;
 }
 
-const DEFAULT_INPUTS: MortgageInputs = {
-  propertyPrice: 75000000,   // $750,000
-  deposit: 15000000,          // $150,000
-  loanTermYears: 30,
-  interestRate: 6.5,
-  repaymentType: 'PI',
-  frequency: 'monthly',
+function resolveMarket(country: string): MarketKey {
+  return VALID_MARKETS.includes(country as MarketKey) ? (country as MarketKey) : 'AU';
+}
+
+function getMarketConfig(market: MarketKey) {
+  return (marketDefaults as Record<string, typeof marketDefaults['AU']>)[market].mortgage;
+}
+
+function buildDefaultInputs(market: MarketKey): MortgageInputs {
+  const cfg = getMarketConfig(market);
+  return {
+    propertyPrice: 75000000,
+    deposit: 15000000,
+    loanTermYears: cfg.defaultLoanTermYears,
+    interestRate: cfg.defaultInterestRate,
+    repaymentType: 'PI',
+    frequency: cfg.defaultFrequency,
+    market,
+  };
+}
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  weekly: 'Weekly',
+  fortnightly: 'Fortnightly',
+  monthly: 'Monthly',
+  'bi-weekly': 'Bi-weekly',
+  'accelerated-bi-weekly': 'Accelerated bi-weekly',
 };
 
-function formatCents(cents: number): string {
-  const dollars = Math.round(cents) / 100;
-  return dollars.toLocaleString('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-    maximumFractionDigits: 0,
-  });
-}
-
-function frequencyLabel(freq: string): string {
-  if (freq === 'weekly') return 'week';
-  if (freq === 'fortnightly') return 'fortnight';
-  return 'month';
-}
+const FREQUENCY_PERIOD: Record<string, string> = {
+  weekly: 'week',
+  fortnightly: 'fortnight',
+  monthly: 'month',
+  'bi-weekly': 'two weeks',
+  'accelerated-bi-weekly': 'two weeks',
+};
 
 const BREADCRUMBS = [
   { label: 'Home', path: '/' },
@@ -87,24 +130,47 @@ const JSON_LD = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'Mortgage Calculator',
-  description: 'Calculate your Australian mortgage repayments, total interest, and view an amortisation schedule.',
+  description: 'Calculate mortgage repayments across AU, US, UK, CA and NZ markets.',
   url: 'https://propertyhack.com.au/tools/mortgage-calculator',
   applicationCategory: 'FinanceApplication',
   operatingSystem: 'Web',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'AUD',
-  },
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'AUD' },
 };
 
+const WarningBox: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+    <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span>{children}</span>
+  </div>
+);
+
 const MortgageCalculator: React.FC = () => {
+  const { country } = useCountry();
+  const market = resolveMarket(country);
+  const marketCfg = getMarketConfig(market);
+  const terminology = marketCfg.terminology as Record<string, string>;
+
   const { inputs, outputs, isCalculating, setInput, reset } =
-    useCalculator<MortgageInputs, MortgageOutputs>('mortgage', DEFAULT_INPUTS);
+    useCalculator<MortgageInputs, MortgageOutputs>('mortgage', buildDefaultInputs(market));
+
+  const { locale, currency, currencySymbol, formatCents } = useMarketCurrency();
+
+  // When market changes, sync market-specific defaults into inputs
+  useEffect(() => {
+    if (inputs.market !== market) {
+      const cfg = getMarketConfig(market);
+      setInput('market', market);
+      setInput('loanTermYears', cfg.defaultLoanTermYears);
+      setInput('interestRate', cfg.defaultInterestRate);
+      setInput('frequency', cfg.defaultFrequency);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [market]);
 
   const mortgageOutputs = outputs as MortgageOutputs | null;
 
-  // Deposit mode: 'amount' or 'percent'
   const [depositMode, setDepositMode] = useState<'amount' | 'percent'>('amount');
 
   const depositPercent =
@@ -117,8 +183,16 @@ const MortgageCalculator: React.FC = () => {
     setInput('deposit', cents);
   };
 
-  const repaymentLabel = mortgageOutputs
-    ? `${formatCents(mortgageOutputs.repaymentAmount)} / ${frequencyLabel(inputs.frequency)}`
+  const loanTermLabel = terminology.loanTerm || 'Loan term';
+  const repaymentLabel = terminology.repayment || 'Repayment';
+  const repaymentsLabel = terminology.repayments || 'Repayments';
+  const lvrLabel = terminology.lvrLabel || 'LVR';
+  const depositCurrencyLabel = terminology.depositToggleLabel || currency;
+  const maxLoanTerm = marketCfg.maxLoanTermYears || 30;
+
+  const periodLabel = FREQUENCY_PERIOD[inputs.frequency] || 'month';
+  const repaymentValueLabel = mortgageOutputs
+    ? `${formatCents(mortgageOutputs.repaymentAmount)} / ${periodLabel}`
     : '—';
 
   const chartData =
@@ -136,9 +210,11 @@ const MortgageCalculator: React.FC = () => {
         onChange={(v) => setInput('propertyPrice', v)}
         min={0}
         max={10000000000}
+        locale={locale}
+        currencySymbol={currencySymbol}
       />
 
-      {/* Deposit with AUD/% toggle */}
+      {/* Deposit with currency/% toggle */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-content">Deposit</span>
@@ -152,7 +228,7 @@ const MortgageCalculator: React.FC = () => {
                   : 'bg-base-100 text-content-secondary hover:bg-base-200'
               }`}
             >
-              AUD
+              {depositCurrencyLabel}
             </button>
             <button
               type="button"
@@ -176,6 +252,8 @@ const MortgageCalculator: React.FC = () => {
             min={0}
             max={inputs.propertyPrice}
             hint={`${depositPercent}% of property price`}
+            locale={locale}
+            currencySymbol={currencySymbol}
           />
         ) : (
           <PercentageInput
@@ -191,11 +269,11 @@ const MortgageCalculator: React.FC = () => {
       </div>
 
       <SliderInput
-        label="Loan Term"
+        label={loanTermLabel}
         value={inputs.loanTermYears}
         onChange={(v) => setInput('loanTermYears', v)}
         min={1}
-        max={30}
+        max={maxLoanTerm}
         step={1}
         unit="years"
       />
@@ -230,20 +308,22 @@ const MortgageCalculator: React.FC = () => {
         </div>
       </div>
 
-      {/* Frequency select */}
+      {/* Frequency select — options driven by market config */}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="frequency-select" className="text-sm font-medium text-content">
-          Repayment Frequency
+          {repaymentsLabel} Frequency
         </label>
         <select
           id="frequency-select"
           value={inputs.frequency}
-          onChange={(e) => setInput('frequency', e.target.value as MortgageInputs['frequency'])}
+          onChange={(e) => setInput('frequency', e.target.value)}
           className="w-full px-3 py-2.5 bg-base-200 border border-base-300 rounded-lg text-content text-sm focus:outline-none focus:border-brand-gold transition-colors"
         >
-          <option value="monthly">Monthly</option>
-          <option value="fortnightly">Fortnightly</option>
-          <option value="weekly">Weekly</option>
+          {(marketCfg.frequencies as string[]).map((freq) => (
+            <option key={freq} value={freq}>
+              {FREQUENCY_LABELS[freq] ?? freq}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -273,28 +353,69 @@ const MortgageCalculator: React.FC = () => {
         <>
           {/* Headline result */}
           <ResultCard
-            label={`Repayment per ${frequencyLabel(inputs.frequency)}`}
-            value={repaymentLabel}
+            label={`${repaymentLabel} per ${periodLabel}`}
+            value={repaymentValueLabel}
             subtitle={`${inputs.repaymentType === 'PI' ? 'Principal & Interest' : 'Interest Only'} · ${inputs.loanTermYears} year${inputs.loanTermYears !== 1 ? 's' : ''}`}
           />
 
-          {/* LMI warning */}
-          {mortgageOutputs.lmiWarning && (
-            <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
-              <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>
-                <strong>LMI likely applies.</strong> Your LVR is {mortgageOutputs.lvr.toFixed(1)}% — lenders typically require Lenders Mortgage Insurance above 80% LVR.
-              </span>
+          {/* CA: CMHC premium line item */}
+          {market === 'CA' && mortgageOutputs.cmhcPremium && (
+            <div className="bg-base-100 border border-amber-200 rounded-xl p-4 flex flex-col gap-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-content">CMHC Insurance Premium</span>
+                <span className="font-semibold text-amber-800">
+                  {formatCents(mortgageOutputs.cmhcPremium.amountCents)}
+                </span>
+              </div>
+              <p className="text-xs text-content-secondary">{mortgageOutputs.cmhcPremium.note}</p>
             </div>
+          )}
+
+          {/* CA: amortization period warning */}
+          {market === 'CA' && mortgageOutputs.caAmortizationNote && (
+            <WarningBox>{mortgageOutputs.caAmortizationNote}</WarningBox>
+          )}
+
+          {/* AU: LMI warning */}
+          {market === 'AU' && mortgageOutputs.lvrWarning && (
+            <WarningBox>
+              <strong>LMI likely applies.</strong> Your {lvrLabel} is {mortgageOutputs.lvr.toFixed(1)}% — lenders typically require Lenders Mortgage Insurance above 80% LVR.
+            </WarningBox>
+          )}
+
+          {/* UK: higher rates warning */}
+          {market === 'UK' && mortgageOutputs.lvrWarning && (
+            <WarningBox>
+              <strong>Higher rates likely.</strong> Your {lvrLabel} is {mortgageOutputs.lvr.toFixed(1)}% — above 75% LTV, lenders typically charge higher interest rates.
+            </WarningBox>
+          )}
+
+          {/* US: PMI estimate */}
+          {market === 'US' && mortgageOutputs.pmi && (
+            <div className="bg-base-100 border border-amber-200 rounded-xl p-4 flex flex-col gap-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-content">Estimated PMI</span>
+                <span className="font-semibold text-amber-800">
+                  {formatCents(mortgageOutputs.pmi.monthlyLowCents)}–{formatCents(mortgageOutputs.pmi.monthlyHighCents)} / month
+                </span>
+              </div>
+              <p className="text-xs text-content-secondary">{mortgageOutputs.pmi.note}</p>
+            </div>
+          )}
+
+          {/* NZ: Low equity premium note */}
+          {market === 'NZ' && mortgageOutputs.nzLepNote && (
+            <WarningBox>
+              <strong>Low equity premium may apply.</strong>{' '}
+              {mortgageOutputs.nzLepNote}
+            </WarningBox>
           )}
 
           {/* Summary stats */}
           <div className="bg-base-100 border border-base-300 rounded-xl p-5 flex flex-col gap-3">
             <div className="flex justify-between text-sm">
-              <span className="text-content-secondary">LVR</span>
-              <span className={`font-medium ${mortgageOutputs.lvr > 80 ? 'text-amber-700' : 'text-content'}`}>
+              <span className="text-content-secondary">{lvrLabel}</span>
+              <span className={`font-medium ${mortgageOutputs.lvrWarning ? 'text-amber-700' : 'text-content'}`}>
                 {mortgageOutputs.lvr.toFixed(1)}%
               </span>
             </div>
@@ -304,6 +425,14 @@ const MortgageCalculator: React.FC = () => {
                 {formatCents(inputs.propertyPrice - inputs.deposit)}
               </span>
             </div>
+            {market === 'CA' && mortgageOutputs.cmhcPremium && (
+              <div className="flex justify-between text-sm">
+                <span className="text-content-secondary">Loan amount (incl. CMHC)</span>
+                <span className="font-medium text-content">
+                  {formatCents(inputs.propertyPrice - inputs.deposit + mortgageOutputs.cmhcPremium.amountCents)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-content-secondary">Total interest</span>
               <span className="font-medium text-content">
@@ -343,7 +472,7 @@ const MortgageCalculator: React.FC = () => {
                     label={{ value: 'Year', position: 'insideBottom', offset: -2, fontSize: 11, fill: '#6b7280' }}
                   />
                   <YAxis
-                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v: number) => `${currencySymbol}${(v / 1000).toFixed(0)}k`}
                     tick={{ fontSize: 11, fill: '#6b7280' }}
                     tickLine={false}
                     axisLine={false}
@@ -351,31 +480,15 @@ const MortgageCalculator: React.FC = () => {
                   />
                   <Tooltip
                     formatter={(value: number, name: string) => [
-                      value.toLocaleString('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }),
+                      value.toLocaleString(locale, { style: 'currency', currency, maximumFractionDigits: 0 }),
                       name,
                     ]}
                     labelFormatter={(label: number) => `Year ${label}`}
                     contentStyle={{ fontSize: 12, border: '1px solid #e5e7eb', borderRadius: 8 }}
                   />
-                  <Legend
-                    wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Principal"
-                    stackId="1"
-                    stroke="#2b2b2b"
-                    fill="url(#colorPrincipal)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Interest"
-                    stackId="1"
-                    stroke="#d4b038"
-                    fill="url(#colorInterest)"
-                    strokeWidth={2}
-                  />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                  <Area type="monotone" dataKey="Principal" stackId="1" stroke="#2b2b2b" fill="url(#colorPrincipal)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="Interest" stackId="1" stroke="#d4b038" fill="url(#colorInterest)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -386,8 +499,8 @@ const MortgageCalculator: React.FC = () => {
             calculatorType="mortgage"
             inputs={inputs}
             outputs={mortgageOutputs}
-            headlineLabel={`Repayment / ${frequencyLabel(inputs.frequency)}`}
-            headlineValue={repaymentLabel}
+            headlineLabel={`${repaymentLabel} / ${periodLabel}`}
+            headlineValue={repaymentValueLabel}
           />
         </>
       )}
@@ -433,9 +546,9 @@ const MortgageCalculator: React.FC = () => {
   return (
     <CalculatorLayout
       title="Mortgage Repayment Calculator"
-      subtitle="Calculate your Australian mortgage repayments, compare P&I vs interest-only, and view your full amortisation schedule."
+      subtitle="Calculate your mortgage repayments, compare P&I vs interest-only, and view your full amortisation schedule."
       metaTitle="Mortgage Calculator | PropertyHack"
-      metaDescription="Calculate your Australian mortgage repayments. Enter your property price, deposit, loan term and interest rate to see weekly, fortnightly or monthly repayments with a full amortisation chart."
+      metaDescription="Calculate your mortgage repayments across AU, US, UK, Canada and NZ. Enter your property price, deposit, loan term and interest rate to see repayments with a full amortisation chart."
       breadcrumbs={BREADCRUMBS}
       jsonLd={JSON_LD}
       inputs={inputsSection}
