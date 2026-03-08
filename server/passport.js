@@ -3,6 +3,7 @@ const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 
 const callbackURL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback';
 
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 passport.use(
   new GoogleStrategy(
     {
@@ -55,5 +56,8 @@ passport.use(
     }
   )
 );
+} else {
+  console.log('[passport] Google OAuth not configured — GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not set');
+}
 
 module.exports = passport;

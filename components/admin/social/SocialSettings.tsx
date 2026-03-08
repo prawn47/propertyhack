@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SocialAccountCard, { SocialAccount, ConnectFormData } from './SocialAccountCard';
 import SocialConfigForm, { SocialConfig } from './SocialConfigForm';
 import LoadingSpinner from '../../shared/LoadingSpinner';
+import authService from '../../../services/authService';
 
 const API = '/api/admin';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await authService.makeAuthenticatedRequest(url, {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    credentials: 'include',
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
