@@ -116,6 +116,7 @@ model SocialPost {
   content         String
   imageUrl        String?          @map("image_url")
   platforms       String[]
+  platform        String?
   articleId       String?          @map("article_id")
   status          SocialPostStatus @default(DRAFT)
   scheduledFor    DateTime?        @map("scheduled_for")
