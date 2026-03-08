@@ -28,6 +28,7 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
+import StampDutyCalculator from './components/calculators/StampDutyCalculator';
 import type { AuthState } from './types';
 import authService from './services/authService';
 
@@ -76,6 +77,7 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<HomePage />} />
+      <Route path="/tools/stamp-duty-calculator" element={<StampDutyCalculator />} />
       <Route path="/articles/:slug" element={<ArticleDetail />} />
       <Route path="/property-news/:location" element={<LocationPage />} />
       <Route path="/category/:slug" element={<CategoryPage />} />
