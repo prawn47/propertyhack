@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 const { PrismaClient } = require('@prisma/client');
 
 const authRoutes = require('./routes/auth');
+const profileRoutes = require('./routes/user/profile');
 const adminSourcesRoutes = require('./routes/admin/sources');
 const adminArticlesRoutes = require('./routes/admin/articles');
 const adminMetaRoutes = require('./routes/admin/meta');
@@ -132,6 +133,7 @@ app.get('/system/queue-status', async (req, res) => {
 
 const noop = (req, res, next) => next();
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
+app.use('/api/user', authenticateToken, profileRoutes);
 app.use('/api/admin', authenticateToken, requireSuperAdmin);
 app.use('/api/admin/sources', adminSourcesRoutes);
 app.use('/api/admin/articles', adminArticlesRoutes);
