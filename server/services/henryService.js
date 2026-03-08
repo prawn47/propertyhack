@@ -112,6 +112,7 @@ async function* streamResponse({ message, conversationId, user, prisma }) {
     } catch (err) {
       embeddingFailed = true;
       console.error('[Henry] Embedding/retrieval failed:', err.message);
+      yield { event: 'thinking', data: { phase: 'article_search_skipped' } };
     }
 
     // 4. Construct Gemini prompt
@@ -150,15 +151,21 @@ async function* streamResponse({ message, conversationId, user, prisma }) {
     let toolEventData = null;
     let loopCount = 0;
     const MAX_TOOL_LOOPS = 5;
+    const GEMINI_TIMEOUT_MS = 60000;
 
     while (loopCount < MAX_TOOL_LOOPS) {
       loopCount++;
 
-      const streamResult = await chat.sendMessageStream(
-        toolCallResult
-          ? [{ functionResponse: { name: toolCallResult.name, response: toolCallResult.response } }]
-          : currentMessage
-      );
+      const streamResult = await Promise.race([
+        chat.sendMessageStream(
+          toolCallResult
+            ? [{ functionResponse: { name: toolCallResult.name, response: toolCallResult.response } }]
+            : currentMessage
+        ),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Gemini stream timed out')), GEMINI_TIMEOUT_MS)
+        ),
+      ]);
 
       toolCallResult = null;
       let pendingFunctionCall = null;
@@ -203,7 +210,16 @@ async function* streamResponse({ message, conversationId, user, prisma }) {
           yield { event: 'calculator', data: toolEventData };
         } catch (toolErr) {
           console.error('[Henry] Tool call failed:', toolErr.message);
-          // Break out of loop — Gemini will respond without calculator
+          yield {
+            event: 'calculator',
+            data: {
+              type: pendingFunctionCall.name.replace('calculate_', ''),
+              inputs: pendingFunctionCall.args || {},
+              outputs: null,
+              error: "I wasn't able to run that calculation — you can try it directly at the calculator.",
+            },
+          };
+          // Break out of loop — Gemini will respond without calculator result
           break;
         }
       } else {
