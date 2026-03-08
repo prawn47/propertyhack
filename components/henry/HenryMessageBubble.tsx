@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Citation {
   articleId: string;
@@ -50,6 +52,35 @@ function formatCalculatorType(type: string): string {
   };
   return labels[type] ?? type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
+
+const markdownComponents = {
+  a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="text-brand-gold hover:underline">
+      {children}
+    </a>
+  ),
+  p: ({ children }: React.HTMLAttributes<HTMLParagraphElement>) => (
+    <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
+  ),
+  ul: ({ children }: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>
+  ),
+  ol: ({ children }: React.OlHTMLAttributes<HTMLOListElement>) => (
+    <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>
+  ),
+  code: ({ inline, children }: { inline?: boolean; children?: React.ReactNode }) =>
+    inline ? (
+      <code className="bg-gray-100 rounded px-1 text-xs font-mono">{children}</code>
+    ) : (
+      <code>{children}</code>
+    ),
+  pre: ({ children }: React.HTMLAttributes<HTMLPreElement>) => (
+    <pre className="bg-gray-800 text-gray-100 rounded-lg p-3 overflow-x-auto text-xs mb-2">{children}</pre>
+  ),
+  strong: ({ children }: React.HTMLAttributes<HTMLElement>) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
+};
 
 export default function HenryMessageBubble({ message, onRate, compact }: HenryMessageBubbleProps) {
   const [copied, setCopied] = useState(false);
@@ -115,12 +146,18 @@ export default function HenryMessageBubble({ message, onRate, compact }: HenryMe
               : 'bg-base-200 text-gray-900',
           ].join(' ')}
         >
-          <p className="whitespace-pre-wrap leading-relaxed">
-            {message.content}
-            {message.isStreaming && (
-              <span className="inline-block w-0.5 h-4 ml-0.5 bg-current align-middle animate-blink" />
-            )}
-          </p>
+          {isUser ? (
+            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+          ) : (
+            <>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {message.content}
+              </ReactMarkdown>
+              {message.isStreaming && (
+                <span className="inline-block w-0.5 h-4 ml-0.5 bg-current align-middle animate-blink" />
+              )}
+            </>
+          )}
         </div>
 
         {/* Citations */}
