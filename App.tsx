@@ -17,6 +17,7 @@ import CategoryPage from './components/public/CategoryPage';
 import AboutPage from './components/public/AboutPage';
 import ContactPage from './components/public/ContactPage';
 import NotFoundPage from './components/public/NotFoundPage';
+import ToolsIndex from './components/calculators/ToolsIndex';
 import AdminLayout from './components/layout/AdminLayout';
 import ArticleList from './components/admin/ArticleList';
 import ArticleEditor from './components/admin/ArticleEditor';
@@ -81,6 +82,7 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/tools" element={<ToolsIndex />} />
       <Route
         path="/login"
         element={
