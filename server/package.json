@@ -37,7 +37,8 @@
     "passport-google-oauth20": "^2.0.0",
     "prisma": "^6.18.0",
     "resend": "^6.9.3",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",
