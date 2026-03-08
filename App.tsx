@@ -36,6 +36,7 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
+import SubscriberList from './components/admin/SubscriberList';
 import RegisterPage from './components/auth/RegisterPage';
 import VerifyEmailPage from './components/auth/VerifyEmailPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
@@ -330,6 +331,14 @@ function AppInner() {
         element={
           <RequireAdmin>
             <AdminPage onLogout={handleLogout}><SocialSettings /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/subscribers"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SubscriberList /></AdminPage>
           </RequireAdmin>
         }
       />
