@@ -1,0 +1,135 @@
+{
+  "NSW": {
+    "brackets": [
+      { "min": 0, "max": 14000, "base": 0, "rate": 0.0125 },
+      { "min": 14001, "max": 31000, "base": 175, "rate": 0.015 },
+      { "min": 31001, "max": 83000, "base": 430, "rate": 0.0175 },
+      { "min": 83001, "max": 310000, "base": 1340, "rate": 0.035 },
+      { "min": 310001, "max": 1033000, "base": 9285, "rate": 0.045 },
+      { "min": 1033001, "max": 3101000, "base": 41820, "rate": 0.055 },
+      { "min": 3101001, "max": null, "base": 155905, "rate": 0.07 }
+    ],
+    "firstHomeBuyer": {
+      "exemptionThreshold": 800000,
+      "concessionThreshold": 1000000
+    },
+    "foreignSurcharge": 0.08,
+    "offThePlanConcession": false
+  },
+  "VIC": {
+    "brackets": [
+      { "min": 0, "max": 25000, "base": 0, "rate": 0.014 },
+      { "min": 25001, "max": 130000, "base": 350, "rate": 0.024 },
+      { "min": 130001, "max": 960000, "base": 2870, "rate": 0.06 },
+      { "min": 960001, "max": 2000000, "base": 52670, "rate": 0.055 },
+      { "min": 2000001, "max": null, "base": 109870, "rate": 0.065 }
+    ],
+    "firstHomeBuyer": {
+      "exemptionThreshold": 600000,
+      "concessionThreshold": 750000
+    },
+    "foreignSurcharge": 0.08,
+    "offThePlanConcession": true
+  },
+  "QLD": {
+    "brackets": [
+      { "min": 0, "max": 5000, "base": 0, "rate": 0 },
+      { "min": 5001, "max": 75000, "base": 0, "rate": 0.015 },
+      { "min": 75001, "max": 540000, "base": 1050, "rate": 0.035 },
+      { "min": 540001, "max": 1000000, "base": 17325, "rate": 0.045 },
+      { "min": 1000001, "max": null, "base": 38025, "rate": 0.0575 }
+    ],
+    "firstHomeBuyer": {
+      "exemptionThreshold": 500000,
+      "concessionThreshold": 550000
+    },
+    "foreignSurcharge": 0.08,
+    "offThePlanConcession": false
+  },
+  "SA": {
+    "brackets": [
+      { "min": 0, "max": 12000, "base": 0, "rate": 0.01 },
+      { "min": 12001, "max": 30000, "base": 120, "rate": 0.02 },
+      { "min": 30001, "max": 50000, "base": 480, "rate": 0.03 },
+      { "min": 50001, "max": 100000, "base": 1080, "rate": 0.035 },
+      { "min": 100001, "max": 200000, "base": 2830, "rate": 0.04 },
+      { "min": 200001, "max": 250000, "base": 6830, "rate": 0.0425 },
+      { "min": 250001, "max": 300000, "base": 8955, "rate": 0.0475 },
+      { "min": 300001, "max": 500000, "base": 11330, "rate": 0.05 },
+      { "min": 500001, "max": null, "base": 21330, "rate": 0.055 }
+    ],
+    "firstHomeBuyer": {
+      "exemptionThreshold": 650000,
+      "concessionThreshold": 700000
+    },
+    "foreignSurcharge": 0.07,
+    "offThePlanConcession": false
+  },
+  "WA": {
+    "brackets": [
+      { "min": 0, "max": 120000, "base": 0, "rate": 0.019 },
+      { "min": 120001, "max": 150000, "base": 2280, "rate": 0.0285 },
+      { "min": 150001, "max": 360000, "base": 3135, "rate": 0.038 },
+      { "min": 360001, "max": 725000, "base": 11115, "rate": 0.0475 },
+      { "min": 725001, "max": null, "base": 28453, "rate": 0.0515 }
+    ],
+    "firstHomeBuyer": {
+      "exemptionThreshold": 430000,
+      "concessionThreshold": 530000
+    },
+    "foreignSurcharge": 0.07,
+    "offThePlanConcession": false
+  },
+  "TAS": {
+    "brackets": [
+      { "min": 0, "max": 3000, "base": 0, "rate": 0 },
+      { "min": 3001, "max": 25000, "base": 50, "rate": 0.0175 },
+      { "min": 25001, "max": 75000, "base": 435, "rate": 0.0225 },
+      { "min": 75001, "max": 200000, "base": 1560, "rate": 0.035 },
+      { "min": 200001, "max": 375000, "base": 5935, "rate": 0.04 },
+      { "min": 375001, "max": 725000, "base": 12935, "rate": 0.0425 },
+      { "min": 725001, "max": null, "base": 27810, "rate": 0.045 }
+    ],
+    "firstHomeBuyer": {
+      "exemptionThreshold": 600000,
+      "concessionThreshold": 750000
+    },
+    "foreignSurcharge": 0.08,
+    "offThePlanConcession": false
+  },
+  "NT": {
+    "brackets": [
+      { "min": 0, "max": 525000, "base": 0, "rate": 0, "formula": "concession" },
+      { "min": 525001, "max": 3000000, "base": 0, "rate": 0.0495 },
+      { "min": 3000001, "max": 5000000, "base": 148500, "rate": 0.055 },
+      { "min": 5000001, "max": null, "base": 258500, "rate": 0.059 }
+    ],
+    "ntConcessionFormula": {
+      "description": "For properties up to $525,000: duty = 0.06571441 * V + 15 * V^2 / 1,000,000 (where V = dutiable value / 1000). Minimum $20.",
+      "threshold": 525000
+    },
+    "firstHomeBuyer": {
+      "exemptionThreshold": 650000,
+      "concessionThreshold": 700000
+    },
+    "foreignSurcharge": 0,
+    "offThePlanConcession": false
+  },
+  "ACT": {
+    "brackets": [
+      { "min": 0, "max": 260000, "base": 0, "rate": 0.0106 },
+      { "min": 260001, "max": 300000, "base": 2756, "rate": 0.0119 },
+      { "min": 300001, "max": 500000, "base": 3232, "rate": 0.0237 },
+      { "min": 500001, "max": 750000, "base": 7972, "rate": 0.0271 },
+      { "min": 750001, "max": 1000000, "base": 14747, "rate": 0.032 },
+      { "min": 1000001, "max": 1455000, "base": 22747, "rate": 0.0385 },
+      { "min": 1455001, "max": null, "base": 40269, "rate": 0.047 }
+    ],
+    "firstHomeBuyer": {
+      "exemptionThreshold": 1000000,
+      "concessionThreshold": null
+    },
+    "foreignSurcharge": 0,
+    "offThePlanConcession": false
+  }
+}
