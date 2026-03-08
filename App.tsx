@@ -29,6 +29,7 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
+import SocialSettings from './components/admin/social/SocialSettings';
 import ProfilePage from './components/user/ProfilePage';
 import RentVsBuyCalculator from './components/calculators/RentVsBuyCalculator';
 import BorrowingPowerCalculator from './components/calculators/BorrowingPowerCalculator';
@@ -224,6 +225,15 @@ function AppInner() {
         element={
           <RequireAdmin>
             <AdminPage onLogout={handleLogout}><SeoSettings /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+
+      <Route
+        path="/admin/settings/social"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SocialSettings /></AdminPage>
           </RequireAdmin>
         }
       />
