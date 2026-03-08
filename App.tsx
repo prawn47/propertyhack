@@ -23,8 +23,9 @@ import ArticleList from './components/admin/ArticleList';
 import ArticleEditor from './components/admin/ArticleEditor';
 import SourceList from './components/admin/SourceList';
 import SourceEditor from './components/admin/SourceEditor';
-import SocialPostList from './components/admin/SocialPostList';
-import SocialPostEditor from './components/admin/SocialPostEditor';
+import SocialPostList from './components/admin/social/SocialPostList';
+import SocialPostEditor from './components/admin/social/SocialPostEditor';
+import SocialSettings from './components/admin/social/SocialSettings';
 import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
@@ -35,6 +36,7 @@ import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import GoogleAuthCallback from './components/auth/GoogleAuthCallback';
 import MortgageCalculator from './components/calculators/MortgageCalculator';
+import StampDutyCalculator from './components/calculators/StampDutyCalculator';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
@@ -87,6 +89,7 @@ function AppInner() {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<HomePage />} />
+      <Route path="/tools/stamp-duty-calculator" element={<StampDutyCalculator />} />
       <Route path="/articles/:slug" element={<ArticleDetail />} />
       <Route path="/property-news/:location" element={<LocationPage />} />
       <Route path="/category/:slug" element={<CategoryPage />} />

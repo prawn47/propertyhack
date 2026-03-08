@@ -7,18 +7,20 @@ import Footer from '../layout/Footer';
 interface BreadcrumbItem {
   label: string;
   path?: string;
+  href?: string;
 }
 
 interface CalculatorLayoutProps {
   title: string;
   subtitle: string;
-  metaTitle: string;
-  metaDescription: string;
+  metaTitle?: string;
+  metaDescription?: string;
   breadcrumbs: BreadcrumbItem[];
   jsonLd?: object;
   inputs: React.ReactNode;
   results: React.ReactNode;
   footer?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const CalculatorLayout: React.FC<CalculatorLayoutProps> = ({
@@ -31,18 +33,21 @@ const CalculatorLayout: React.FC<CalculatorLayoutProps> = ({
   inputs,
   results,
   footer,
+  children,
 }) => {
   return (
     <>
-      <Helmet>
-        <title>{metaTitle}</title>
-        <meta name="description" content={metaDescription} />
-        {jsonLd && (
-          <script type="application/ld+json">
-            {JSON.stringify(jsonLd)}
-          </script>
-        )}
-      </Helmet>
+      {(metaTitle || metaDescription) && (
+        <Helmet>
+          {metaTitle && <title>{metaTitle}</title>}
+          {metaDescription && <meta name="description" content={metaDescription} />}
+          {jsonLd && (
+            <script type="application/ld+json">
+              {JSON.stringify(jsonLd)}
+            </script>
+          )}
+        </Helmet>
+      )}
 
       <div className="min-h-screen flex flex-col bg-base-200">
         <Header />
@@ -59,8 +64,8 @@ const CalculatorLayout: React.FC<CalculatorLayoutProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
                     )}
-                    {crumb.path ? (
-                      <Link to={crumb.path} className="hover:text-brand-gold transition-colors">
+                    {(crumb.path || crumb.href) ? (
+                      <Link to={(crumb.path || crumb.href)!} className="hover:text-brand-gold transition-colors">
                         {crumb.label}
                       </Link>
                     ) : (
@@ -96,6 +101,8 @@ const CalculatorLayout: React.FC<CalculatorLayoutProps> = ({
                 {footer}
               </div>
             )}
+
+            {children}
           </div>
         </main>
 
