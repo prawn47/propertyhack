@@ -2,6 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useMarketCurrency } from '../../hooks/useMarketCurrency';
 import CurrencyInput from './shared/CurrencyInput';
 import PercentageInput from './shared/PercentageInput';
 import ExpandableSection from './shared/ExpandableSection';
@@ -49,21 +50,13 @@ const DEFAULT_INPUTS: BorrowingPowerInputs = {
   assessmentRate: DEFAULT_ASSESSMENT_RATE,
 };
 
-function formatDollars(cents: number): string {
-  const dollars = Math.round(cents) / 100;
-  return dollars.toLocaleString('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-    maximumFractionDigits: 0,
-  });
-}
-
 const BorrowingPowerCalculator: React.FC = () => {
   const { inputs, outputs, isCalculating, error, setInput, reset } =
     useCalculator<BorrowingPowerInputs, BorrowingPowerOutputs>(
       'borrowing-power',
       DEFAULT_INPUTS
     );
+  const { locale, currencySymbol, formatCents: formatDollars } = useMarketCurrency();
 
   const typedOutputs = outputs as BorrowingPowerOutputs | null;
 
@@ -180,6 +173,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                 value={inputs.grossIncome1}
                 onChange={(v) => setInput('grossIncome1', v)}
                 hint="Gross annual salary or wages"
+                locale={locale}
+                currencySymbol={currencySymbol}
               />
 
               {/* Secondary income — conditional */}
@@ -190,6 +185,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                     value={inputs.grossIncome2}
                     onChange={(v) => setInput('grossIncome2', v)}
                     hint="Gross annual salary or wages for second applicant"
+                    locale={locale}
+                    currencySymbol={currencySymbol}
                   />
                 </div>
               )}
@@ -200,6 +197,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                 value={inputs.otherIncome}
                 onChange={(v) => setInput('otherIncome', v)}
                 hint="Rental income, dividends, etc."
+                locale={locale}
+                currencySymbol={currencySymbol}
               />
 
               {/* Monthly expenses */}
@@ -208,6 +207,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                 value={inputs.monthlyLivingExpenses}
                 onChange={(v) => setInput('monthlyLivingExpenses', v)}
                 hint="Food, utilities, transport, subscriptions, etc."
+                locale={locale}
+                currencySymbol={currencySymbol}
               />
 
               {/* Dependants */}
@@ -236,18 +237,24 @@ const BorrowingPowerCalculator: React.FC = () => {
                   value={inputs.creditCardLimits}
                   onChange={(v) => setInput('creditCardLimits', v)}
                   hint="Combined limit across all credit cards (lenders use 3% as monthly commitment)"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
                 <CurrencyInput
                   label="Existing loan repayments (monthly)"
                   value={inputs.existingLoanRepayments}
                   onChange={(v) => setInput('existingLoanRepayments', v)}
                   hint="Car loans, personal loans, existing mortgage repayments"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
                 <CurrencyInput
                   label="HECS/HELP debt (total)"
                   value={inputs.hecsDebt}
                   onChange={(v) => setInput('hecsDebt', v)}
                   hint="Your current HECS or HELP student loan balance"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
               </ExpandableSection>
 
@@ -318,8 +325,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                       />
                     </div>
                     <div className="flex justify-between mt-1.5 text-xs text-content-secondary">
-                      <span>$0</span>
-                      <span>$2,000,000</span>
+                      <span>{currencySymbol}0</span>
+                      <span>{currencySymbol}2,000,000</span>
                     </div>
                   </div>
                 )}

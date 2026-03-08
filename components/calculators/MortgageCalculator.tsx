@@ -18,6 +18,7 @@ import ExpandableSection from './shared/ExpandableSection';
 import ShareButton from './shared/ShareButton';
 import SaveScenarioButton from './shared/SaveScenarioButton';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useMarketCurrency } from '../../hooks/useMarketCurrency';
 
 interface MortgageInputs extends Record<string, unknown> {
   propertyPrice: number;
@@ -62,15 +63,6 @@ const DEFAULT_INPUTS: MortgageInputs = {
   frequency: 'monthly',
 };
 
-function formatCents(cents: number): string {
-  const dollars = Math.round(cents) / 100;
-  return dollars.toLocaleString('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-    maximumFractionDigits: 0,
-  });
-}
-
 function frequencyLabel(freq: string): string {
   if (freq === 'weekly') return 'week';
   if (freq === 'fortnightly') return 'fortnight';
@@ -101,6 +93,7 @@ const JSON_LD = {
 const MortgageCalculator: React.FC = () => {
   const { inputs, outputs, isCalculating, setInput, reset } =
     useCalculator<MortgageInputs, MortgageOutputs>('mortgage', DEFAULT_INPUTS);
+  const { locale, currency, currencySymbol, formatCents } = useMarketCurrency();
 
   const mortgageOutputs = outputs as MortgageOutputs | null;
 
@@ -136,6 +129,8 @@ const MortgageCalculator: React.FC = () => {
         onChange={(v) => setInput('propertyPrice', v)}
         min={0}
         max={10000000000}
+        locale={locale}
+        currencySymbol={currencySymbol}
       />
 
       {/* Deposit with AUD/% toggle */}
@@ -152,7 +147,7 @@ const MortgageCalculator: React.FC = () => {
                   : 'bg-base-100 text-content-secondary hover:bg-base-200'
               }`}
             >
-              AUD
+              {currency}
             </button>
             <button
               type="button"
@@ -176,6 +171,8 @@ const MortgageCalculator: React.FC = () => {
             min={0}
             max={inputs.propertyPrice}
             hint={`${depositPercent}% of property price`}
+            locale={locale}
+            currencySymbol={currencySymbol}
           />
         ) : (
           <PercentageInput
@@ -343,7 +340,7 @@ const MortgageCalculator: React.FC = () => {
                     label={{ value: 'Year', position: 'insideBottom', offset: -2, fontSize: 11, fill: '#6b7280' }}
                   />
                   <YAxis
-                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v: number) => `${currencySymbol}${(v / 1000).toFixed(0)}k`}
                     tick={{ fontSize: 11, fill: '#6b7280' }}
                     tickLine={false}
                     axisLine={false}
@@ -351,7 +348,7 @@ const MortgageCalculator: React.FC = () => {
                   />
                   <Tooltip
                     formatter={(value: number, name: string) => [
-                      value.toLocaleString('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }),
+                      value.toLocaleString(locale, { style: 'currency', currency, maximumFractionDigits: 0 }),
                       name,
                     ]}
                     labelFormatter={(label: number) => `Year ${label}`}

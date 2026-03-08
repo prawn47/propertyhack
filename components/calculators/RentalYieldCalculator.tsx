@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useMarketCurrency } from '../../hooks/useMarketCurrency';
 import CalculatorLayout from './CalculatorLayout';
 import CurrencyInput from './shared/CurrencyInput';
 import ExpandableSection from './shared/ExpandableSection';
@@ -52,10 +53,6 @@ const DEFAULT_INPUTS: RentalYieldInputs = {
   otherExpenses: 0,
 };
 
-function formatDollars(cents: number): string {
-  return '$' + (Math.round(cents) / 100).toLocaleString('en-AU', { maximumFractionDigits: 0 });
-}
-
 function formatPercent(pct: number): string {
   return pct.toFixed(2) + '%';
 }
@@ -92,6 +89,7 @@ const BREADCRUMBS = [
 const RentalYieldCalculator: React.FC = () => {
   const { inputs, outputs, isCalculating, error, setInput, reset } =
     useCalculator<RentalYieldInputs, RentalYieldOutputs>('rental-yield', DEFAULT_INPUTS);
+  const { locale, currencySymbol, formatCents: formatDollars } = useMarketCurrency();
 
   const out = outputs as RentalYieldOutputs | null;
 
@@ -111,6 +109,8 @@ const RentalYieldCalculator: React.FC = () => {
         value={inputs.purchasePrice}
         onChange={(v) => setInput('purchasePrice', v)}
         min={0}
+        locale={locale}
+        currencySymbol={currencySymbol}
       />
       <CurrencyInput
         label="Weekly Rent"
@@ -118,6 +118,8 @@ const RentalYieldCalculator: React.FC = () => {
         onChange={(v) => setInput('weeklyRent', v)}
         min={0}
         hint="Current or expected weekly rental income"
+        locale={locale}
+        currencySymbol={currencySymbol}
       />
 
       <ExpandableSection title="Advanced — Expenses">
@@ -126,30 +128,40 @@ const RentalYieldCalculator: React.FC = () => {
           value={inputs.councilRates}
           onChange={(v) => setInput('councilRates', v)}
           min={0}
+          locale={locale}
+          currencySymbol={currencySymbol}
         />
         <CurrencyInput
           label="Water Rates (annual)"
           value={inputs.waterRates}
           onChange={(v) => setInput('waterRates', v)}
           min={0}
+          locale={locale}
+          currencySymbol={currencySymbol}
         />
         <CurrencyInput
           label="Insurance (annual)"
           value={inputs.insurance}
           onChange={(v) => setInput('insurance', v)}
           min={0}
+          locale={locale}
+          currencySymbol={currencySymbol}
         />
         <CurrencyInput
           label="Maintenance & Repairs (annual)"
           value={inputs.maintenance}
           onChange={(v) => setInput('maintenance', v)}
           min={0}
+          locale={locale}
+          currencySymbol={currencySymbol}
         />
         <CurrencyInput
           label="Strata / Body Corporate Fees (annual)"
           value={inputs.strataFees}
           onChange={(v) => setInput('strataFees', v)}
           min={0}
+          locale={locale}
+          currencySymbol={currencySymbol}
         />
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-content" htmlFor="mgmt-fee">
@@ -175,12 +187,16 @@ const RentalYieldCalculator: React.FC = () => {
           value={inputs.landTax}
           onChange={(v) => setInput('landTax', v)}
           min={0}
+          locale={locale}
+          currencySymbol={currencySymbol}
         />
         <CurrencyInput
           label="Other Expenses (annual)"
           value={inputs.otherExpenses}
           onChange={(v) => setInput('otherExpenses', v)}
           min={0}
+          locale={locale}
+          currencySymbol={currencySymbol}
         />
       </ExpandableSection>
 
