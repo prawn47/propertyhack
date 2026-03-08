@@ -1,0 +1,32 @@
+# PropertyHack
+
+> Agenda-free Australian property news, market updates, and analysis.
+
+PropertyHack aggregates and AI-summarises property news from across Australia, covering Sydney, Melbourne, Brisbane, Perth, Adelaide, Canberra, Hobart, Darwin, and Gold Coast.
+
+## Key Sections
+
+- [Homepage](https://propertyhack.com.au/): Latest property news feed with search and location filters
+- [Sydney Property News](https://propertyhack.com.au/property-news/sydney)
+- [Melbourne Property News](https://propertyhack.com.au/property-news/melbourne)
+- [Brisbane Property News](https://propertyhack.com.au/property-news/brisbane)
+- [Perth Property News](https://propertyhack.com.au/property-news/perth)
+- [Adelaide Property News](https://propertyhack.com.au/property-news/adelaide)
+- [Canberra Property News](https://propertyhack.com.au/property-news/canberra)
+- [Hobart Property News](https://propertyhack.com.au/property-news/hobart)
+- [Darwin Property News](https://propertyhack.com.au/property-news/darwin)
+- [Gold Coast Property News](https://propertyhack.com.au/property-news/gold-coast)
+- [About](https://propertyhack.com.au/about)
+- [Contact](https://propertyhack.com.au/contact)
+
+## Public API
+
+Articles feed (JSON): `GET https://propertyhack.com.au/api/public/articles`
+- Query params: `page`, `limit`, `search`, `location`, `category`
+- Returns paginated list of property news articles with title, summary, category, location, and source attribution
+
+## Feeds & Discovery
+
+- [RSS Feed](https://propertyhack.com.au/feed.xml)
+- [Sitemap](https://propertyhack.com.au/sitemap.xml)
+- [Full LLM Reference](https://propertyhack.com.au/llms-full.txt)

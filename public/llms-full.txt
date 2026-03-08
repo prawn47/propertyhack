@@ -1,0 +1,54 @@
+# PropertyHack - Full LLM Reference
+
+> Agenda-free Australian property news, market updates, and analysis.
+
+## About
+
+PropertyHack is an AI-powered property news aggregation platform for Australia. It collects articles from multiple sources (RSS feeds, news APIs, web scraping), AI-summarises them using Google Gemini, and serves them in a clean, location-aware news feed. All content is property-market focused.
+
+## Article Structure
+
+Each article includes:
+- **title**: Headline of the article
+- **shortBlurb**: 1-2 sentence summary (AI-generated)
+- **longSummary**: Detailed AI-generated summary (2-4 paragraphs)
+- **category**: Property market category (e.g. Market Trends, Finance, Investment, Rental Market)
+- **location**: Australian city or region
+- **source**: Original publication name
+- **sourceUrl**: Link to original article for attribution
+- **publishedAt**: Publication date/time (ISO 8601)
+- **imageUrl**: Article hero image
+- **imageAltText**: Descriptive alt text for the image
+
+## Location Coverage
+
+Nine major Australian cities and regions:
+Sydney, Melbourne, Brisbane, Perth, Adelaide, Canberra, Hobart, Darwin, Gold Coast
+
+## Public API Reference
+
+Base URL: `https://propertyhack.com.au/api/public`
+
+### GET /articles
+Returns paginated property news articles.
+
+Query parameters:
+- `page` (integer, default 1)
+- `limit` (integer, default 20, max 50)
+- `search` (string) - full-text search on title and summary
+- `location` (string) - filter by city slug (e.g. `sydney`, `gold-coast`)
+- `category` (string) - filter by category slug
+
+### GET /articles/:slug
+Returns a single article by slug with full content.
+
+## Feeds
+
+- RSS 2.0: `https://propertyhack.com.au/feed.xml`
+- Sitemap index: `https://propertyhack.com.au/sitemap.xml`
+- Articles sitemap: `https://propertyhack.com.au/sitemap-articles.xml`
+- Google News sitemap: `https://propertyhack.com.au/sitemap-news.xml`
+
+## Editorial Policy
+
+PropertyHack does not have a financial stake in any property outcome. Content is sourced from established Australian property and financial media and AI-summarised to be concise and readable. Source attribution is always included.
