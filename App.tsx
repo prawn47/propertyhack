@@ -39,6 +39,7 @@ import GoogleAuthCallback from './components/auth/GoogleAuthCallback';
 import MortgageCalculator from './components/calculators/MortgageCalculator';
 import StampDutyCalculator from './components/calculators/StampDutyCalculator';
 import RentalYieldCalculator from './components/calculators/RentalYieldCalculator';
+import ScenarioDashboard from './components/user/ScenarioDashboard';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
@@ -124,6 +125,16 @@ function AppInner() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+
+      {/* User routes — require auth */}
+      <Route
+        path="/profile/scenarios"
+        element={
+          <RequireAuth>
+            <ScenarioDashboard />
+          </RequireAuth>
+        }
+      />
 
       {/* Admin routes — require admin role */}
       <Route
