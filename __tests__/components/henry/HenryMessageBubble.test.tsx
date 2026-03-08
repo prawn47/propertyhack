@@ -16,8 +16,8 @@ function makeMsg(overrides: Partial<{
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  citations: unknown[];
-  calculatorCall: unknown;
+  citations: Array<{ articleId: string; title: string; slug: string; similarity: number }>;
+  calculatorCall: { type: string; inputs: Record<string, unknown>; outputs: Record<string, unknown> } | undefined;
   isStreaming: boolean;
 }> = {}) {
   return {
