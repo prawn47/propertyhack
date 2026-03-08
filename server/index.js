@@ -25,6 +25,7 @@ const publicLocationsRoutes = require('./routes/public/locations');
 const publicMarketsRoutes = require('./routes/public/markets');
 const calculatorRoutes = require('./routes/public/calculators');
 const scenarioRoutes = require('./routes/public/scenarios');
+const henryRoutes = require('./routes/henry');
 const publicSubscribeRoutes = require('./routes/public/subscribe');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
@@ -181,6 +182,7 @@ app.use('/api/admin/social-config', adminSocialConfigRoutes);
 app.use('/api/admin/social-accounts', adminSocialAccountsRoutes);
 app.use('/api/admin/subscribers', adminSubscribersRoutes);
 app.use('/api/scenarios', authenticateToken, scenarioRoutes);
+app.use('/api/henry', henryRoutes);
 // Spec-required public API paths
 app.use('/api/articles', publicArticlesRoutes);
 app.use('/api/categories', publicCategoriesRoutes);
