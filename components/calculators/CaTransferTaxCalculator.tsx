@@ -492,9 +492,9 @@ const CaTransferTaxCalculator: React.FC = () => {
   return (
     <>
       <SeoHead
-        title="Canada Land Transfer Tax Calculator 2026"
-        description="Calculate land transfer tax for property purchases across all Canadian provinces and territories. Includes Toronto and Montreal municipal taxes, first-time buyer rebates, and Ontario Non-Resident Speculation Tax."
-        canonicalUrl="/ca/tools/land-transfer-tax-calculator"
+        title="Land Transfer Tax Calculator Canada 2026 — All Provinces"
+        description="Calculate land transfer tax for property purchases across all Canadian provinces and territories. Covers Ontario and BC progressive brackets, Toronto and Montreal municipal LTT, first-time buyer rebates, and non-resident speculation tax."
+        canonicalUrl="/tools/ca/land-transfer-tax-calculator"
         jsonLd={jsonLd}
       />
       <CalculatorLayout
