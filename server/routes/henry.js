@@ -122,7 +122,7 @@ router.post('/chat', anonChatLimiter, optionalAuth, messageValidation, async (re
   const { message } = req.body;
 
   await streamSse(req, res, () =>
-    henryService.streamResponse({ message, user: req.user || null })
+    henryService.streamResponse({ message, user: req.user || null, prisma: req.prisma })
   );
 });
 
@@ -244,7 +244,7 @@ router.post(
     const { message } = req.body;
 
     await streamSse(req, res, () =>
-      henryService.streamResponse({ message, conversationId: req.params.id, user: req.user })
+      henryService.streamResponse({ message, conversationId: req.params.id, user: req.user, prisma: req.prisma })
     );
   }
 );

@@ -3,7 +3,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { generateEmbedding } = require('./embeddingService');
 const { buildSystemPrompt, buildUserContext, buildArticleContext, buildCalculatorContext, formatConversationHistory, generateTitle } = require('./henryPrompts');
-const { getToolDefinitions, executeToolCall } = require('./henryTools');
+const { getToolDeclarations, executeToolCall } = require('./henryTools');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -132,9 +132,9 @@ async function* streamResponse({ message, conversationId, user, prisma }) {
     ].filter(Boolean).join('\n\n');
 
     // 5. Call Gemini with streaming + function calling
-    const tools = getToolDefinitions();
+    const tools = getToolDeclarations();
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       systemInstruction,
       tools: tools.length > 0 ? [{ functionDeclarations: tools }] : undefined,
     });
