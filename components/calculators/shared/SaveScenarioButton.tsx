@@ -22,6 +22,7 @@ const CALCULATOR_TYPE_MAP: Record<CalculatorType, string> = {
   'rent-vs-buy': 'RENT_VS_BUY',
   'uk-transfer-tax': 'UK_TRANSFER_TAX',
   'ca-transfer-tax': 'CA_TRANSFER_TAX',
+  'us-transfer-tax': 'US_TRANSFER_TAX',
   'nz-buying-costs': 'NZ_BUYING_COSTS',
 };
 

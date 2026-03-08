@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 import SeoHead from '../shared/SeoHead';
 import Breadcrumbs from '../shared/Breadcrumbs';
-import { useCountryDetection } from '../../hooks/useCountryDetection';
+import { useCountry } from '../../contexts/CountryContext';
 
 const SITE_URL = 'https://propertyhack.com.au';
 
@@ -54,7 +54,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'us/transfer-tax-calculator',
+    slug: 'transfer-tax-calculator',
     name: 'US Transfer Tax Calculator',
     description: 'Estimate transfer taxes, mortgage recording tax, and closing costs for property purchases across all 50 US states.',
     countries: ['US'],
@@ -76,7 +76,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'uk/stamp-duty-calculator',
+    slug: 'sdlt-calculator',
     name: 'UK Stamp Duty Calculator',
     description: 'Calculate SDLT (England & Northern Ireland), LBTT (Scotland), or LTT (Wales) for UK property purchases, including first-time buyer relief and additional property surcharges.',
     countries: ['UK'],
@@ -98,7 +98,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'nz/buying-costs-calculator',
+    slug: 'buying-costs-calculator',
     name: 'NZ Buying Costs Calculator',
     description: 'New Zealand has no stamp duty or transfer tax. Estimate your total buying costs — legal fees, building inspections, valuations, LIM reports, and more.',
     countries: ['NZ'],
@@ -140,8 +140,10 @@ const breadcrumbJsonLd = {
 };
 
 const ToolsIndex: React.FC = () => {
-  const { country, loading: countryLoading } = useCountryDetection();
+  const { country: countryParam } = useParams<{ country: string }>();
+  const { country, loading: countryLoading } = useCountry();
   const [showAll, setShowAll] = useState(false);
+  const countryPrefix = countryParam || country?.toLowerCase() || 'au';
 
   const filteredCalculators = useMemo(() => {
     if (showAll || !country || countryLoading) return calculators;
@@ -179,7 +181,7 @@ const ToolsIndex: React.FC = () => {
             {filteredCalculators.map((calc) => (
               <Link
                 key={calc.slug}
-                to={'path' in calc ? (calc as { path: string }).path : `/tools/${calc.slug}`}
+                to={`/${countryPrefix}/tools/${calc.slug}`}
                 className="group bg-base-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-lg hover:border-brand-gold border border-transparent"
               >
                 <div className="text-brand-gold">

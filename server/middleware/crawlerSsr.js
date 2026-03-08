@@ -303,8 +303,8 @@ async function getMetaForUrl(url, prisma) {
   // Tools index and calculator pages
   const CURRENCY_BY_MARKET = { au: 'AUD', us: 'USD', uk: 'GBP', ca: 'CAD', nz: 'NZD' };
 
-  // Market-specific tools index pages: /tools/:market
-  const toolsMarketMatch = url.match(/^\/tools\/([a-z]{2})$/);
+  // Market-specific tools index pages: /:market/tools
+  const toolsMarketMatch = url.match(/^\/([a-z]{2})\/tools$/);
   if (toolsMarketMatch && SUPPORTED_COUNTRIES.includes(toolsMarketMatch[1])) {
     const mkt = toolsMarketMatch[1];
     const countryName = COUNTRY_NAMES[mkt.toUpperCase()];
@@ -314,7 +314,7 @@ async function getMetaForUrl(url, prisma) {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
       name: title,
-      url: `${SITE_URL}/tools/${mkt}`,
+      url: `${SITE_URL}/${mkt}/tools`,
       description,
     };
     const breadcrumbJsonLd = {
@@ -322,20 +322,20 @@ async function getMetaForUrl(url, prisma) {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
-        { '@type': 'ListItem', position: 3, name: `${countryName} Calculators`, item: `${SITE_URL}/tools/${mkt}` },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/${mkt}/tools` },
+        { '@type': 'ListItem', position: 3, name: `${countryName} Calculators`, item: `${SITE_URL}/${mkt}/tools` },
       ],
     };
     const tags = [];
     const fullTitle = `${title} | ${SITE_NAME}`;
     tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
     tags.push(`<meta name="description" content="${escapeHtml(description)}" />`);
-    tags.push(`<link rel="canonical" href="${SITE_URL}/tools/${mkt}" />`);
+    tags.push(`<link rel="canonical" href="${SITE_URL}/${mkt}/tools" />`);
     tags.push(buildHreflangTags(url));
     tags.push(`<meta property="og:title" content="${escapeHtml(fullTitle)}" />`);
     tags.push(`<meta property="og:description" content="${escapeHtml(description)}" />`);
     tags.push(`<meta property="og:type" content="website" />`);
-    tags.push(`<meta property="og:url" content="${SITE_URL}/tools/${mkt}" />`);
+    tags.push(`<meta property="og:url" content="${SITE_URL}/${mkt}/tools" />`);
     tags.push(`<meta property="og:site_name" content="${SITE_NAME}" />`);
     tags.push(`<meta property="og:image" content="${DEFAULT_IMAGE}" />`);
     tags.push(`<meta name="twitter:card" content="summary_large_image" />`);
@@ -347,8 +347,8 @@ async function getMetaForUrl(url, prisma) {
     return tags.join('\n    ');
   }
 
-  // Market-specific calculator pages: /tools/:market/:calculator-slug
-  const toolsMarketCalcMatch = url.match(/^\/tools\/([a-z]{2})\/([^/?#]+)$/);
+  // Market-specific calculator pages: /:market/tools/:calculator-slug
+  const toolsMarketCalcMatch = url.match(/^\/([a-z]{2})\/tools\/([^/?#]+)$/);
   if (toolsMarketCalcMatch && SUPPORTED_COUNTRIES.includes(toolsMarketCalcMatch[1])) {
     const mkt = toolsMarketCalcMatch[1];
     const calcSlug = toolsMarketCalcMatch[2];
@@ -387,7 +387,7 @@ async function getMetaForUrl(url, prisma) {
       'stamp-duty-calculator': {
         au: { title: 'Stamp Duty Calculator Australia 2026 — Calculate by State', description: 'Calculate stamp duty for every Australian state and territory. Includes first home buyer concessions, foreign buyer surcharges, and investment property rates.' },
       },
-      'stamp-duty-calculator-uk': {
+      'sdlt-calculator': {
         uk: { title: 'Stamp Duty Calculator UK 2026 — SDLT, LBTT & LTT Rates', description: 'Calculate UK property stamp duty for England & Northern Ireland (SDLT), Scotland (LBTT), and Wales (LTT). Includes first-time buyer relief and additional property surcharges.' },
       },
       'land-transfer-tax-calculator': {
@@ -408,7 +408,7 @@ async function getMetaForUrl(url, prisma) {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         name: calcMeta.title,
-        url: `${SITE_URL}/tools/${mkt}/${calcSlug}`,
+        url: `${SITE_URL}/${mkt}/tools/${calcSlug}`,
         description: calcMeta.description,
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'All',
@@ -420,8 +420,8 @@ async function getMetaForUrl(url, prisma) {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
           { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
-          { '@type': 'ListItem', position: 3, name: `${countryName} Calculators`, item: `${SITE_URL}/tools/${mkt}` },
-          { '@type': 'ListItem', position: 4, name: calcDisplayName, item: `${SITE_URL}/tools/${mkt}/${calcSlug}` },
+          { '@type': 'ListItem', position: 3, name: `${countryName} Calculators`, item: `${SITE_URL}/${mkt}/tools` },
+          { '@type': 'ListItem', position: 4, name: calcDisplayName, item: `${SITE_URL}/${mkt}/tools/${calcSlug}` },
         ],
       };
       const tags = [];

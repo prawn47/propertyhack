@@ -139,6 +139,7 @@ const UkTransferTaxCalculator: React.FC = () => {
         min={100_00}
         max={100_000_000_00}
         hint="Enter the purchase price in British pounds"
+        currencySymbol="£"
       />
 
       {/* Location selector — primary control */}

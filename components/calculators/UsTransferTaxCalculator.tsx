@@ -81,16 +81,14 @@ interface UsTransferTaxInputs extends Record<string, unknown> {
 interface UsTransferTaxOutputs {
   stateTransferTax: number;
   mortgageRecordingTax: number;
-  estimatedTitleInsuranceMin: number;
-  estimatedTitleInsuranceMax: number;
-  estimatedTotalClosingCostsMin: number;
-  estimatedTotalClosingCostsMax: number;
+  estimatedTitleInsurance: { min: number; max: number };
+  estimatedTotalClosingCosts: { min: number; max: number };
   effectiveRate: number;
   hasTransferTax: boolean;
   whoPays: WhoPays;
   stateName: string;
   disclaimer: string;
-  firstTimeBuyerExemption: boolean;
+  firstTimeBuyerExemption: number;
 }
 
 const DEFAULT_INPUTS: UsTransferTaxInputs = {
@@ -364,7 +362,7 @@ const UsTransferTaxCalculator: React.FC = () => {
       )}
 
       {/* First-time buyer exemption note */}
-      {outputs?.firstTimeBuyerExemption && (
+      {outputs?.firstTimeBuyerExemption > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <p className="text-sm font-medium text-amber-800 mb-1">First-Time Buyer Exemption Applied</p>
           <p className="text-sm text-amber-700">
@@ -395,14 +393,14 @@ const UsTransferTaxCalculator: React.FC = () => {
             <div className="flex justify-between">
               <dt className="text-content-secondary">Title insurance (est.)</dt>
               <dd className="font-medium text-content">
-                {formatUSD(outputs.estimatedTitleInsuranceMin)}–{formatUSD(outputs.estimatedTitleInsuranceMax)}
+                {formatUSD(outputs.estimatedTitleInsurance.min)}–{formatUSD(outputs.estimatedTitleInsurance.max)}
               </dd>
             </div>
 
             <div className="flex justify-between border-t border-base-300 pt-2">
               <dt className="font-semibold text-content">Est. total closing costs</dt>
               <dd className="font-bold text-brand-primary text-base">
-                {formatUSD(outputs.estimatedTotalClosingCostsMin)}–{formatUSD(outputs.estimatedTotalClosingCostsMax)}
+                {formatUSD(outputs.estimatedTotalClosingCosts.min)}–{formatUSD(outputs.estimatedTotalClosingCosts.max)}
               </dd>
             </div>
           </dl>
@@ -455,8 +453,7 @@ const UsTransferTaxCalculator: React.FC = () => {
 
       {/* Disclaimer */}
       <p className="text-xs text-content-secondary leading-relaxed">
-        Transfer taxes vary by county and municipality. This is an estimate — consult a local attorney or title company for exact costs.
-        {outputs?.disclaimer ? ` ${outputs.disclaimer}` : ''}
+        {outputs?.disclaimer || 'Transfer taxes vary by county and municipality. This is an estimate — consult a local attorney or title company for exact costs.'}
       </p>
     </>
   );

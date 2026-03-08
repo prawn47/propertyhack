@@ -159,7 +159,7 @@ router.get('/sitemap-pages.xml', cached('pages', async (req) => {
   // Jurisdiction-specific calculators
   const jurisdictionCalcs = {
     au: ['stamp-duty-calculator'],
-    uk: ['stamp-duty-calculator-uk'],
+    uk: ['sdlt-calculator'],
     ca: ['land-transfer-tax-calculator'],
     us: ['transfer-tax-calculator'],
     nz: ['buying-costs-calculator'],
@@ -167,12 +167,12 @@ router.get('/sitemap-pages.xml', cached('pages', async (req) => {
 
   const marketCalcUrls = [];
   for (const mkt of SUPPORTED_COUNTRIES) {
-    marketCalcUrls.push({ loc: `/tools/${mkt}`, priority: '0.7', changefreq: 'monthly' });
+    marketCalcUrls.push({ loc: `/${mkt}/tools`, priority: '0.7', changefreq: 'monthly' });
     for (const calc of globalCalcs) {
-      marketCalcUrls.push({ loc: `/tools/${mkt}/${calc}`, priority: '0.8', changefreq: 'monthly' });
+      marketCalcUrls.push({ loc: `/${mkt}/tools/${calc}`, priority: '0.8', changefreq: 'monthly' });
     }
     for (const calc of (jurisdictionCalcs[mkt] || [])) {
-      marketCalcUrls.push({ loc: `/tools/${mkt}/${calc}`, priority: '0.8', changefreq: 'monthly' });
+      marketCalcUrls.push({ loc: `/${mkt}/tools/${calc}`, priority: '0.8', changefreq: 'monthly' });
     }
   }
 
