@@ -28,6 +28,8 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
+import MortgageCalculator from './components/calculators/MortgageCalculator';
+import { AuthProvider } from './contexts/AuthContext';
 import type { AuthState } from './types';
 import authService from './services/authService';
 
@@ -81,6 +83,9 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
+
+      {/* Calculator routes */}
+      <Route path="/tools/mortgage-calculator" element={<MortgageCalculator />} />
       <Route
         path="/login"
         element={
@@ -250,11 +255,13 @@ const App: React.FC = () => {
   return (
     <HelmetProvider>
       <BrowserRouter>
-        <AppInner
-          authState={authState}
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-        />
+        <AuthProvider>
+          <AppInner
+            authState={authState}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+          />
+        </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>
   );
