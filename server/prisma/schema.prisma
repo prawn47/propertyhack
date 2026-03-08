@@ -40,15 +40,53 @@ enum IngestionLogStatus {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  displayName  String?  @map("display_name")
-  superAdmin   Boolean  @default(false) @map("super_admin")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?   @map("password_hash")
+  displayName     String?   @map("display_name")
+  superAdmin      Boolean   @default(false) @map("super_admin")
+  role            String    @default("user")
+  googleId        String?   @unique @map("google_id")
+  avatarUrl       String?   @map("avatar_url")
+  emailVerified   Boolean   @default(false) @map("email_verified")
+  otpCode         String?   @map("otp_code")
+  otpExpiresAt    DateTime? @map("otp_expires_at")
+  otpPurpose      String?   @map("otp_purpose")
+  newsletterOptIn Boolean   @default(false) @map("newsletter_opt_in")
+  preferences     Json?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  savedScenarios SavedScenario[]
 
   @@map("users")
+}
+
+enum CalculatorType {
+  MORTGAGE
+  STAMP_DUTY
+  RENTAL_YIELD
+  BORROWING_POWER
+  RENT_VS_BUY
+}
+
+model SavedScenario {
+  id             String         @id @default(cuid())
+  userId         String         @map("user_id")
+  name           String
+  calculatorType CalculatorType @map("calculator_type")
+  inputs         Json
+  outputs        Json
+  headlineLabel  String         @map("headline_label")
+  headlineValue  String         @map("headline_value")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([calculatorType])
+  @@map("saved_scenarios")
 }
 
 model IngestionSource {
