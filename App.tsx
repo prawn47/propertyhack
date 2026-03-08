@@ -53,6 +53,8 @@ import UkTransferTaxCalculator from './components/calculators/UkTransferTaxCalcu
 import CaTransferTaxCalculator from './components/calculators/CaTransferTaxCalculator';
 import NzBuyingCostsCalculator from './components/calculators/NzBuyingCostsCalculator';
 import UsTransferTaxCalculator from './components/calculators/UsTransferTaxCalculator';
+import HenryPage from './components/henry/HenryPage';
+import HenrySidebar from './components/henry/HenrySidebar';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -157,6 +159,8 @@ function AppInner() {
   };
 
   return (
+    <>
+    <HenrySidebar />
     <Routes>
       {/* Root — detect country and redirect */}
       <Route path="/" element={<CountryRedirect />} />
@@ -186,6 +190,7 @@ function AppInner() {
         <Route path="tools/land-transfer-tax-calculator" element={<CaTransferTaxCalculator />} />
         <Route path="tools/transfer-tax-calculator" element={<UsTransferTaxCalculator />} />
         <Route path="tools/buying-costs-calculator" element={<NzBuyingCostsCalculator />} />
+        <Route path="henry" element={<HenryPage />} />
       </Route>
 
       {/* Auth routes */}
@@ -354,6 +359,7 @@ function AppInner() {
       {/* 404 catch-all */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   );
 }
 

@@ -59,8 +59,38 @@ model User {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   savedScenarios SavedScenario[]
+  conversations  Conversation[]
 
   @@map("users")
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  title     String    @db.VarChar(80)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  role           String       @db.VarChar(10)
+  content        String
+  citations      Json?
+  calculatorCall Json?        @map("calculator_call")
+  rating         Int?
+  tokenCount     Int?         @map("token_count")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
 }
 
 enum CalculatorType {
@@ -292,6 +322,35 @@ model Subscriber {
 
   @@index([country, region])
   @@map("subscribers")
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String    @db.VarChar(80)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String       @db.VarChar(10)
+  content        String
+  citations      Json?
+  calculatorCall Json?
+  rating         Int?
+  tokenCount     Int?
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
 }
 
 model LocationSeo {
