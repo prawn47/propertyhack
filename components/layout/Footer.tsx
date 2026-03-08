@@ -2,6 +2,7 @@ import React, { useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCountry } from '../../contexts/CountryContext';
 import { useCountryPath } from '../../hooks/useCountryPath';
+import SubscribeForm from '../public/SubscribeForm';
 
 const Footer: React.FC = () => {
   const year = new Date().getFullYear();
@@ -24,6 +25,10 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-brand-primary text-white/50 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <SubscribeForm variant="footer" />
+        </div>
+
         <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 mb-5 text-sm">
           {[
             { path: '/tools/mortgage-calculator', name: 'Mortgage Calculator' },

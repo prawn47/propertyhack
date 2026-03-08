@@ -276,6 +276,21 @@ model SeoKeyword {
   @@map("seo_keywords")
 }
 
+model Subscriber {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  firstName      String    @map("first_name")
+  country        String
+  region         String
+  beehiivSynced  Boolean   @default(false) @map("beehiiv_synced")
+  unsubscribedAt DateTime? @map("unsubscribed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([country, region])
+  @@map("subscribers")
+}
+
 model LocationSeo {
   id              String   @id @default(cuid())
   location        String   @unique

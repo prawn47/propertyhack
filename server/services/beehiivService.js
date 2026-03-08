@@ -22,7 +22,7 @@ async function getSubscriptionId(email) {
   return subscriptions[0].id;
 }
 
-async function subscribe(email) {
+async function subscribe(email, options = {}) {
   const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
   const apiKey = process.env.BEEHIIV_API_KEY;
 
@@ -32,6 +32,20 @@ async function subscribe(email) {
   }
 
   try {
+    const body = {
+      email,
+      reactivate_existing: true,
+      send_welcome_email: true,
+    };
+    if (options.firstName) {
+      body.utm_medium = options.firstName;
+    }
+    if (options.country || options.region) {
+      body.custom_fields = [];
+      if (options.country) body.custom_fields.push({ name: 'country', value: options.country });
+      if (options.region) body.custom_fields.push({ name: 'region', value: options.region });
+    }
+
     const res = await fetch(
       `${BEEHIIV_BASE_URL}/publications/${publicationId}/subscriptions`,
       {
@@ -40,17 +54,13 @@ async function subscribe(email) {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email,
-          reactivate_existing: true,
-          send_welcome_email: true,
-        }),
+        body: JSON.stringify(body),
       }
     );
 
     if (!res.ok) {
-      const body = await res.text();
-      console.error(`[beehiiv] subscribe failed (${res.status}): ${body}`);
+      const errBody = await res.text();
+      console.error(`[beehiiv] subscribe failed (${res.status}): ${errBody}`);
     }
   } catch (err) {
     console.error('[beehiiv] subscribe error:', err.message);
