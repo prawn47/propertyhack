@@ -30,6 +30,8 @@ import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
 import ProfilePage from './components/user/ProfilePage';
+import RentVsBuyCalculator from './components/calculators/RentVsBuyCalculator';
+import BorrowingPowerCalculator from './components/calculators/BorrowingPowerCalculator';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
@@ -87,6 +89,10 @@ function AppInner() {
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
+
+      {/* Calculator routes */}
+      <Route path="/tools/rent-vs-buy-calculator" element={<RentVsBuyCalculator />} />
+      <Route path="/tools/borrowing-power-calculator" element={<BorrowingPowerCalculator />} />
 
       {/* Auth routes */}
       <Route
