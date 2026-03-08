@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import authService from '../../services/authService';
+import { useCountry } from '../../contexts/CountryContext';
 
 interface NavItem {
   label: string;
@@ -80,6 +81,57 @@ interface AdminLayoutProps {
   onLogout?: () => void;
 }
 
+const MarketSwitcher: React.FC = () => {
+  const { country, setCountry, markets } = useCountry();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const activeMarket = markets.find((m) => m.code === country);
+  const activeLabel = activeMarket ? `${activeMarket.flagEmoji} ${activeMarket.code}` : country;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium text-white/80 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+      >
+        <span>{activeLabel}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-36 bg-brand-secondary rounded shadow-lg border border-white/10 py-1 z-50">
+          <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-white/40">View as market</div>
+          {markets.filter((m) => m.isActive).map((m) => (
+            <button
+              key={m.code}
+              onClick={() => { setCountry(m.code); setOpen(false); }}
+              className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors ${
+                m.code === country
+                  ? 'text-brand-gold bg-white/10'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span>{m.flagEmoji}</span>
+              <span>{m.code}</span>
+              <span className="text-white/40 text-xs ml-auto">{m.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -110,7 +162,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, onLogout }) => {
         <Link to="/admin" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
           <span className="text-brand-gold font-bold text-lg tracking-tight">PropertyHack</span>
         </Link>
-        <p className="text-white/40 text-xs mt-0.5">Admin</p>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-white/40 text-xs">Admin</p>
+          <MarketSwitcher />
+        </div>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -188,6 +243,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, onLogout }) => {
             </svg>
           </button>
           <span className="text-brand-gold font-bold text-base tracking-tight">PropertyHack</span>
+          <div className="ml-auto">
+            <MarketSwitcher />
+          </div>
         </div>
 
         <main className="flex-1 overflow-y-auto p-6">
