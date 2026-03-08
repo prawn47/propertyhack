@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useMarketCurrency } from '../../hooks/useMarketCurrency';
 import CurrencyInput from './shared/CurrencyInput';
 import PercentageInput from './shared/PercentageInput';
 import SliderInput from './shared/SliderInput';
@@ -77,26 +78,12 @@ const DEFAULT_INPUTS: RentVsBuyInputs = {
 
 const MILESTONE_YEARS = [5, 10, 15, 20, 25, 30];
 
-function formatDollars(cents: number): string {
-  const dollars = Math.abs(cents) / 100;
-  if (dollars >= 1_000_000) {
-    return `${cents < 0 ? '-' : ''}$${(dollars / 1_000_000).toFixed(2)}M`;
-  }
-  return `${cents < 0 ? '-' : ''}$${dollars.toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
-}
 
-function formatChartDollars(value: number): string {
-  const dollars = value / 100;
-  if (Math.abs(dollars) >= 1_000_000) {
-    return `$${(dollars / 1_000_000).toFixed(1)}M`;
-  }
-  return `$${(dollars / 1_000).toFixed(0)}K`;
-}
-
-const CustomTooltip = ({ active, payload, label }: {
+const CustomTooltip = ({ active, payload, label, formatter }: {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: number;
+  formatter: (v: number) => string;
 }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -109,7 +96,7 @@ const CustomTooltip = ({ active, payload, label }: {
             style={{ backgroundColor: entry.color }}
           />
           <span className="text-content-secondary">{entry.name}:</span>
-          <span className="font-medium text-content">{formatChartDollars(entry.value)}</span>
+          <span className="font-medium text-content">{formatter(entry.value)}</span>
         </div>
       ))}
     </div>
@@ -119,6 +106,7 @@ const CustomTooltip = ({ active, payload, label }: {
 const RentVsBuyCalculator: React.FC = () => {
   const { inputs, outputs, isCalculating, error, setInput, reset } =
     useCalculator<RentVsBuyInputs, RentVsBuyOutputs>('rent-vs-buy', DEFAULT_INPUTS);
+  const { locale, currencySymbol, formatDollars, formatChartDollars } = useMarketCurrency();
 
   const [showFullBreakdown, setShowFullBreakdown] = useState(false);
 
@@ -235,6 +223,8 @@ const RentVsBuyCalculator: React.FC = () => {
                   onChange={(v) => setInput('purchasePrice', v)}
                   min={1000000}
                   hint="Total property purchase price"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
 
                 <CurrencyInput
@@ -243,6 +233,8 @@ const RentVsBuyCalculator: React.FC = () => {
                   onChange={(v) => setInput('availableDeposit', v)}
                   min={0}
                   hint="Upfront deposit amount"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
 
                 <CurrencyInput
@@ -251,6 +243,8 @@ const RentVsBuyCalculator: React.FC = () => {
                   onChange={(v) => setInput('weeklyRent', v)}
                   min={100}
                   hint="Current weekly rent you pay (or would pay)"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
 
                 <PercentageInput
@@ -443,7 +437,7 @@ const RentVsBuyCalculator: React.FC = () => {
                             tickFormatter={formatChartDollars}
                             width={58}
                           />
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<CustomTooltip formatter={formatChartDollars} />} />
                           <Legend
                             iconType="circle"
                             iconSize={8}

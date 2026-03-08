@@ -8,11 +8,13 @@ interface CurrencyInputProps {
   max?: number;
   step?: number;
   hint?: string;
+  locale?: string;
+  currencySymbol?: string;
 }
 
-function formatCurrency(cents: number): string {
+function formatCurrency(cents: number, locale = 'en-AU'): string {
   const dollars = Math.round(cents) / 100;
-  return dollars.toLocaleString('en-AU', { maximumFractionDigits: 0 });
+  return dollars.toLocaleString(locale, { maximumFractionDigits: 0 });
 }
 
 function parseCurrency(raw: string): number {
@@ -29,16 +31,18 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   max,
   step,
   hint,
+  locale = 'en-AU',
+  currencySymbol = '$',
 }) => {
   const id = useId();
-  const [displayValue, setDisplayValue] = useState(formatCurrency(value));
+  const [displayValue, setDisplayValue] = useState(formatCurrency(value, locale));
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     if (!isFocused) {
-      setDisplayValue(formatCurrency(value));
+      setDisplayValue(formatCurrency(value, locale));
     }
-  }, [value, isFocused]);
+  }, [value, isFocused, locale]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
@@ -52,7 +56,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
 
   const handleBlur = () => {
     setIsFocused(false);
-    setDisplayValue(formatCurrency(value));
+    setDisplayValue(formatCurrency(value, locale));
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -73,7 +77,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-content-secondary text-sm select-none"
           aria-hidden="true"
         >
-          $
+          {currencySymbol}
         </span>
         <input
           id={id}
