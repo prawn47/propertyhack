@@ -66,6 +66,12 @@ const updateProfileValidation = [
     .isString()
     .isIn(['all', 'today', 'week', 'month'])
     .withMessage('defaultDateRange must be one of: all, today, week, month'),
+  body('preferences.defaultCountry')
+    .optional()
+    .isString()
+    .trim()
+    .isIn(['AU', 'US', 'UK', 'CA', 'GLOBAL'])
+    .withMessage('defaultCountry must be one of: AU, US, UK, CA, GLOBAL'),
 ];
 
 router.put('/profile', updateProfileValidation, async (req, res) => {

@@ -14,6 +14,7 @@ export interface User {
     defaultLocation?: string;
     defaultCategories?: string[];
     defaultDateRange?: string;
+    defaultCountry?: string;
   } | null;
   superAdmin?: boolean;
   createdAt?: string;
