@@ -9,10 +9,35 @@ const CRAWLER_USER_AGENTS = [
   'google-extended', 'amazonbot', 'claudebot',
 ];
 
-const SITE_URL = 'https://propertyhack.com.au';
+const SITE_URL = 'https://propertyhack.com';
 const SITE_NAME = 'PropertyHack';
-const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.';
 const DEFAULT_IMAGE = `${SITE_URL}/ph-logo.jpg`;
+
+const COUNTRY_NAMES = {
+  AU: 'Australia',
+  US: 'United States',
+  UK: 'United Kingdom',
+  CA: 'Canada',
+};
+
+const VALID_COUNTRIES = ['au', 'us', 'uk', 'ca'];
+
+function extractCountryFromPath(urlPath) {
+  const parts = urlPath.split('/');
+  // parts[0] is '' (before leading slash), parts[1] is the potential country
+  const segment = parts[1]?.toLowerCase();
+  if (VALID_COUNTRIES.includes(segment)) {
+    return segment.toUpperCase();
+  }
+  return null;
+}
+
+function getDefaultDescription(country) {
+  if (country && COUNTRY_NAMES[country]) {
+    return `Latest property news and market insights for ${COUNTRY_NAMES[country]}. Stay informed with PropertyHack.`;
+  }
+  return 'Latest property news and market insights. Stay informed with PropertyHack.';
+}
 
 function isCrawler(userAgent) {
   if (!userAgent) return false;
@@ -28,10 +53,10 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd, article }) {
+function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd, article, country }) {
   const tags = [];
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Agenda-free Australian Property News`;
-  const desc = description || DEFAULT_DESCRIPTION;
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Property News`;
+  const desc = description || getDefaultDescription(country);
   const img = image || DEFAULT_IMAGE;
 
   tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
@@ -99,13 +124,13 @@ function buildArticleJsonLd(article) {
   return jsonLd;
 }
 
-function buildWebsiteJsonLd() {
+function buildWebsiteJsonLd(country) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: SITE_NAME,
     url: SITE_URL,
-    description: DEFAULT_DESCRIPTION,
+    description: getDefaultDescription(country),
     potentialAction: {
       '@type': 'SearchAction',
       target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/?search={search_term_string}` },
@@ -115,19 +140,34 @@ function buildWebsiteJsonLd() {
 }
 
 async function getMetaForUrl(url, prisma) {
-  // Homepage
-  if (url === '/') {
+  const country = extractCountryFromPath(url);
+  const countryName = country ? COUNTRY_NAMES[country] : null;
+
+  // Country homepage: /:country
+  if (country && url === `/${country.toLowerCase()}`) {
     return buildMetaTags({
-      title: null,
-      description: DEFAULT_DESCRIPTION,
-      url: '/',
+      title: countryName ? `Property News ${countryName}` : null,
+      description: getDefaultDescription(country),
+      url,
       type: 'website',
-      jsonLd: buildWebsiteJsonLd(),
+      jsonLd: buildWebsiteJsonLd(country),
+      country,
     });
   }
 
-  // Article detail: /articles/:slug
-  const articleMatch = url.match(/^\/articles\/([^/?#]+)/);
+  // Legacy homepage: /
+  if (url === '/') {
+    return buildMetaTags({
+      title: null,
+      description: getDefaultDescription(null),
+      url: '/',
+      type: 'website',
+      jsonLd: buildWebsiteJsonLd(null),
+    });
+  }
+
+  // Article detail: /:country/article/:slug  OR  /articles/:slug (legacy)
+  const articleMatch = url.match(/^(?:\/[a-z]{2})?\/article(?:s)?\/([^/?#]+)/);
   if (articleMatch) {
     const slug = articleMatch[1];
     const article = await prisma.article.findUnique({
@@ -145,10 +185,11 @@ async function getMetaForUrl(url, prisma) {
         : article.imageUrl
           ? `${SITE_URL}${article.imageUrl}`
           : DEFAULT_IMAGE;
+      const articlePath = country ? `/${country.toLowerCase()}/article/${article.slug}` : `/articles/${article.slug}`;
       return buildMetaTags({
         title: article.title,
         description: article.shortBlurb || article.longSummary?.substring(0, 160),
-        url: `/articles/${article.slug}`,
+        url: articlePath,
         image: imgUrl,
         imageAlt: article.imageAltText || article.title,
         type: 'article',
@@ -158,50 +199,65 @@ async function getMetaForUrl(url, prisma) {
           section: article.category,
         },
         jsonLd: buildArticleJsonLd(article),
+        country,
       });
     }
   }
 
-  // Location page: /property-news/:location
-  const locationMatch = url.match(/^\/property-news\/([^/?#]+)/);
+  // Location page: /:country/property-news/:location  OR  /property-news/:location (legacy)
+  const locationMatch = url.match(/^(?:\/[a-z]{2})?\/property-news\/([^/?#]+)/);
   if (locationMatch) {
     const slug = locationMatch[1];
     const locationSeo = await prisma.locationSeo.findUnique({ where: { slug } });
+    const locationPath = country ? `/${country.toLowerCase()}/property-news/${slug}` : `/property-news/${slug}`;
     if (locationSeo) {
       return buildMetaTags({
         title: locationSeo.metaTitle,
         description: locationSeo.metaDescription,
-        url: `/property-news/${slug}`,
+        url: locationPath,
         type: 'website',
         jsonLd: {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           name: locationSeo.h1Title,
           description: locationSeo.metaDescription,
-          url: `${SITE_URL}/property-news/${slug}`,
+          url: `${SITE_URL}${locationPath}`,
         },
+        country,
       });
     }
     // Fallback for locations without SEO config
     const displayName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const locationDesc = countryName
+      ? `Latest property news, market updates and analysis for ${displayName}, ${countryName}.`
+      : `Latest property news, market updates and analysis for ${displayName}.`;
     return buildMetaTags({
-      title: `${displayName} Property News`,
-      description: `Latest property news, market updates and analysis for ${displayName}, Australia.`,
-      url: `/property-news/${slug}`,
+      title: countryName ? `Property News ${displayName}, ${countryName}` : `${displayName} Property News`,
+      description: locationDesc,
+      url: locationPath,
       type: 'website',
+      country,
     });
   }
 
-  // Category page: /category/:slug
-  const categoryMatch = url.match(/^\/category\/([^/?#]+)/);
+  // Category page: /:country/category/:slug  OR  /category/:slug (legacy)
+  const categoryMatch = url.match(/^(?:\/[a-z]{2})?\/category\/([^/?#]+)/);
   if (categoryMatch) {
     const slug = categoryMatch[1];
     const displayName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const categoryPath = country ? `/${country.toLowerCase()}/category/${slug}` : `/category/${slug}`;
+    const categoryTitle = countryName
+      ? `${displayName} Property News ${countryName}`
+      : `${displayName} Property News`;
+    const categoryDesc = countryName
+      ? `Latest ${displayName.toLowerCase()} news and analysis from the ${countryName} property market.`
+      : `Latest ${displayName.toLowerCase()} news and analysis from the property market.`;
     return buildMetaTags({
-      title: `${displayName} - Australian Property News`,
-      description: `Latest ${displayName.toLowerCase()} news and analysis from the Australian property market.`,
-      url: `/category/${slug}`,
+      title: categoryTitle,
+      description: categoryDesc,
+      url: categoryPath,
       type: 'website',
+      country,
     });
   }
 
