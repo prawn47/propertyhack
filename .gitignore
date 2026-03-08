@@ -112,5 +112,8 @@ server/prisma/dev.db*
 test-functionality.cjs
 test-frontend-gemini.js
 
+# QA screenshots
+qa-*.png
+
 # Dolt database files (added by bd init)
 .dolt/
