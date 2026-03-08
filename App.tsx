@@ -34,6 +34,7 @@ import VerifyEmailPage from './components/auth/VerifyEmailPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import GoogleAuthCallback from './components/auth/GoogleAuthCallback';
+import MortgageCalculator from './components/calculators/MortgageCalculator';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
@@ -91,6 +92,9 @@ function AppInner() {
       <Route path="/category/:slug" element={<CategoryPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
+
+      {/* Calculator routes */}
+      <Route path="/tools/mortgage-calculator" element={<MortgageCalculator />} />
 
       {/* Auth routes */}
       <Route
