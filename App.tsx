@@ -18,6 +18,7 @@ import CategoryPage from './components/public/CategoryPage';
 import AboutPage from './components/public/AboutPage';
 import ContactPage from './components/public/ContactPage';
 import NotFoundPage from './components/public/NotFoundPage';
+import ToolsIndex from './components/calculators/ToolsIndex';
 import AdminLayout from './components/layout/AdminLayout';
 import ArticleList from './components/admin/ArticleList';
 import ArticleEditor from './components/admin/ArticleEditor';
@@ -98,6 +99,7 @@ function AppInner() {
       <Route path="/contact" element={<ContactPage />} />
 
       {/* Calculator routes */}
+      <Route path="/tools" element={<ToolsIndex />} />
       <Route path="/tools/mortgage-calculator" element={<MortgageCalculator />} />
 
       {/* Auth routes */}
