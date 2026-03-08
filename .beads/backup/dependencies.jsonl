@@ -71,6 +71,7 @@
 {"created_at":"2026-03-08T19:02:56Z","created_by":"prawn47","depends_on_id":"propertyhack-1si.26","issue_id":"propertyhack-1si.38","type":"blocks"}
 {"created_at":"2026-03-08T19:02:56Z","created_by":"prawn47","depends_on_id":"propertyhack-1si.27","issue_id":"propertyhack-1si.38","type":"blocks"}
 {"created_at":"2026-03-08T19:02:56Z","created_by":"prawn47","depends_on_id":"propertyhack-1si.29","issue_id":"propertyhack-1si.38","type":"blocks"}
+{"created_at":"2026-03-08T19:43:55Z","created_by":"prawn47","depends_on_id":"propertyhack-1si","issue_id":"propertyhack-1si.39","type":"parent-child"}
 {"created_at":"2026-03-08T19:01:28Z","created_by":"prawn47","depends_on_id":"propertyhack-1si","issue_id":"propertyhack-1si.4","type":"parent-child"}
 {"created_at":"2026-03-08T19:02:52Z","created_by":"prawn47","depends_on_id":"propertyhack-1si.1","issue_id":"propertyhack-1si.4","type":"blocks"}
 {"created_at":"2026-03-08T19:01:29Z","created_by":"prawn47","depends_on_id":"propertyhack-1si","issue_id":"propertyhack-1si.5","type":"parent-child"}
