@@ -20,16 +20,16 @@ async function main() {
   console.log('Created admin user: admin@propertyhack.com');
 
   const markets = [
-    { code: 'AU', name: 'Australia', currency: 'AUD' },
-    { code: 'US', name: 'United States', currency: 'USD' },
-    { code: 'UK', name: 'United Kingdom', currency: 'GBP' },
-    { code: 'CA', name: 'Canada', currency: 'CAD' },
+    { code: 'AU', name: 'Australia', currency: 'AUD', flagEmoji: '🇦🇺' },
+    { code: 'US', name: 'United States', currency: 'USD', flagEmoji: '🇺🇸' },
+    { code: 'UK', name: 'United Kingdom', currency: 'GBP', flagEmoji: '🇬🇧' },
+    { code: 'CA', name: 'Canada', currency: 'CAD', flagEmoji: '🇨🇦' },
   ];
 
   for (const m of markets) {
     await prisma.market.upsert({
       where: { code: m.code },
-      update: {},
+      update: { flagEmoji: m.flagEmoji },
       create: { ...m, isActive: true },
     });
   }
