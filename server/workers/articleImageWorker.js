@@ -1,6 +1,7 @@
 const { Worker } = require('bullmq');
 const { connection } = require('../queues/connection');
 const { articleEmbedQueue } = require('../queues/articleEmbedQueue');
+const { socialGenerateQueue } = require('../queues/socialGenerateQueue');
 const { generateArticleImage } = require('../services/imageGenerationService');
 const { generateImageAltText } = require('../services/articleSummaryService');
 const { PrismaClient } = require('@prisma/client');
@@ -58,6 +59,21 @@ const articleImageWorker = new Worker('article-image', async (job) => {
   }
 
   await articleEmbedQueue.add('embed-article', { articleId });
+
+  // Trigger social post generation for published articles
+  try {
+    const publishedArticle = await prisma.article.findUnique({
+      where: { id: articleId },
+      select: { status: true },
+    });
+    if (publishedArticle?.status === 'PUBLISHED') {
+      await socialGenerateQueue.add('social-generate', { articleId });
+      console.log(`[article-image] Queued social post generation for article: ${articleId}`);
+    }
+  } catch (err) {
+    // Don't fail the image job if social queueing fails
+    console.error(`[article-image] Failed to queue social generation:`, err.message);
+  }
 
   console.log(`[article-image] Completed: ${articleId}`);
   return { articleId, hasImage: !!imageResult };
