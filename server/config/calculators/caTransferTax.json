@@ -1,0 +1,280 @@
+{
+  "ON": {
+    "name": "Ontario",
+    "taxName": "Land Transfer Tax",
+    "hasMunicipalTax": true,
+    "municipalCities": ["Toronto"],
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.ontario.ca/page/land-transfer-tax",
+    "provincial": {
+      "brackets": [
+        { "min": 0, "max": 55000, "rate": 0.005 },
+        { "min": 55000, "max": 250000, "rate": 0.01 },
+        { "min": 250000, "max": 400000, "rate": 0.015 },
+        { "min": 400000, "max": 2000000, "rate": 0.02 },
+        { "min": 2000000, "max": null, "rate": 0.025 }
+      ],
+      "firstTimeBuyerRebate": {
+        "maxRebate": 4000,
+        "eligibilitySummary": "Must be a Canadian citizen or permanent resident, 18+ years old, never owned a home anywhere in the world, and must occupy the home as principal residence within 9 months of purchase."
+      },
+      "nonResidentSpeculationTax": {
+        "rate": 0.25,
+        "description": "Non-Resident Speculation Tax (NRST) applies to foreign nationals and foreign corporations purchasing residential property in Ontario.",
+        "appliesTo": "non-residents"
+      }
+    },
+    "municipal": {
+      "city": "Toronto",
+      "taxName": "Toronto Municipal Land Transfer Tax",
+      "source": "https://www.toronto.ca/services-payments/building-construction-and-planning/land-transfer-tax/",
+      "brackets": [
+        { "min": 0, "max": 55000, "rate": 0.005 },
+        { "min": 55000, "max": 250000, "rate": 0.01 },
+        { "min": 250000, "max": 400000, "rate": 0.015 },
+        { "min": 400000, "max": 2000000, "rate": 0.02 },
+        { "min": 2000000, "max": null, "rate": 0.025 }
+      ],
+      "firstTimeBuyerRebate": {
+        "maxRebate": 4475,
+        "eligibilitySummary": "Must qualify for the provincial first-time buyer rebate. The municipal rebate mirrors provincial eligibility criteria."
+      }
+    }
+  },
+
+  "BC": {
+    "name": "British Columbia",
+    "taxName": "Property Transfer Tax",
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www2.gov.bc.ca/gov/content/taxes/property-taxes/property-transfer-tax",
+    "provincial": {
+      "brackets": [
+        { "min": 0, "max": 200000, "rate": 0.01 },
+        { "min": 200000, "max": 2000000, "rate": 0.02 },
+        { "min": 2000000, "max": 3000000, "rate": 0.03 },
+        { "min": 3000000, "max": null, "rate": 0.05 }
+      ],
+      "firstTimeBuyerExemption": {
+        "fullExemptionThreshold": 835000,
+        "partialExemptionThreshold": 860000,
+        "eligibilitySummary": "Must be a Canadian citizen or permanent resident, have lived in BC for 12 consecutive months prior to registration or filed 2 income tax returns in BC in the last 6 years, never owned a principal residence anywhere, and occupy the property as principal residence for the first year."
+      },
+      "newlyBuiltHomeExemption": {
+        "fullExemptionThreshold": 1100000,
+        "eligibilitySummary": "Applies to newly built homes. Buyer must be a Canadian citizen or permanent resident and occupy as principal residence."
+      },
+      "foreignBuyerTax": {
+        "rate": 0.20,
+        "description": "Additional Property Transfer Tax for foreign nationals in designated areas.",
+        "banNote": "Foreign buyer ban is in effect until January 2027 under the Prohibition on the Purchase of Residential Property by Non-Canadians Act."
+      }
+    }
+  },
+
+  "QC": {
+    "name": "Quebec",
+    "taxName": "Welcome Tax (Taxe de Bienvenue)",
+    "hasMunicipalTax": true,
+    "municipalCities": ["Montreal"],
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.revenuquebec.ca/en/citizens/property/welcome-tax/",
+    "provincial": {
+      "note": "The Welcome Tax is set and collected by municipalities. The general bracket structure is set by provincial law; Montreal applies higher rates under its own by-law.",
+      "brackets": [
+        { "min": 0, "max": 55200, "rate": 0.005 },
+        { "min": 55200, "max": 276200, "rate": 0.01 },
+        { "min": 276200, "max": null, "rate": 0.015 }
+      ],
+      "firstTimeBuyerRebate": null
+    },
+    "municipal": {
+      "city": "Montreal",
+      "taxName": "Montreal Welcome Tax",
+      "source": "https://montreal.ca/en/articles/transfer-duties-immovables",
+      "brackets": [
+        { "min": 0, "max": 55200, "rate": 0.005 },
+        { "min": 55200, "max": 276200, "rate": 0.01 },
+        { "min": 276200, "max": 552800, "rate": 0.015 },
+        { "min": 552800, "max": 1105700, "rate": 0.02 },
+        { "min": 1105700, "max": 2107300, "rate": 0.025 },
+        { "min": 2107300, "max": null, "rate": 0.045 }
+      ]
+    }
+  },
+
+  "AB": {
+    "name": "Alberta",
+    "taxName": "No Land Transfer Tax",
+    "hasLTT": false,
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.alberta.ca/land-titles.aspx",
+    "note": "Alberta does not charge a land transfer tax. Instead, the Land Titles Office charges flat registration fees for the title transfer and mortgage registration.",
+    "registrationFees": {
+      "titleTransfer": {
+        "baseFee": 50,
+        "perUnit": 5,
+        "unitValue": 5000,
+        "description": "Title transfer fee: $50 base + $5 per $5,000 of property value (or part thereof)"
+      },
+      "mortgageRegistration": {
+        "baseFee": 50,
+        "perUnit": 5,
+        "unitValue": 5000,
+        "description": "Mortgage registration fee: $50 base + $5 per $5,000 of mortgage amount (or part thereof)"
+      }
+    }
+  },
+
+  "SK": {
+    "name": "Saskatchewan",
+    "taxName": "No Land Transfer Tax",
+    "hasLTT": false,
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.isc.ca/Titles/Pages/default.aspx",
+    "note": "Saskatchewan does not charge a land transfer tax. Instead, Information Services Corporation (ISC) charges a title transfer fee based on the property value.",
+    "registrationFees": {
+      "titleTransfer": {
+        "rate": 0.003,
+        "description": "Title transfer fee: 0.3% of property value"
+      }
+    }
+  },
+
+  "MB": {
+    "name": "Manitoba",
+    "taxName": "Land Transfer Tax",
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.gov.mb.ca/finance/tao/ltt.html",
+    "provincial": {
+      "brackets": [
+        { "min": 0, "max": 30000, "rate": 0.00 },
+        { "min": 30000, "max": 90000, "rate": 0.005 },
+        { "min": 90000, "max": 150000, "rate": 0.01 },
+        { "min": 150000, "max": 200000, "rate": 0.015 },
+        { "min": 200000, "max": null, "rate": 0.02 }
+      ],
+      "firstTimeBuyerRebate": null
+    }
+  },
+
+  "NB": {
+    "name": "New Brunswick",
+    "taxName": "Land Transfer Tax",
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www2.gnb.ca/content/gnb/en/departments/finance/taxes/land_transfer.html",
+    "provincial": {
+      "flatRate": 0.01,
+      "description": "Flat 1% of purchase price",
+      "firstTimeBuyerRebate": null
+    }
+  },
+
+  "NS": {
+    "name": "Nova Scotia",
+    "taxName": "Deed Transfer Tax",
+    "hasMunicipalTax": true,
+    "lastUpdated": "2025-01-01",
+    "source": "https://novascotia.ca/finance/en/home/taxation/tax101/deeds/default.aspx",
+    "note": "Nova Scotia's Deed Transfer Tax is set and collected by each municipality. Rates typically range from 0.5% to 1.5%.",
+    "provincial": {
+      "note": "No provincial deed transfer tax. Tax is municipal only.",
+      "brackets": null
+    },
+    "municipalities": [
+      { "name": "Halifax Regional Municipality", "rate": 0.015 },
+      { "name": "Cape Breton Regional Municipality", "rate": 0.015 },
+      { "name": "Kings County", "rate": 0.01 },
+      { "name": "Pictou County", "rate": 0.01 },
+      { "name": "Annapolis County", "rate": 0.005 },
+      { "name": "Other", "rate": 0.01, "note": "Default estimate — verify with local municipality" }
+    ]
+  },
+
+  "NL": {
+    "name": "Newfoundland and Labrador",
+    "taxName": "Land Registration Fee",
+    "hasLTT": false,
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.gov.nl.ca/gs/cca/registries-deeds/",
+    "note": "Newfoundland and Labrador charges a land registration fee rather than a land transfer tax.",
+    "registrationFees": {
+      "titleTransfer": {
+        "baseFee": 100,
+        "additionalRate": 0.004,
+        "additionalThreshold": 500,
+        "description": "$100 flat fee + $0.40 per $100 of property value over $500"
+      }
+    }
+  },
+
+  "PE": {
+    "name": "Prince Edward Island",
+    "taxName": "Real Property Transfer Tax",
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.princeedwardisland.ca/en/information/finance/real-property-transfer-tax",
+    "provincial": {
+      "flatRate": 0.01,
+      "description": "Flat 1% of purchase price",
+      "firstTimeBuyerRebate": {
+        "maxRebate": null,
+        "fullRebate": true,
+        "eligibilitySummary": "First-time home buyers may be eligible for a full rebate of the Real Property Transfer Tax. Must be a Canadian citizen or permanent resident, have been a resident of PEI for at least 12 months, and the property must be used as a principal residence. Property value limits may apply — verify with PEI Finance."
+      }
+    }
+  },
+
+  "YT": {
+    "name": "Yukon",
+    "taxName": "No Land Transfer Tax",
+    "hasLTT": false,
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://yukon.ca/en/land-and-property",
+    "note": "Yukon charges no land transfer tax. A small land title registration fee applies.",
+    "registrationFees": {
+      "titleTransfer": {
+        "description": "Small registration fee applies. Contact Yukon Land Titles Office for current fee schedule.",
+        "estimatedFee": 50
+      }
+    }
+  },
+
+  "NT": {
+    "name": "Northwest Territories",
+    "taxName": "No Land Transfer Tax",
+    "hasLTT": false,
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.iti.gov.nt.ca/en/services/land-administration",
+    "note": "Northwest Territories charges no land transfer tax. A small land title registration fee applies.",
+    "registrationFees": {
+      "titleTransfer": {
+        "description": "Small registration fee applies. Contact NWT Land Titles Office for current fee schedule.",
+        "estimatedFee": 50
+      }
+    }
+  },
+
+  "NU": {
+    "name": "Nunavut",
+    "taxName": "No Land Transfer Tax",
+    "hasLTT": false,
+    "hasMunicipalTax": false,
+    "lastUpdated": "2025-01-01",
+    "source": "https://www.gov.nu.ca/justice/information/land-titles",
+    "note": "Nunavut charges no land transfer tax. A small land title registration fee applies.",
+    "registrationFees": {
+      "titleTransfer": {
+        "description": "Small registration fee applies. Contact Nunavut Land Titles Office for current fee schedule.",
+        "estimatedFee": 50
+      }
+    }
+  }
+}

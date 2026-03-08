@@ -6,6 +6,7 @@ export interface Scenario {
   id: string;
   name: string;
   calculatorType: string;
+  market: string;
   inputs: Record<string, unknown>;
   outputs: Record<string, unknown>;
   headlineLabel: string;
@@ -33,9 +34,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function listScenarios(params?: { type?: string; search?: string }): Promise<Scenario[]> {
+export async function listScenarios(params?: { type?: string; market?: string; search?: string }): Promise<Scenario[]> {
   const url = new URL(`${API_BASE}/scenarios`, window.location.origin);
   if (params?.type) url.searchParams.set('type', params.type);
+  if (params?.market) url.searchParams.set('market', params.market);
   if (params?.search) url.searchParams.set('search', params.search);
   const res = await fetch(url.toString(), {
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
