@@ -70,6 +70,98 @@ async function main() {
   });
   console.log('Created sample RSS source: Domain.com.au');
 
+  const globalSources = [
+    {
+      id: 'seed-housingwire-rss',
+      name: 'HousingWire',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.housingwire.com/feed' },
+      market: 'US',
+    },
+    {
+      id: 'seed-realtor-news-rss',
+      name: 'Realtor.com News',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.realtor.com/news/feed' },
+      market: 'US',
+    },
+    {
+      id: 'seed-inman-rss',
+      name: 'Inman News',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.inman.com/feed' },
+      market: 'US',
+    },
+    {
+      id: 'seed-nar-economists-rss',
+      name: "NAR Economists' Outlook",
+      type: 'RSS',
+      config: { feedUrl: 'https://www.nar.realtor/blogs/economists-outlook/feed' },
+      market: 'US',
+    },
+    {
+      id: 'seed-propertywire-rss',
+      name: 'Property Wire',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.propertywire.com/feed' },
+      market: 'UK',
+    },
+    {
+      id: 'seed-propertyreporter-rss',
+      name: 'Property Reporter',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.propertyreporter.co.uk/feed' },
+      market: 'UK',
+    },
+    {
+      id: 'seed-estateagenttoday-rss',
+      name: 'Estate Agent Today',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.estateagenttoday.co.uk/rss' },
+      market: 'UK',
+    },
+    {
+      id: 'seed-rightmove-blog-rss',
+      name: 'Rightmove Blog',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.rightmove.co.uk/news/feed' },
+      market: 'UK',
+    },
+    {
+      id: 'seed-crea-rss',
+      name: 'CREA',
+      type: 'RSS',
+      config: { feedUrl: 'https://creastats.crea.ca/feed' },
+      market: 'CA',
+    },
+    {
+      id: 'seed-rew-ca-rss',
+      name: 'REW.ca',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.rew.ca/news.rss' },
+      market: 'CA',
+    },
+    {
+      id: 'seed-canadian-re-magazine-rss',
+      name: 'Canadian Real Estate Magazine',
+      type: 'RSS',
+      config: { feedUrl: 'https://www.canadianrealestatemagazine.ca/feed' },
+      market: 'CA',
+    },
+  ];
+
+  for (const source of globalSources) {
+    await prisma.ingestionSource.upsert({
+      where: { id: source.id },
+      update: {},
+      create: {
+        ...source,
+        isActive: false,
+      },
+    });
+  }
+  console.log('Created 11 inactive ingestion sources for US, UK, CA markets');
+
   console.log('Seeding complete.');
 }
 
