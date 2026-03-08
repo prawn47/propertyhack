@@ -1,0 +1,1124 @@
+{
+  "_meta": {
+    "description": "US real estate transfer tax rates by state. Transfer taxes vary significantly by county and municipality — this data covers state-level rates only. County/city level data is a Phase 3 enhancement.",
+    "disclaimer": "Transfer taxes vary by county and municipality. This is an estimate — consult a local attorney or title company for exact costs.",
+    "lastUpdated": "2026-03-08",
+    "source": "Compiled from state revenue department websites. See individual state source fields for specific citations.",
+    "noTransferTaxStates": ["AK", "ID", "IN", "KS", "LA", "MS", "MO", "MT", "NM", "ND", "TX", "UT", "WY"],
+    "closingCostNote": "Closing cost ranges are estimates for the buyer's side only and exclude transfer taxes. They include title insurance, escrow/settlement fees, recording fees, lender fees, and miscellaneous costs. Actual costs vary by lender, title company, and locality."
+  },
+  "states": [
+    {
+      "code": "AL",
+      "name": "Alabama",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "stateTax": {
+          "description": "State deed tax: $0.50 per $500 of value ($1.00 per $1,000)",
+          "ratePerThousand": 1.00,
+          "rateDecimal": 0.001
+        },
+        "countyTax": {
+          "description": "Additional county tax varies; most counties add $0.50 per $500",
+          "typicalRatePerThousand": 0.50,
+          "note": "County rate varies — many counties add $0.50/$500 on top of state rate"
+        }
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://revenue.alabama.gov/business-license/deed-tax/"
+    },
+    {
+      "code": "AK",
+      "name": "Alaska",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://ltgov.alaska.gov/recorder/"
+    },
+    {
+      "code": "AZ",
+      "name": "Arizona",
+      "hasTransferTax": true,
+      "rateType": "fixed",
+      "rates": {
+        "description": "Arizona charges a flat affidavit of value fee. State law prohibits local transfer taxes.",
+        "flatFee": 2.00,
+        "note": "Arizona charges a $2 fee for the Affidavit of Legal Value. No percentage-based transfer tax."
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.015, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://azdor.gov/business/real-estate-rental-industry"
+    },
+    {
+      "code": "AR",
+      "name": "Arkansas",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Property Transfer Tax: $3.30 per $1,000 of consideration",
+        "ratePerThousand": 3.30,
+        "rateDecimal": 0.0033
+      },
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.dfa.arkansas.gov/offices/excise-tax/real-property-transfer-tax/"
+    },
+    {
+      "code": "CA",
+      "name": "California",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "County Documentary Transfer Tax: $1.10 per $1,000 of consideration. Most cities add an additional city tax on top.",
+        "countyRatePerThousand": 1.10,
+        "countyRateDecimal": 0.0011,
+        "cityTaxNote": "Many California cities charge additional transfer taxes. Los Angeles city adds $4.50/$1,000. San Francisco has a tiered structure from $5.00 to $25.00/$1,000 depending on price.",
+        "highValueNote": "Los Angeles Measure ULA (\"mansion tax\") adds 4% for sales $5M–$10M and 5.5% above $10M"
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.boe.ca.gov/proptaxes/pdf/lta9930.pdf"
+    },
+    {
+      "code": "CO",
+      "name": "Colorado",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Documentary Fee: $0.01 per $100 of consideration ($1 per $10,000)",
+        "ratePerHundred": 0.01,
+        "rateDecimal": 0.0001,
+        "note": "Very low transfer tax. Some mountain resort towns (Aspen, Telluride, Vail) charge additional real estate transfer assessments (RETA) of 1%–1.5%."
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://leg.colorado.gov/sites/default/files/documents/2018A/bills/2018a_1185_01.pdf"
+    },
+    {
+      "code": "CT",
+      "name": "Connecticut",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "description": "Connecticut Real Estate Conveyance Tax — state + municipal tiers",
+        "stateTax": {
+          "brackets": [
+            { "from": 0, "to": 800000, "rateDecimal": 0.0075, "description": "0.75% on first $800,000" },
+            { "from": 800001, "to": null, "rateDecimal": 0.0125, "description": "1.25% on amounts above $800,000" }
+          ]
+        },
+        "municipalTax": {
+          "rateDecimal": 0.0025,
+          "description": "Additional 0.25% municipal conveyance tax on full sale price"
+        },
+        "totalTypicalRate": "Effective rate ranges from 1.0% to 1.5% depending on price"
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://portal.ct.gov/DRS/Taxes/Real-Estate-Conveyance-Tax"
+    },
+    {
+      "code": "DE",
+      "name": "Delaware",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Delaware Real Estate Transfer Tax: 4% total — 2.5% state + 1.5% county/local (buyer and seller each pay half of total, i.e. 2% each by convention)",
+        "stateTaxRateDecimal": 0.025,
+        "localTaxRateDecimal": 0.015,
+        "totalRateDecimal": 0.04,
+        "splitNote": "By convention buyer and seller split the total 4% evenly — 2% each"
+      },
+      "whoPaysDefault": "split",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": true,
+      "firstTimeBuyerDetails": {
+        "description": "First-time buyers are exempt from the state portion (2.5%). Local portion still applies.",
+        "exemptionAmount": "state portion (2.5%)"
+      },
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.03, "max": 0.06 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://revenue.delaware.gov/realty-transfer-tax/"
+    },
+    {
+      "code": "DC",
+      "name": "District of Columbia",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "description": "DC Deed Recordation Tax + Transfer Tax (both apply, buyer pays recordation, seller pays transfer — or negotiated)",
+        "deedRecordationTax": {
+          "brackets": [
+            { "from": 0, "to": 399999, "rateDecimal": 0.011, "description": "1.1% on first $399,999" },
+            { "from": 400000, "to": null, "rateDecimal": 0.014, "description": "1.45% on $400,000 and above" }
+          ]
+        },
+        "realPropertyTransferTax": {
+          "brackets": [
+            { "from": 0, "to": 399999, "rateDecimal": 0.011, "description": "1.1% on first $399,999" },
+            { "from": 400000, "to": null, "rateDecimal": 0.014, "description": "1.45% on $400,000 and above" }
+          ]
+        },
+        "note": "Both taxes apply — total effective rate is 2.2% under $400K and 2.9% at $400K+. Recordation typically paid by buyer, transfer tax by seller."
+      },
+      "whoPaysDefault": "split",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": true,
+      "firstTimeBuyerDetails": {
+        "description": "First-time DC homebuyers may be exempt from the deed recordation tax on properties under $625,000.",
+        "incomeLimit": "Income limits apply"
+      },
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.03, "max": 0.06 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://otr.cfo.dc.gov/page/real-property-tax-suite"
+    },
+    {
+      "code": "FL",
+      "name": "Florida",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Documentary Stamp Tax on deeds: $0.70 per $100 (0.7%). Miami-Dade County charges $0.60 per $100 (0.6%) for single-family + $0.45/$100 surtax for other property types.",
+        "standardRateDecimal": 0.007,
+        "miamiDadeResidentialRateDecimal": 0.006,
+        "miamiDadeSurtaxDecimal": 0.0045
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": true,
+      "mortgageRecordingTaxRate": {
+        "description": "Documentary Stamp Tax on mortgages: $0.35 per $100 (0.35%) of mortgage amount",
+        "rateDecimal": 0.0035,
+        "paidBy": "buyer"
+      },
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.005, "max": 0.008 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://floridarevenue.com/taxes/taxesfees/Pages/doc_stamp.aspx"
+    },
+    {
+      "code": "GA",
+      "name": "Georgia",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Estate Transfer Tax: $1.00 per $1,000 of consideration (0.1%)",
+        "ratePerThousand": 1.00,
+        "rateDecimal": 0.001,
+        "minimumFee": 1.00
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://dor.georgia.gov/taxes/business-taxes/real-estate-transfer-tax"
+    },
+    {
+      "code": "HI",
+      "name": "Hawaii",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "description": "Hawaii Conveyance Tax — progressive tiered rate",
+        "brackets": [
+          { "from": 0, "to": 600000, "rateDecimal": 0.001, "description": "0.1% on first $600,000" },
+          { "from": 600001, "to": 1000000, "rateDecimal": 0.002, "description": "0.2% on $600,001 to $1,000,000" },
+          { "from": 1000001, "to": 2000000, "rateDecimal": 0.003, "description": "0.3% on $1,000,001 to $2,000,000" },
+          { "from": 2000001, "to": 4000000, "rateDecimal": 0.005, "description": "0.5% on $2,000,001 to $4,000,000" },
+          { "from": 4000001, "to": 6000000, "rateDecimal": 0.007, "description": "0.7% on $4,000,001 to $6,000,000" },
+          { "from": 6000001, "to": 10000000, "rateDecimal": 0.009, "description": "0.9% on $6,000,001 to $10,000,000" },
+          { "from": 10000001, "to": null, "rateDecimal": 0.01, "description": "1.0% above $10,000,000" }
+        ],
+        "ownerOccupiedDiscount": "Owner-occupants (homestead) qualify for reduced rates at each tier — approximately half the investor rate"
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.hawaii.gov/taxtype/conveyance/"
+    },
+    {
+      "code": "ID",
+      "name": "Idaho",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.idaho.gov/"
+    },
+    {
+      "code": "IL",
+      "name": "Illinois",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "State Real Estate Transfer Tax: $0.50 per $500 ($1.00 per $1,000). County and city taxes are additional. Cook County adds $0.25/$500. Chicago adds $3.75/$500 ($7.50/$1,000).",
+        "stateRateDecimal": 0.001,
+        "countyNote": "Cook County: additional $0.25/$500 (0.05%)",
+        "cityNote": "Chicago: additional $7.50/$1,000 (0.75%) — making total in Chicago approximately 1.75%/$1,000"
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.illinois.gov/research/taxinformation/realestate/retransfer.html"
+    },
+    {
+      "code": "IN",
+      "name": "Indiana",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.in.gov/dlgf/"
+    },
+    {
+      "code": "IA",
+      "name": "Iowa",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Estate Transfer Tax: $1.60 per $1,000 of consideration over $500",
+        "ratePerThousand": 1.60,
+        "rateDecimal": 0.0016,
+        "minimumExemption": 500
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.iowa.gov/real-estate-transfer-tax"
+    },
+    {
+      "code": "KS",
+      "name": "Kansas",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.ksrevenue.gov/"
+    },
+    {
+      "code": "KY",
+      "name": "Kentucky",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Estate Transfer Tax: $0.50 per $500 of consideration ($1.00 per $1,000)",
+        "ratePerThousand": 1.00,
+        "rateDecimal": 0.001
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://revenue.ky.gov/Business/Pages/Real-Estate-Transfer-Tax.aspx"
+    },
+    {
+      "code": "LA",
+      "name": "Louisiana",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": {
+        "note": "Louisiana has no state transfer tax, but charges nominal documentary/recording fees"
+      },
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.revenue.louisiana.gov/"
+    },
+    {
+      "code": "ME",
+      "name": "Maine",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Estate Transfer Tax: $2.20 per $500 of consideration ($4.40 per $1,000 total — buyer and seller each pay $2.20 per $1,000)",
+        "totalRateDecimal": 0.0044,
+        "buyerRateDecimal": 0.0022,
+        "sellerRateDecimal": 0.0022
+      },
+      "whoPaysDefault": "split",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.maine.gov/revenue/taxes/tax-relief-credits-programs/real-estate-transfer-tax"
+    },
+    {
+      "code": "MD",
+      "name": "Maryland",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "State Transfer Tax: 0.5% of consideration (1% for non-owner-occupants). Additional county transfer taxes vary (0.5%–2%). Recordation tax also applies.",
+        "stateRateOwnerOccupied": 0.005,
+        "stateRateNonOwnerOccupied": 0.01,
+        "countyTaxNote": "County transfer taxes vary: Baltimore City 1.5%, Montgomery County 1%, Prince George's County 1.4%, etc.",
+        "recordationTaxNote": "Recordation tax: $4.95 per $500 ($9.90 per $1,000) — applies to deed transfer"
+      },
+      "whoPaysDefault": "split",
+      "hasMortgageRecordingTax": true,
+      "mortgageRecordingTaxRate": {
+        "description": "Recordation tax on mortgage: varies by county, typically $5–$10 per $500 of mortgage amount",
+        "typicalRateDecimal": 0.01,
+        "paidBy": "buyer",
+        "note": "Rate varies by county. First $50,000 exempt for owner-occupied properties."
+      },
+      "firstTimeBuyerExemption": true,
+      "firstTimeBuyerDetails": {
+        "description": "First-time buyers in Maryland are exempt from the state transfer tax (0.5% or 1%). County exemptions vary."
+      },
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.007 },
+      "estimatedClosingCostPercent": { "min": 0.03, "max": 0.06 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://dat.maryland.gov/realproperty/Pages/Transfer-Recordation.aspx"
+    },
+    {
+      "code": "MA",
+      "name": "Massachusetts",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Deed Excise Tax: $4.56 per $1,000 of consideration. Barnstable County (Cape Cod): $6.06 per $1,000.",
+        "standardRateDecimal": 0.00456,
+        "barnstableRateDecimal": 0.00606
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.mass.gov/info-details/deed-excise-tax"
+    },
+    {
+      "code": "MI",
+      "name": "Michigan",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "State Transfer Tax: $3.75 per $500 ($7.50 per $1,000). County Transfer Tax: $0.55 per $500 ($1.10 per $1,000). Total: $8.60 per $1,000.",
+        "stateRateDecimal": 0.0075,
+        "countyRateDecimal": 0.0011,
+        "totalRateDecimal": 0.0086
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": true,
+      "firstTimeBuyerDetails": {
+        "description": "First-time buyers (principal residence, never owned before) are exempt from the state transfer tax portion ($7.50 per $1,000). County tax still applies."
+      },
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.michigan.gov/taxes/property/real-estate-transfer-tax"
+    },
+    {
+      "code": "MN",
+      "name": "Minnesota",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Deed Tax: $3.30 per $1,000 of net consideration (0.33%)",
+        "ratePerThousand": 3.30,
+        "rateDecimal": 0.0033,
+        "minimumFee": 1.65
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.revenue.state.mn.us/deed-tax"
+    },
+    {
+      "code": "MS",
+      "name": "Mississippi",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.dor.ms.gov/"
+    },
+    {
+      "code": "MO",
+      "name": "Missouri",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://dor.mo.gov/"
+    },
+    {
+      "code": "MT",
+      "name": "Montana",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://mtrevenue.gov/"
+    },
+    {
+      "code": "NE",
+      "name": "Nebraska",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Documentary Stamp Tax: $2.25 per $1,000 of consideration",
+        "ratePerThousand": 2.25,
+        "rateDecimal": 0.00225
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://revenue.nebraska.gov/about/legal-information/statutes/rev-stat-76-901-through-76-909"
+    },
+    {
+      "code": "NV",
+      "name": "Nevada",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Property Transfer Tax: $1.95 per $500 of consideration ($3.90 per $1,000). Clark County (Las Vegas): additional $0.60 per $500 surcharge making total $2.55 per $500 ($5.10 per $1,000).",
+        "standardRateDecimal": 0.0039,
+        "clarkCountyTotalRateDecimal": 0.0051
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.nv.gov/Publications/Real_Property_Transfer_Tax_FAQ/"
+    },
+    {
+      "code": "NH",
+      "name": "New Hampshire",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Estate Transfer Tax: $7.50 per $1,000 of consideration — buyer and seller each pay $3.75 per $1,000 (0.75% each, 1.5% total)",
+        "totalRateDecimal": 0.015,
+        "buyerRateDecimal": 0.0075,
+        "sellerRateDecimal": 0.0075,
+        "minimumFee": 20.00
+      },
+      "whoPaysDefault": "split",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.revenue.nh.gov/frequently-asked-questions/real-estate-transfer-tax"
+    },
+    {
+      "code": "NJ",
+      "name": "New Jersey",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "description": "Realty Transfer Fee (RTF) — progressive tiered rate based on purchase price",
+        "standardBrackets": [
+          { "from": 0, "to": 150000, "rateDecimal": 0.01, "description": "1.0% on first $150,000" },
+          { "from": 150001, "to": 200000, "rateDecimal": 0.01425, "description": "1.425% on $150,001–$200,000" },
+          { "from": 200001, "to": 350000, "rateDecimal": 0.015, "description": "1.5% on $200,001–$350,000" },
+          { "from": 350001, "to": 550000, "rateDecimal": 0.02125, "description": "2.125% on $350,001–$550,000" },
+          { "from": 550001, "to": 850000, "rateDecimal": 0.02750, "description": "2.75% on $550,001–$850,000" },
+          { "from": 850001, "to": 1000000, "rateDecimal": 0.03350, "description": "3.35% on $850,001–$1,000,000" },
+          { "from": 1000001, "to": null, "rateDecimal": 0.037, "description": "3.7% above $1,000,000" }
+        ],
+        "seniorCitizenRate": "Senior citizens, blind, or disabled persons pay half the standard RTF",
+        "paidBy": "seller"
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.njconsumeraffairs.gov/lre/Pages/Realty-Transfer-Fee.aspx"
+    },
+    {
+      "code": "NM",
+      "name": "New Mexico",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.tax.newmexico.gov/"
+    },
+    {
+      "code": "NY",
+      "name": "New York",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "description": "New York State Real Estate Transfer Tax + NYC Additional Transfer Tax (for NYC properties) + Mansion Tax for properties $1M+",
+        "stateTransferTax": {
+          "standardRateDecimal": 0.004,
+          "description": "NYS: $2 per $500 (0.4%) on all residential transfers",
+          "highValueSurcharge": {
+            "threshold": 3000000,
+            "additionalRateDecimal": 0.001,
+            "description": "Additional 0.1% (total 0.5%) for residential properties over $3M"
+          }
+        },
+        "mansionTax": {
+          "description": "Additional buyer-paid tax on residential properties $1M and above (NYC and rest of state)",
+          "brackets": [
+            { "from": 1000000, "to": 1999999, "rateDecimal": 0.01, "description": "1% on $1M–$1,999,999" },
+            { "from": 2000000, "to": 2999999, "rateDecimal": 0.0125, "description": "1.25% on $2M–$2,999,999" },
+            { "from": 3000000, "to": 4999999, "rateDecimal": 0.015, "description": "1.5% on $3M–$4,999,999" },
+            { "from": 5000000, "to": 9999999, "rateDecimal": 0.0225, "description": "2.25% on $5M–$9,999,999" },
+            { "from": 10000000, "to": 14999999, "rateDecimal": 0.0325, "description": "3.25% on $10M–$14,999,999" },
+            { "from": 15000000, "to": 19999999, "rateDecimal": 0.035, "description": "3.5% on $15M–$19,999,999" },
+            { "from": 20000000, "to": 24999999, "rateDecimal": 0.0375, "description": "3.75% on $20M–$24,999,999" },
+            { "from": 25000000, "to": null, "rateDecimal": 0.039, "description": "3.9% on $25M+" }
+          ],
+          "paidBy": "buyer",
+          "note": "Mansion tax applies to full sale price, not marginal amounts"
+        },
+        "nycAdditionalTax": {
+          "description": "For NYC properties only — NYC Real Property Transfer Tax (RPTT)",
+          "brackets": [
+            { "from": 0, "to": 499999, "rateDecimal": 0.01, "description": "1% for residential under $500K" },
+            { "from": 500000, "to": null, "rateDecimal": 0.01425, "description": "1.425% for residential $500K+" }
+          ],
+          "note": "NYC RPTT is paid by the seller. Applies in addition to NYS transfer tax."
+        }
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": true,
+      "mortgageRecordingTaxRate": {
+        "description": "NYC/NYS Mortgage Recording Tax (MRT): 1.8% on mortgages under $500K, 1.925% on mortgages $500K+. Lender pays 0.25%; borrower pays remainder.",
+        "standardRateDecimal": 0.018,
+        "highValueRateDecimal": 0.01925,
+        "threshold": 500000,
+        "lenderPortion": 0.0025,
+        "borrowerPortionStandard": 0.0155,
+        "borrowerPortionHighValue": 0.01675,
+        "paidBy": "buyer",
+        "note": "MRT applies to mortgage amount, not purchase price. Cooperatives (co-ops) are exempt."
+      },
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.007 },
+      "estimatedClosingCostPercent": { "min": 0.03, "max": 0.07 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.tax.ny.gov/pit/property/mortgagetax/"
+    },
+    {
+      "code": "NC",
+      "name": "North Carolina",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Excise Tax on Real Estate Conveyances: $2.00 per $1,000 of consideration (0.2%)",
+        "ratePerThousand": 2.00,
+        "rateDecimal": 0.002
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.ncdor.gov/taxes-forms/excise-tax/real-estate-excise-tax"
+    },
+    {
+      "code": "ND",
+      "name": "North Dakota",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.nd.gov/tax/"
+    },
+    {
+      "code": "OH",
+      "name": "Ohio",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Conveyance Fee: $1.00 per $1,000 of consideration (state mandated minimum). Counties may charge higher — typically $3.00–$4.00 per $1,000.",
+        "stateMinimumRateDecimal": 0.001,
+        "typicalCountyRateDecimal": 0.003,
+        "note": "County rates vary significantly. Cuyahoga County (Cleveland): $4.00/$1,000. Franklin County (Columbus): $4.00/$1,000."
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.ohio.gov/business/ohio-business-taxes/commercial-activity-tax"
+    },
+    {
+      "code": "OK",
+      "name": "Oklahoma",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Documentary Stamp Tax on deeds: $0.75 per $500 ($1.50 per $1,000)",
+        "ratePerThousand": 1.50,
+        "rateDecimal": 0.0015
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://oklahoma.gov/tax/"
+    },
+    {
+      "code": "OR",
+      "name": "Oregon",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": {
+        "note": "Oregon prohibits state-level transfer taxes. However, Washington County and some cities charge local transfer taxes. Portland charges a Metro Housing Services Deed Transfer Tax of 0.1% on sales over $1,000.",
+        "portlandNote": "Portland Metro area: additional 0.1% deed transfer surcharge applies to sales over $1,000"
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.oregon.gov/dor/Pages/index.aspx"
+    },
+    {
+      "code": "PA",
+      "name": "Pennsylvania",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Realty Transfer Tax: 2% state rate. Most localities add additional transfer tax — Philadelphia adds 3.278% (plus state 1% = 4.278% total for Philadelphia). Standard total for most of PA is 2% state + 1% local = 3%.",
+        "stateRateDecimal": 0.01,
+        "localRateDecimal": 0.01,
+        "standardTotalRateDecimal": 0.02,
+        "philadelphiaTotalRateDecimal": 0.04278,
+        "note": "State rate is 1% paid by each party (buyer and seller). Local tax is additional. Total varies by location — statewide average ~3%."
+      },
+      "whoPaysDefault": "split",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.revenue.pa.gov/TaxTypes/RTT/Pages/default.aspx"
+    },
+    {
+      "code": "RI",
+      "name": "Rhode Island",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Estate Conveyance Tax: $2.30 per $500 of consideration ($4.60 per $1,000 = 0.46%)",
+        "ratePerThousand": 4.60,
+        "rateDecimal": 0.0046
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.ri.gov/tax-sections/business-taxes/real-estate-conveyance-tax"
+    },
+    {
+      "code": "SC",
+      "name": "South Carolina",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Deed Recording Fee: $1.85 per $500 of consideration ($3.70 per $1,000 = 0.37%)",
+        "ratePerThousand": 3.70,
+        "rateDecimal": 0.0037
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://dor.sc.gov/tax/deed-recording-fee"
+    },
+    {
+      "code": "SD",
+      "name": "South Dakota",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Realty Transfer Fee: $0.50 per $500 ($1.00 per $1,000 = 0.1%)",
+        "ratePerThousand": 1.00,
+        "rateDecimal": 0.001
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://dor.sd.gov/businesses/taxes/real-estate/"
+    },
+    {
+      "code": "TN",
+      "name": "Tennessee",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Documentary Transfer Tax (Realty Transfer Tax): $0.37 per $100 of consideration (0.37%)",
+        "ratePerHundred": 0.37,
+        "rateDecimal": 0.0037
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.tn.gov/revenue/taxes/realty-transfer-tax.html"
+    },
+    {
+      "code": "TX",
+      "name": "Texas",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.005, "max": 0.008 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.tdi.texas.gov/title/index.html"
+    },
+    {
+      "code": "UT",
+      "name": "Utah",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.utah.gov/"
+    },
+    {
+      "code": "VT",
+      "name": "Vermont",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "description": "Vermont Property Transfer Tax — tiered based on buyer/property type",
+        "standardRate": {
+          "firstThresholdRateDecimal": 0.005,
+          "firstThreshold": 100000,
+          "aboveThresholdRateDecimal": 0.015,
+          "description": "0.5% on first $100,000; 1.5% on amounts above $100,000"
+        },
+        "principalResidenceRate": {
+          "firstThresholdRateDecimal": 0.005,
+          "firstThreshold": 100000,
+          "aboveThresholdRateDecimal": 0.0125,
+          "description": "0.5% on first $100,000; 1.25% on amounts above $100,000 for principal residence"
+        }
+      },
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.vermont.gov/property/property-transfer-tax"
+    },
+    {
+      "code": "VA",
+      "name": "Virginia",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Grantor's Tax (paid by seller): $0.50 per $500 ($1.00 per $1,000 = 0.1%). Northern Virginia congestion fee: additional $0.15 per $100 (0.15%) in certain localities.",
+        "stateGrantorTaxRateDecimal": 0.001,
+        "novaAdditionalRateDecimal": 0.0015,
+        "recordationTax": {
+          "description": "State Deed Recordation Tax: $0.25 per $100 of consideration (0.25%) — paid by buyer",
+          "rateDecimal": 0.0025,
+          "paidBy": "buyer"
+        }
+      },
+      "whoPaysDefault": "split",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.dta.virginia.gov/index.aspx"
+    },
+    {
+      "code": "WA",
+      "name": "Washington",
+      "hasTransferTax": true,
+      "rateType": "tiered",
+      "rates": {
+        "description": "Real Estate Excise Tax (REET) — graduated rate from 1.1% to 3.0%",
+        "brackets": [
+          { "from": 0, "to": 525000, "rateDecimal": 0.011, "description": "1.1% on first $525,000" },
+          { "from": 525001, "to": 1525000, "rateDecimal": 0.0128, "description": "1.28% on $525,001–$1,525,000" },
+          { "from": 1525001, "to": 3025000, "rateDecimal": 0.0275, "description": "2.75% on $1,525,001–$3,025,000" },
+          { "from": 3025001, "to": null, "rateDecimal": 0.03, "description": "3.0% above $3,025,000" }
+        ],
+        "localSurtax": "Local/county surtax of 0.5% applies in most counties (e.g., King County = 1.78% base + 0.5% local)"
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.004, "max": 0.006 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.05 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://dor.wa.gov/taxes-rates/real-estate-excise-tax"
+    },
+    {
+      "code": "WV",
+      "name": "West Virginia",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Excise Tax on Privilege of Transferring Real Property: $1.10 per $500 of consideration ($2.20 per $1,000 = 0.22%)",
+        "ratePerThousand": 2.20,
+        "rateDecimal": 0.0022
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://tax.wv.gov/Business/Pages/TransferTax.aspx"
+    },
+    {
+      "code": "WI",
+      "name": "Wisconsin",
+      "hasTransferTax": true,
+      "rateType": "flat_percentage",
+      "rates": {
+        "description": "Real Estate Transfer Fee: $3.00 per $1,000 of consideration (0.3%)",
+        "ratePerThousand": 3.00,
+        "rateDecimal": 0.003
+      },
+      "whoPaysDefault": "seller",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://www.revenue.wi.gov/Pages/FAQS/ise-retransfer.aspx"
+    },
+    {
+      "code": "WY",
+      "name": "Wyoming",
+      "hasTransferTax": false,
+      "rateType": "none",
+      "rates": null,
+      "whoPaysDefault": "buyer",
+      "hasMortgageRecordingTax": false,
+      "mortgageRecordingTaxRate": null,
+      "firstTimeBuyerExemption": false,
+      "firstTimeBuyerDetails": null,
+      "estimatedTitleInsurance": { "min": 0.003, "max": 0.005 },
+      "estimatedClosingCostPercent": { "min": 0.02, "max": 0.04 },
+      "lastUpdated": "2026-03-08",
+      "source": "https://revenue.wyo.gov/"
+    }
+  ]
+}
