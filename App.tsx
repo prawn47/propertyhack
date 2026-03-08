@@ -37,6 +37,7 @@ import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import GoogleAuthCallback from './components/auth/GoogleAuthCallback';
 import MortgageCalculator from './components/calculators/MortgageCalculator';
 import StampDutyCalculator from './components/calculators/StampDutyCalculator';
+import RentalYieldCalculator from './components/calculators/RentalYieldCalculator';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
@@ -227,6 +228,18 @@ function AppInner() {
           </RequireAdmin>
         }
       />
+
+      <Route
+        path="/admin/settings/social"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SocialSettings /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+
+      {/* Calculator routes (public) */}
+      <Route path="/tools/rental-yield-calculator" element={<RentalYieldCalculator />} />
 
       {/* 404 catch-all */}
       <Route path="*" element={<NotFoundPage />} />

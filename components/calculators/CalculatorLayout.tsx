@@ -17,9 +17,12 @@ interface CalculatorLayoutProps {
   metaDescription?: string;
   breadcrumbs: BreadcrumbItem[];
   jsonLd?: object;
-  inputs: React.ReactNode;
-  results: React.ReactNode;
+  inputs?: React.ReactNode;
+  inputPanel?: React.ReactNode;
+  results?: React.ReactNode;
+  resultPanel?: React.ReactNode;
   footer?: React.ReactNode;
+  belowFold?: React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -31,10 +34,17 @@ const CalculatorLayout: React.FC<CalculatorLayoutProps> = ({
   breadcrumbs,
   jsonLd,
   inputs,
+  inputPanel,
   results,
+  resultPanel,
   footer,
+  belowFold,
   children,
 }) => {
+  const inputsContent = inputs ?? inputPanel;
+  const resultsContent = results ?? resultPanel;
+  const footerContent = footer ?? belowFold;
+
   return (
     <>
       {(metaTitle || metaDescription) && (
@@ -86,19 +96,19 @@ const CalculatorLayout: React.FC<CalculatorLayoutProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               {/* Inputs column */}
               <div className="bg-base-100 rounded-xl shadow-soft p-6 flex flex-col gap-5">
-                {inputs}
+                {inputsContent}
               </div>
 
               {/* Results column */}
               <div className="flex flex-col gap-4">
-                {results}
+                {resultsContent}
               </div>
             </div>
 
             {/* Footer section (e.g. yearly breakdown table) */}
-            {footer && (
+            {footerContent && (
               <div className="mt-6 bg-base-100 rounded-xl shadow-soft overflow-hidden">
-                {footer}
+                {footerContent}
               </div>
             )}
 
