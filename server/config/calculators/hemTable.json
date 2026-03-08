@@ -1,0 +1,62 @@
+{
+  "_note": "HEM (Household Expenditure Measure) monthly figures in cents (AUD). Used by Australian banks for serviceability assessments. Indexed by applicant type, number of dependants, and income bracket. Source: HEM benchmarks as used by major Australian lenders (2024-25).",
+  "single": {
+    "0": {
+      "low": 175000,
+      "medium": 200000,
+      "high": 235000
+    },
+    "1": {
+      "low": 220000,
+      "medium": 250000,
+      "high": 290000
+    },
+    "2": {
+      "low": 265000,
+      "medium": 300000,
+      "high": 345000
+    },
+    "3": {
+      "low": 310000,
+      "medium": 350000,
+      "high": 400000
+    },
+    "4+": {
+      "low": 350000,
+      "medium": 395000,
+      "high": 450000
+    }
+  },
+  "couple": {
+    "0": {
+      "low": 255000,
+      "medium": 290000,
+      "high": 335000
+    },
+    "1": {
+      "low": 305000,
+      "medium": 345000,
+      "high": 395000
+    },
+    "2": {
+      "low": 350000,
+      "medium": 395000,
+      "high": 450000
+    },
+    "3": {
+      "low": 395000,
+      "medium": 445000,
+      "high": 505000
+    },
+    "4+": {
+      "low": 440000,
+      "medium": 495000,
+      "high": 560000
+    }
+  },
+  "_incomeBrackets": {
+    "low": "Annual gross income below $50,000",
+    "medium": "Annual gross income $50,000 to $100,000",
+    "high": "Annual gross income above $100,000"
+  }
+}
