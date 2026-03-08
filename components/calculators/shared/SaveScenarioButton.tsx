@@ -20,6 +20,7 @@ const CALCULATOR_TYPE_MAP: Record<CalculatorType, string> = {
   'rental-yield': 'RENTAL_YIELD',
   'borrowing-power': 'BORROWING_POWER',
   'rent-vs-buy': 'RENT_VS_BUY',
+  'uk-transfer-tax': 'UK_TRANSFER_TAX',
 };
 
 const SaveScenarioButton: React.FC<SaveScenarioButtonProps> = ({
