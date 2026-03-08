@@ -27,7 +27,8 @@ router.post(
     body('loanTermYears').isInt({ min: 1, max: 50 }).withMessage('loanTermYears must be between 1 and 50'),
     body('interestRate').isFloat({ min: 0, max: 100 }).withMessage('interestRate must be between 0 and 100'),
     body('repaymentType').isIn(['PI', 'IO']).withMessage('repaymentType must be PI or IO'),
-    body('frequency').isIn(['weekly', 'fortnightly', 'monthly']).withMessage('frequency must be weekly, fortnightly, or monthly'),
+    body('frequency').isIn(['weekly', 'fortnightly', 'monthly', 'bi-weekly', 'accelerated-bi-weekly']).withMessage('frequency must be a valid repayment frequency'),
+    body('market').optional().isIn(['AU', 'US', 'UK', 'CA', 'NZ']).withMessage('market must be AU, US, UK, CA, or NZ'),
   ],
   (req, res) => {
     const validationError = handleValidation(req, res);
