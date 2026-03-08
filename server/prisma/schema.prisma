@@ -213,3 +213,21 @@ model LocationSeo {
 
   @@map("location_seo")
 }
+
+model SocialAccount {
+  id             String    @id @default(cuid())
+  platform       String    @unique
+  accountName    String?   @map("account_name")
+  accountId      String?   @map("account_id")
+  accessToken    String?   @map("access_token")
+  refreshToken   String?   @map("refresh_token")
+  tokenExpiry    DateTime? @map("token_expiry")
+  isConnected    Boolean   @default(false) @map("is_connected")
+  autoPublish    Boolean   @default(true) @map("auto_publish")
+  lastError      String?   @map("last_error")
+  lastCheckedAt  DateTime? @map("last_checked_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("social_accounts")
+}
