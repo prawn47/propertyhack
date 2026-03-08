@@ -69,6 +69,7 @@ enum CalculatorType {
   RENTAL_YIELD
   BORROWING_POWER
   RENT_VS_BUY
+  BUYING_COSTS
 }
 
 model SavedScenario {
@@ -76,6 +77,7 @@ model SavedScenario {
   userId         String         @map("user_id")
   name           String
   calculatorType CalculatorType @map("calculator_type")
+  market         String         @default("AU")
   inputs         Json
   outputs        Json
   headlineLabel  String         @map("headline_label")
@@ -87,6 +89,7 @@ model SavedScenario {
 
   @@index([userId])
   @@index([calculatorType])
+  @@index([market])
   @@map("saved_scenarios")
 }
 
