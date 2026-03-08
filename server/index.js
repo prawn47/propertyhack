@@ -21,6 +21,7 @@ const adminSocialAccountsRoutes = require('./routes/admin/socialAccounts');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
+const publicMarketsRoutes = require('./routes/public/markets');
 const calculatorRoutes = require('./routes/public/calculators');
 const scenarioRoutes = require('./routes/public/scenarios');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
@@ -169,6 +170,7 @@ app.use('/api/scenarios', authenticateToken, scenarioRoutes);
 app.use('/api/articles', publicArticlesRoutes);
 app.use('/api/categories', publicCategoriesRoutes);
 app.use('/api/locations', publicLocationsRoutes);
+app.use('/api/markets', publicMarketsRoutes);
 // Legacy path kept for existing frontend compatibility
 app.use('/api/public/articles', publicArticlesRoutes);
 // Webhooks (no auth, validated by x-webhook-secret header)

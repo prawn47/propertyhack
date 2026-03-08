@@ -9,6 +9,7 @@ import {
   useLocation,
 } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CountryProvider } from './contexts/CountryContext';
 import LoginPage from './components/LoginPage';
 import Loader from './components/Loader';
 import HomePage from './components/public/HomePage';
@@ -282,7 +283,9 @@ const App: React.FC = () => {
     <HelmetProvider>
       <BrowserRouter>
         <AuthProvider>
-          <AppInner />
+          <CountryProvider>
+            <AppInner />
+          </CountryProvider>
         </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>
