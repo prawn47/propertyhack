@@ -1,6 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import type { PublicArticle } from '../../services/publicArticleService';
+import { CountryLink } from '../../hooks/useCountryPath';
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Recently';
@@ -26,7 +26,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, featured }) => {
   const isFeatured = featured || article.isFeatured;
 
   return (
-    <Link
+    <CountryLink
       to={`/articles/${article.slug}`}
       className={`group block bg-base-100 rounded-xl shadow-soft hover:shadow-medium transition-shadow duration-200 overflow-hidden${isFeatured ? ' border-l-4 border-brand-gold' : ''}`}
     >
@@ -95,7 +95,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, featured }) => {
           </time>
         </div>
       </div>
-    </Link>
+    </CountryLink>
   );
 };
 
