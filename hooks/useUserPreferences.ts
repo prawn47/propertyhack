@@ -4,6 +4,7 @@ export interface UserPreferences {
   defaultLocation: string | null;
   defaultCategories: string[];
   defaultDateRange: string | null;
+  defaultCountry: string | null;
 }
 
 export function useUserPreferences(): UserPreferences | null {
@@ -11,11 +12,12 @@ export function useUserPreferences(): UserPreferences | null {
 
   if (!user || !user.preferences) return null;
 
-  const { defaultLocation, defaultCategories, defaultDateRange } = user.preferences;
+  const { defaultLocation, defaultCategories, defaultDateRange, defaultCountry } = user.preferences;
 
   return {
     defaultLocation: defaultLocation ?? null,
     defaultCategories: defaultCategories ?? [],
     defaultDateRange: defaultDateRange ?? null,
+    defaultCountry: defaultCountry ?? null,
   };
 }
