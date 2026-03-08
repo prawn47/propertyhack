@@ -87,6 +87,15 @@ const NATIONAL_KEYWORDS = [
 async function main() {
   console.log('Seeding SEO data...');
 
+  // Backfill any existing AU LocationSeo records that may lack the country field
+  const backfilled = await prisma.locationSeo.updateMany({
+    where: { country: '' },
+    data: { country: 'AU' },
+  });
+  if (backfilled.count > 0) {
+    console.log(`  Backfilled country='AU' on ${backfilled.count} LocationSeo records`);
+  }
+
   // Seed location configs
   for (const config of LOCATION_CONFIGS) {
     const existing = await prisma.locationSeo.findUnique({ where: { slug: config.slug } });
@@ -94,7 +103,7 @@ async function main() {
       console.log(`  Location ${config.location} already exists, skipping`);
       continue;
     }
-    await prisma.locationSeo.create({ data: config });
+    await prisma.locationSeo.create({ data: { ...config, country: 'AU' } });
     console.log(`  Created location config: ${config.location}`);
   }
 
