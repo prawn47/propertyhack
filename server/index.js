@@ -27,6 +27,7 @@ const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const passport = require('./passport');
 const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
+const { legacyRedirects } = require('./middleware/legacyRedirects');
 const sitemapRoutes = require('./routes/sitemap');
 const feedRoutes = require('./routes/feed');
 const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
@@ -191,6 +192,9 @@ app.get('/api/locations/:slug/seo', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Legacy AU-only URL redirects — 301 to country-prefixed paths
+app.use(legacyRedirects);
 
 // Crawler SSR middleware — serves dynamic meta tags to search engine bots
 const indexHtmlPath = path.join(__dirname, '..', 'frontend-dist', 'index.html');
