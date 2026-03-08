@@ -409,8 +409,8 @@ const UkTransferTaxCalculator: React.FC = () => {
     <CalculatorLayout
       title="UK Stamp Duty Calculator"
       subtitle="Calculate SDLT, LBTT, or LTT for property purchases in England & Northern Ireland, Scotland, or Wales."
-      metaTitle="UK Stamp Duty Calculator 2026 — SDLT, LBTT & LTT Rates | PropertyHack"
-      metaDescription="Calculate UK property transfer tax across all three systems. Covers England & Northern Ireland (SDLT), Scotland (LBTT), and Wales (LTT) with first-time buyer and additional property rates."
+      metaTitle="Stamp Duty Calculator UK 2026 — SDLT, LBTT & LTT Rates | PropertyHack"
+      metaDescription="Calculate stamp duty for UK property purchases. Covers SDLT (England & Northern Ireland), LBTT (Scotland), and LTT (Wales) — with first-time buyer relief and additional property surcharges."
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'Tools', href: '/tools' },
