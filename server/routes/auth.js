@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { body, validationResult } = require('express-validator');
 const { authenticateRefreshToken, generateTokens } = require('../middleware/auth');
+const passport = require('../passport');
 
 const router = express.Router();
 
@@ -64,5 +65,20 @@ router.post('/refresh', authenticateRefreshToken, async (req, res) => {
 router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
+
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+);
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3004'}/login?error=oauth_failed` }),
+  (req, res) => {
+    const { accessToken, refreshToken } = generateTokens(req.user.id);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3004';
+    res.redirect(`${frontendUrl}/auth/google/callback#access_token=${accessToken}&refresh_token=${refreshToken}`);
+  }
+);
 
 module.exports = router;
