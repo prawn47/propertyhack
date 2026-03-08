@@ -239,7 +239,9 @@ router.post(
     body('monthlyLivingExpenses').optional().isInt({ min: 0 }).withMessage('monthlyLivingExpenses must be a non-negative integer (cents)'),
     body('creditCardLimits').optional().isInt({ min: 0 }).withMessage('creditCardLimits must be a non-negative integer (cents)'),
     body('existingLoanRepayments').optional().isInt({ min: 0 }).withMessage('existingLoanRepayments must be a non-negative integer (cents)'),
+    // hecsDebt: backward compat (AU only). studentDebt is the new multi-market field.
     body('hecsDebt').optional().isInt({ min: 0 }).withMessage('hecsDebt must be a non-negative integer (cents)'),
+    body('studentDebt').optional(),
     body('dependants').optional().isInt({ min: 0, max: 10 }).withMessage('dependants must be between 0 and 10'),
     body('assessmentRate').optional().isFloat({ min: 0, max: 100 }).withMessage('assessmentRate must be between 0 and 100'),
   ],
@@ -249,7 +251,12 @@ router.post(
 
     try {
       const market = getMarket(req);
-      const result = borrowingPowerCalculator.calculate({ ...req.body, market });
+      const inputs = { ...req.body, market };
+      // backward compat: hecsDebt maps to studentDebt for AU
+      if (inputs.hecsDebt !== undefined && inputs.studentDebt === undefined) {
+        inputs.studentDebt = inputs.hecsDebt;
+      }
+      const result = borrowingPowerCalculator.calculate(inputs);
       return res.json(result);
     } catch (err) {
       return res.status(500).json({ error: 'Calculation failed', message: err.message });
