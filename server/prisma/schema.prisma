@@ -225,6 +225,7 @@ model Market {
   code      String   @unique
   name      String
   currency  String
+  flagEmoji String   @default("") @map("flag_emoji")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -277,6 +278,7 @@ model LocationSeo {
   id              String   @id @default(cuid())
   location        String   @unique
   slug            String   @unique
+  country         String   @default("AU")
   metaTitle       String   @map("meta_title")
   metaDescription String   @map("meta_description")
   h1Title         String   @map("h1_title")
@@ -286,5 +288,6 @@ model LocationSeo {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  @@index([country])
   @@map("location_seo")
 }
