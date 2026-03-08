@@ -1,6 +1,7 @@
 const { Worker } = require('bullmq');
 const { PrismaClient } = require('@prisma/client');
 const { connection } = require('../queues/connection');
+const { generateSocialPosts } = require('../services/socialGenerationService');
 
 const prisma = new PrismaClient();
 
@@ -22,11 +23,9 @@ const socialGenerateWorker = new Worker('social-generate', async (job) => {
     return { articleId, skipped: true };
   }
 
-  // TODO: Call socialGenerationService.generateSocialPosts(articleId)
-  // This will be implemented in T6 (orchestrator task)
-  console.log(`[social-generate] Stub — would generate social posts for article: ${article.title}`);
-
-  return { articleId, generated: true };
+  const posts = await generateSocialPosts(articleId);
+  console.log(`[social-generate] Generated ${posts.length} social posts for article: ${article.title}`);
+  return { articleId, postsCreated: posts.length };
 }, {
   connection,
   concurrency: 1,
