@@ -17,13 +17,38 @@ function handleValidationErrors(req, res) {
   return false;
 }
 
-// GET / — List social posts with pagination
+// GET /stats — Quick stats (must be before /:id route)
+router.get('/stats', async (req, res) => {
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const [weeklyCount, monthlyCount, failedCount, platformCounts] = await Promise.all([
+    req.prisma.socialPost.count({ where: { status: 'PUBLISHED', publishedAt: { gte: weekAgo } } }),
+    req.prisma.socialPost.count({ where: { status: 'PUBLISHED', publishedAt: { gte: monthAgo } } }),
+    req.prisma.socialPost.count({ where: { status: 'FAILED' } }),
+    req.prisma.socialPost.groupBy({ by: ['platform'], where: { status: 'PUBLISHED', publishedAt: { gte: weekAgo } }, _count: true }),
+  ]);
+
+  res.json({
+    thisWeek: weeklyCount,
+    thisMonth: monthlyCount,
+    failed: failedCount,
+    byPlatform: Object.fromEntries(platformCounts.map(p => [p.platform, p._count])),
+  });
+});
+
+// GET / — List social posts with pagination and filters
 router.get(
   '/',
   [
     query('page').optional().isInt({ min: 1 }).toInt(),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
-    query('status').optional().isIn(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'FAILED']),
+    query('status').optional().isIn(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'FAILED', 'PENDING_APPROVAL']),
+    query('platform').optional().isString(),
+    query('dateFrom').optional().isISO8601(),
+    query('dateTo').optional().isISO8601(),
+    query('search').optional().isString(),
   ],
   async (req, res) => {
     if (handleValidationErrors(req, res)) return;
@@ -31,7 +56,28 @@ router.get(
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const skip = (page - 1) * limit;
-    const where = req.query.status ? { status: req.query.status } : {};
+
+    const andClauses = [];
+    if (req.query.status) andClauses.push({ status: req.query.status });
+    if (req.query.platform) andClauses.push({ platform: req.query.platform });
+    if (req.query.dateFrom || req.query.dateTo) {
+      const createdAt = {};
+      if (req.query.dateFrom) createdAt.gte = new Date(req.query.dateFrom);
+      if (req.query.dateTo) createdAt.lte = new Date(req.query.dateTo);
+      andClauses.push({ createdAt });
+    }
+    if (req.query.search) {
+      const search = req.query.search;
+      andClauses.push({
+        OR: [
+          { content: { contains: search, mode: 'insensitive' } },
+          { headline: { contains: search, mode: 'insensitive' } },
+          { article: { title: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
+    }
+
+    const where = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [posts, total] = await Promise.all([
       req.prisma.socialPost.findMany({
@@ -105,6 +151,39 @@ router.post(
     res.status(201).json(post);
   }
 );
+
+// POST /:id/retry — Retry a failed post
+router.post('/:id/retry', async (req, res) => {
+  const post = await req.prisma.socialPost.findUnique({ where: { id: req.params.id } });
+  if (!post) return res.status(404).json({ error: 'Post not found' });
+  if (post.status !== 'FAILED') return res.status(400).json({ error: 'Only failed posts can be retried' });
+
+  await req.prisma.socialPost.update({
+    where: { id: post.id },
+    data: { status: 'SCHEDULED', retryCount: { increment: 1 }, errorReason: null },
+  });
+
+  await socialPublishQueue.add('social-publish', { postId: post.id });
+  res.json({ message: 'Post queued for retry' });
+});
+
+// POST /:id/approve — Approve a pending post
+router.post('/:id/approve', async (req, res) => {
+  const post = await req.prisma.socialPost.findUnique({ where: { id: req.params.id } });
+  if (!post) return res.status(404).json({ error: 'Post not found' });
+  if (post.status !== 'PENDING_APPROVAL') return res.status(400).json({ error: 'Only pending posts can be approved' });
+
+  const scheduledFor = post.scheduledFor || new Date(Date.now() + 5 * 60 * 1000);
+  const delay = Math.max(0, scheduledFor.getTime() - Date.now());
+
+  await req.prisma.socialPost.update({
+    where: { id: post.id },
+    data: { status: 'SCHEDULED', scheduledFor },
+  });
+
+  await socialPublishQueue.add('social-publish', { postId: post.id }, { delay });
+  res.json({ message: 'Post approved and scheduled' });
+});
 
 // GET /:id — Get single social post
 router.get(
