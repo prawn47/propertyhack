@@ -464,8 +464,8 @@ const UsTransferTaxCalculator: React.FC = () => {
   return (
     <>
       <SeoHead
-        title="US Transfer Tax & Closing Costs Calculator"
-        description="Calculate transfer taxes and estimated closing costs for US property purchases across all 50 states and DC. Includes mortgage recording tax states and first-time buyer exemptions."
+        title="Transfer Tax Calculator USA 2026 — All 50 States"
+        description="Calculate state transfer taxes, mortgage recording tax, and estimated closing costs for US property purchases across all 50 states and DC. Understand your full closing costs before you buy."
         canonicalUrl="/tools/us/transfer-tax-calculator"
         jsonLd={jsonLd}
       />
