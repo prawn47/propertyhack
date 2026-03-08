@@ -1,0 +1,24 @@
+{
+  "_note": "ATO HECS-HELP compulsory repayment thresholds for 2025-26 financial year. Rates applied to entire repayment income (not just the portion above the threshold). Source: ATO.",
+  "thresholds": [
+    { "min": 0, "max": 54434, "rate": 0 },
+    { "min": 54435, "max": 62945, "rate": 0.01 },
+    { "min": 62946, "max": 66000, "rate": 0.02 },
+    { "min": 66001, "max": 72753, "rate": 0.025 },
+    { "min": 72754, "max": 78053, "rate": 0.03 },
+    { "min": 78054, "max": 83736, "rate": 0.035 },
+    { "min": 83737, "max": 89833, "rate": 0.04 },
+    { "min": 89834, "max": 96389, "rate": 0.045 },
+    { "min": 96390, "max": 103440, "rate": 0.05 },
+    { "min": 103441, "max": 111027, "rate": 0.055 },
+    { "min": 111028, "max": 119202, "rate": 0.06 },
+    { "min": 119203, "max": 128012, "rate": 0.065 },
+    { "min": 128013, "max": 137513, "rate": 0.07 },
+    { "min": 137514, "max": 147764, "rate": 0.075 },
+    { "min": 147765, "max": 158845, "rate": 0.08 },
+    { "min": 158846, "max": 170756, "rate": 0.085 },
+    { "min": 170757, "max": 183503, "rate": 0.09 },
+    { "min": 183504, "max": 197189, "rate": 0.095 },
+    { "min": 197190, "max": null, "rate": 0.10 }
+  ]
+}

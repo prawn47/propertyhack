@@ -18,6 +18,7 @@ const adminSeoRoutes = require('./routes/admin/seo');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
+const calculatorRoutes = require('./routes/public/calculators');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
@@ -129,7 +130,17 @@ app.get('/system/queue-status', async (req, res) => {
 });
 
 const noop = (req, res, next) => next();
+
+const calculatorLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many calculation requests.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
+app.use('/api/calculators', isProduction ? calculatorLimiter : noop, calculatorRoutes);
 app.use('/api/admin', authenticateToken, requireSuperAdmin);
 app.use('/api/admin/sources', adminSourcesRoutes);
 app.use('/api/admin/articles', adminArticlesRoutes);
