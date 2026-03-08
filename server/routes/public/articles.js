@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { generateEmbedding } = require('../../services/embeddingService');
 
+const VALID_COUNTRIES = ['AU', 'US', 'UK', 'CA', 'GLOBAL'];
+
 const ARTICLE_SELECT = {
   id: true,
   sourceId: true,
@@ -214,6 +216,39 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('[Articles] Error:', error);
     res.status(500).json({ error: 'Failed to fetch articles' });
+  }
+});
+
+// GET /api/articles/trending
+router.get('/trending', async (req, res) => {
+  try {
+    const { country, limit = 10 } = req.query;
+
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+
+    const countryUpper = country && VALID_COUNTRIES.includes(country.toUpperCase()) ? country.toUpperCase() : null;
+    const applyCountryFilter = countryUpper && countryUpper !== 'GLOBAL';
+
+    const where = { status: 'PUBLISHED' };
+
+    if (applyCountryFilter) {
+      where.OR = [
+        { market: countryUpper },
+        { isEvergreen: true },
+      ];
+    }
+
+    const articles = await req.prisma.article.findMany({
+      where,
+      select: ARTICLE_SELECT,
+      orderBy: [{ viewCount: 'desc' }, { publishedAt: 'desc' }],
+      take: limitNum,
+    });
+
+    return res.json({ articles });
+  } catch (error) {
+    console.error('[Trending Articles] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch trending articles' });
   }
 });
 
