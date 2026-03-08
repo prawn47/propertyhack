@@ -3,6 +3,7 @@ const router = express.Router();
 
 // GET /api/locations
 router.get('/', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=86400');
   try {
     const result = await req.prisma.article.findMany({
       where: { status: 'PUBLISHED', location: { not: null } },
