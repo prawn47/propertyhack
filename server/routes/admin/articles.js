@@ -2,6 +2,7 @@ const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const { generateSlug } = require('../../utils/slug');
 const { generateSocialPosts } = require('../../services/socialPostGenerationService');
+const { socialGenerateQueue } = require('../../queues/socialGenerateQueue');
 
 const router = express.Router();
 
@@ -252,6 +253,15 @@ router.put(
         data: updateData,
         include: { source: { select: { id: true, name: true, type: true } } },
       });
+
+      if (req.body.status === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+        try {
+          await socialGenerateQueue.add('social-generate', { articleId: article.id });
+          console.log(`[admin-articles] Queued social posts for manually published article: ${article.id}`);
+        } catch (err) {
+          console.error(`[admin-articles] Failed to queue social generation:`, err.message);
+        }
+      }
 
       res.json({ ...article, needsReembedding });
     } catch (error) {

@@ -16,6 +16,8 @@ const adminMetaRoutes = require('./routes/admin/meta');
 const adminSocialPostsRoutes = require('./routes/admin/socialPosts');
 const adminDashboardRoutes = require('./routes/admin/dashboard');
 const adminSeoRoutes = require('./routes/admin/seo');
+const adminSocialConfigRoutes = require('./routes/admin/socialConfig');
+const adminSocialAccountsRoutes = require('./routes/admin/socialAccounts');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
@@ -33,6 +35,7 @@ const { articleSummariseWorker } = require('./workers/articleSummariseWorker');
 const { articleImageWorker } = require('./workers/articleImageWorker');
 const { articleEmbedWorker } = require('./workers/articleEmbedWorker');
 const { socialPublishWorker } = require('./workers/socialPublishWorker');
+const { socialGenerateWorker } = require('./workers/socialGenerateWorker');
 
 const { sourceFetchQueue } = require('./queues/sourceFetchQueue');
 const { articleProcessQueue } = require('./queues/articleProcessQueue');
@@ -40,8 +43,10 @@ const { articleSummariseQueue } = require('./queues/articleSummariseQueue');
 const { articleImageQueue } = require('./queues/articleImageQueue');
 const { articleEmbedQueue } = require('./queues/articleEmbedQueue');
 const { socialPublishQueue } = require('./queues/socialPublishQueue');
+const { socialGenerateQueue } = require('./queues/socialGenerateQueue');
 
 const { startScheduler } = require('./jobs/ingestionScheduler');
+const { startSocialHealthCheck } = require('./jobs/socialHealthCheck');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -109,6 +114,7 @@ app.get('/system/queue-status', async (req, res) => {
       articleImageCounts,
       articleEmbedCounts,
       socialPublishCounts,
+      socialGenerateCounts,
     ] = await Promise.all([
       sourceFetchQueue.getJobCounts(),
       articleProcessQueue.getJobCounts(),
@@ -116,6 +122,7 @@ app.get('/system/queue-status', async (req, res) => {
       articleImageQueue.getJobCounts(),
       articleEmbedQueue.getJobCounts(),
       socialPublishQueue.getJobCounts(),
+      socialGenerateQueue.getJobCounts(),
     ]);
 
     res.json({
@@ -126,6 +133,7 @@ app.get('/system/queue-status', async (req, res) => {
         'article-image': articleImageCounts,
         'article-embed': articleEmbedCounts,
         'social-publish': socialPublishCounts,
+        'social-generate': socialGenerateCounts,
       },
     });
   } catch (err) {
@@ -154,8 +162,9 @@ app.use('/api/admin/prompts', adminMetaRoutes);
 app.use('/api/admin/social-posts', adminSocialPostsRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/seo', adminSeoRoutes);
+app.use('/api/admin/social-config', adminSocialConfigRoutes);
+app.use('/api/admin/social-accounts', adminSocialAccountsRoutes);
 app.use('/api/scenarios', authenticateToken, scenarioRoutes);
-
 // Spec-required public API paths
 app.use('/api/articles', publicArticlesRoutes);
 app.use('/api/categories', publicCategoriesRoutes);
@@ -216,6 +225,7 @@ app.use((req, res) => {
 });
 
 startScheduler();
+startSocialHealthCheck();
 
 const allWorkers = [
   sourceFetchWorker,
@@ -224,6 +234,7 @@ const allWorkers = [
   articleImageWorker,
   articleEmbedWorker,
   socialPublishWorker,
+  socialGenerateWorker,
 ];
 
 async function shutdown(signal) {
@@ -250,4 +261,5 @@ app.listen(PORT, () => {
   console.log('  - article-image worker (concurrency: 1)');
   console.log('  - article-embed worker (concurrency: 3)');
   console.log('  - social-publish worker (concurrency: 1)');
+  console.log('  - social-generate worker (concurrency: 1)');
 });

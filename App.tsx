@@ -40,6 +40,9 @@ import MortgageCalculator from './components/calculators/MortgageCalculator';
 import StampDutyCalculator from './components/calculators/StampDutyCalculator';
 import RentalYieldCalculator from './components/calculators/RentalYieldCalculator';
 import ScenarioDashboard from './components/user/ScenarioDashboard';
+import ProfilePage from './components/user/ProfilePage';
+import RentVsBuyCalculator from './components/calculators/RentVsBuyCalculator';
+import BorrowingPowerCalculator from './components/calculators/BorrowingPowerCalculator';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return <AdminLayout onLogout={onLogout}>{children}</AdminLayout>;
@@ -102,6 +105,8 @@ function AppInner() {
       {/* Calculator routes */}
       <Route path="/tools" element={<ToolsIndex />} />
       <Route path="/tools/mortgage-calculator" element={<MortgageCalculator />} />
+      <Route path="/tools/rent-vs-buy-calculator" element={<RentVsBuyCalculator />} />
+      <Route path="/tools/borrowing-power-calculator" element={<BorrowingPowerCalculator />} />
 
       {/* Auth routes */}
       <Route
@@ -127,6 +132,14 @@ function AppInner() {
       <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
 
       {/* User routes — require auth */}
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <ProfilePage />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/profile/scenarios"
         element={
