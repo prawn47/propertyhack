@@ -20,7 +20,7 @@ export interface CountryContextValue {
   loading: boolean;
 }
 
-const SUPPORTED_MARKETS = ['AU', 'US', 'UK', 'CA', 'GLOBAL'];
+const SUPPORTED_MARKETS = ['AU', 'US', 'UK', 'CA', 'NZ', 'GLOBAL'];
 const STORAGE_KEY = 'ph_country';
 
 const CountryContext = createContext<CountryContextValue | null>(null);

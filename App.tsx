@@ -49,7 +49,7 @@ import ProfilePage from './components/user/ProfilePage';
 import RentVsBuyCalculator from './components/calculators/RentVsBuyCalculator';
 import BorrowingPowerCalculator from './components/calculators/BorrowingPowerCalculator';
 
-const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca'];
+const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
 
 function AdminPage({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {

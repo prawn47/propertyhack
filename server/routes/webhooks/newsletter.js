@@ -1,39 +1,46 @@
 const express = require('express')
-const { body, validationResult } = require('express-validator')
+const { Webhook } = require('svix')
 const { sourceFetchQueue } = require('../../queues/sourceFetchQueue')
 
 const router = express.Router()
 
-function validateWebhookSecret(req, res, next) {
-  const secret = req.headers['x-webhook-secret']
-  const expected = process.env.WEBHOOK_SECRET
-  if (!expected) {
-    console.warn('[newsletter-webhook] WEBHOOK_SECRET env var not set — skipping validation')
+function verifyResendSignature(req, res, next) {
+  const secret = process.env.RESEND_WEBHOOK_SIGNING_SECRET
+  if (!secret) {
+    console.warn('[newsletter-webhook] RESEND_WEBHOOK_SIGNING_SECRET not set — skipping verification')
     return next()
   }
-  if (!secret || secret !== expected) {
-    return res.status(401).json({ error: 'Invalid webhook secret' })
+  const wh = new Webhook(secret)
+  try {
+    wh.verify(req.rawBody, {
+      'svix-id': req.headers['svix-id'],
+      'svix-timestamp': req.headers['svix-timestamp'],
+      'svix-signature': req.headers['svix-signature'],
+    })
+    next()
+  } catch (err) {
+    console.error('[newsletter-webhook] Signature verification failed:', err.message)
+    return res.status(401).json({ error: 'Invalid signature' })
   }
-  next()
 }
 
 router.post(
   '/',
-  validateWebhookSecret,
-  [
-    body('from').notEmpty().withMessage('from is required'),
-    body('html').notEmpty().withMessage('html body is required'),
-  ],
+  verifyResendSignature,
   async (req, res) => {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: 'Validation error', details: errors.array() })
+    const { type, data } = req.body
+
+    if (type !== 'email.received') {
+      return res.status(200).json({ status: 'ignored', reason: 'not an inbound email event' })
     }
 
-    const { from, html, subject } = req.body
+    const { from, html, subject } = data
+    if (!from || !html) {
+      return res.status(400).json({ error: 'Missing from or html in email data' })
+    }
+
     const prisma = req.prisma
 
-    // Find a NEWSLETTER source whose allowedSenders includes this sender
     let matchedSource = null
     try {
       const sources = await prisma.ingestionSource.findMany({

@@ -1,6 +1,6 @@
 'use strict';
 
-const VALID_MARKETS = new Set(['au', 'us', 'uk', 'ca']);
+const VALID_MARKETS = new Set(['au', 'us', 'uk', 'ca', 'nz']);
 
 const LEGACY_PATTERNS = [
   { from: /^\/property-news\/(.+)$/, to: '/au/property-news/$1' },

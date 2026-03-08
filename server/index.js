@@ -91,6 +91,14 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Raw body capture for Resend webhook signature verification (must be before general JSON parser)
+app.use('/api/webhooks/newsletter', express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString();
+  }
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

@@ -24,6 +24,7 @@ async function main() {
     { code: 'US', name: 'United States', currency: 'USD', flagEmoji: '🇺🇸' },
     { code: 'UK', name: 'United Kingdom', currency: 'GBP', flagEmoji: '🇬🇧' },
     { code: 'CA', name: 'Canada', currency: 'CAD', flagEmoji: '🇨🇦' },
+    { code: 'NZ', name: 'New Zealand', currency: 'NZD', flagEmoji: '🇳🇿' },
   ];
 
   for (const m of markets) {
@@ -33,7 +34,7 @@ async function main() {
       create: { ...m, isActive: true },
     });
   }
-  console.log('Created markets: AU, US, UK, CA');
+  console.log('Created markets: AU, US, UK, CA, NZ');
 
   const baseCategories = [
     { name: 'Property Market', baseSlug: 'property-market', description: 'Overall property market trends and analysis' },
@@ -45,7 +46,7 @@ async function main() {
     { name: 'Finance', baseSlug: 'finance', description: 'Interest rates, mortgages and property finance' },
   ];
 
-  const categoryMarkets = ['AU', 'US', 'UK', 'CA'];
+  const categoryMarkets = ['AU', 'US', 'UK', 'CA', 'NZ'];
 
   for (const market of categoryMarkets) {
     for (const cat of baseCategories) {
@@ -57,7 +58,7 @@ async function main() {
       });
     }
   }
-  console.log('Created 28 article categories (7 per market: AU, US, UK, CA)');
+  console.log('Created 35 article categories (7 per market: AU, US, UK, CA, NZ)');
 
   await prisma.ingestionSource.upsert({
     where: { id: 'seed-domain-rss' },

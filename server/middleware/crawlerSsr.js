@@ -19,6 +19,7 @@ function getMarketDescription(country) {
     US: 'Stay informed with property news, market updates, and analysis across New York, Los Angeles, Chicago, Houston, and more US cities.',
     UK: 'Stay informed with property news, market updates, and analysis across London, Manchester, Birmingham, Edinburgh, and more UK cities.',
     CA: 'Stay informed with property news, market updates, and analysis across Toronto, Vancouver, Montreal, Calgary, and more Canadian cities.',
+    NZ: 'Stay informed with property news, market updates, and analysis across Auckland, Wellington, Christchurch, Hamilton, and more New Zealand cities.',
   };
   return descriptions[country?.toUpperCase()] || DEFAULT_DESCRIPTION;
 }
@@ -28,11 +29,12 @@ const COUNTRY_NAMES = {
   US: 'United States',
   UK: 'United Kingdom',
   CA: 'Canada',
+  NZ: 'New Zealand',
 };
 const DEFAULT_IMAGE = `${SITE_URL}/ph-logo.jpg`;
 
-const SUPPORTED_COUNTRIES = ['au', 'us', 'uk', 'ca'];
-const HREFLANG_MAP = { au: 'en-AU', us: 'en-US', uk: 'en-GB', ca: 'en-CA' };
+const SUPPORTED_COUNTRIES = ['au', 'us', 'uk', 'ca', 'nz'];
+const HREFLANG_MAP = { au: 'en-AU', us: 'en-US', uk: 'en-GB', ca: 'en-CA', nz: 'en-NZ' };
 
 function parseCountryAndPath(urlPath) {
   const match = urlPath.match(/^\/([a-z]{2})(\/.*)?$/);
