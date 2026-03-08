@@ -145,17 +145,19 @@ const ToolsIndex: React.FC = () => {
   const [showAll, setShowAll] = useState(false);
   const countryPrefix = countryParam || country?.toLowerCase() || 'au';
 
+  const activeCountry = countryParam?.toUpperCase() || country || 'AU';
+
   const filteredCalculators = useMemo(() => {
-    if (showAll || !country || countryLoading) return calculators;
-    return calculators.filter((calc) => !calc.countries || calc.countries.includes(country));
-  }, [country, countryLoading, showAll]);
+    if (showAll) return calculators;
+    return calculators.filter((calc) => !calc.countries || calc.countries.includes(activeCountry));
+  }, [activeCountry, showAll]);
 
   const hasHidden = filteredCalculators.length < calculators.length;
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col">
       <SeoHead
-        title="Property Calculators Australia"
+        title={`Property Calculators ${activeCountry === 'AU' ? 'Australia' : activeCountry === 'US' ? 'USA' : activeCountry === 'UK' ? 'UK' : activeCountry === 'CA' ? 'Canada' : activeCountry === 'NZ' ? 'New Zealand' : ''}`}
         description="Free property calculators — mortgage repayments, stamp duty, rental yield, borrowing power, rent vs buy. Make smarter property decisions."
         canonicalUrl="/tools"
         jsonLd={[jsonLd, breadcrumbJsonLd]}

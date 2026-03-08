@@ -83,15 +83,19 @@ function computeBCFTBRebate(price, fullTax, exemption) {
  */
 function calculate(inputs) {
   const {
-    propertyPrice,
+    propertyPrice: priceCents,
     province,
     city,
     buyerType = 'standard',
     isResident = true,
-    mortgageAmount = 0,
+    mortgageAmount: mortgageCents = 0,
   } = inputs;
 
-  if (!propertyPrice || propertyPrice <= 0) throw new Error('propertyPrice must be a positive number');
+  if (!priceCents || priceCents <= 0) throw new Error('propertyPrice must be a positive number');
+
+  // API sends propertyPrice in cents; engine operates in dollars
+  const propertyPrice = Math.round(priceCents / 100);
+  const mortgageAmount = Math.round(mortgageCents / 100);
   if (!province) throw new Error('province is required');
 
   const provinceConfig = config[province];
@@ -235,14 +239,17 @@ function calculate(inputs) {
     ? parseFloat(((netTax / propertyPrice) * 100).toFixed(4))
     : 0;
 
+  // Convert dollars to cents for consistent API response
+  const toCents = (d) => Math.round(d * 100);
+
   return {
-    provincialTax: Math.round(provincialTax * 100) / 100,
-    municipalTax: Math.round(municipalTax * 100) / 100,
-    nonResidentTax: Math.round(nonResidentTax * 100) / 100,
-    foreignBuyerTax: Math.round(foreignBuyerTax * 100) / 100,
-    firstTimeBuyerRebate: Math.round(firstTimeBuyerRebate * 100) / 100,
-    totalTax: Math.round(totalTax * 100) / 100,
-    netTax: Math.round(netTax * 100) / 100,
+    provincialTax: toCents(provincialTax),
+    municipalTax: toCents(municipalTax),
+    nonResidentTax: toCents(nonResidentTax),
+    foreignBuyerTax: toCents(foreignBuyerTax),
+    firstTimeBuyerRebate: toCents(firstTimeBuyerRebate),
+    totalTax: toCents(totalTax),
+    netTax: toCents(netTax),
     effectiveRate,
     hasLTT,
     taxLabel,

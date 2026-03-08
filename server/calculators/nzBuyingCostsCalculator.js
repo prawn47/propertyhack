@@ -5,16 +5,19 @@ const config = require(path.join(__dirname, '../config/calculators/nzBuyingCosts
 
 function calculate(inputs) {
   const {
-    propertyPrice,
+    propertyPrice: priceCents,
     buyerType,
     firstHomeBuyer,
     depositPercentage,
     newBuild,
   } = inputs;
 
-  if (!propertyPrice || propertyPrice <= 0) {
+  if (!priceCents || priceCents <= 0) {
     throw new Error('propertyPrice must be a positive number');
   }
+
+  // API sends propertyPrice in cents; engine operates in dollars
+  const propertyPrice = Math.round(priceCents / 100);
 
   const depositPct = depositPercentage != null ? depositPercentage : 20;
   const loanAmount = propertyPrice * (1 - depositPct / 100);
@@ -71,16 +74,23 @@ function calculate(inputs) {
   const totalMin = lineItems.reduce((sum, item) => sum + item.min, 0);
   const totalMax = lineItems.reduce((sum, item) => sum + item.max, 0);
 
+  // Convert dollar amounts to cents for consistent API response
+  const toCents = (d) => Math.round(d * 100);
+
   return {
     noTransferTax: config.noTransferTax,
     noTransferTaxNote: config.noTransferTaxNote,
-    propertyPrice,
+    propertyPrice: toCents(propertyPrice),
     depositPercentage: depositPct,
-    loanAmount: Math.round(loanAmount),
+    loanAmount: toCents(Math.round(loanAmount)),
     isLowEquity,
-    lineItems,
-    totalMin,
-    totalMax,
+    lineItems: lineItems.map(item => ({
+      ...item,
+      min: toCents(item.min),
+      max: toCents(item.max),
+    })),
+    totalMin: toCents(totalMin),
+    totalMax: toCents(totalMax),
     notes,
   };
 }

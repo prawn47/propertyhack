@@ -165,11 +165,14 @@ function calculateForRegion(propertyPrice, location, buyerType, ukResident) {
 }
 
 function calculate(inputs) {
-  const { propertyPrice, location, buyerType, ukResident } = inputs;
+  const { propertyPrice: pricePence, location, buyerType, ukResident } = inputs;
 
-  if (!propertyPrice || propertyPrice <= 0) {
+  if (!pricePence || pricePence <= 0) {
     throw new Error('propertyPrice must be a positive number');
   }
+
+  // API sends propertyPrice in pence; engine operates in pounds
+  const propertyPrice = Math.round(pricePence / 100);
 
   const validLocations = ['england', 'england_and_northern_ireland', 'scotland', 'wales'];
   if (!validLocations.includes(location)) {
@@ -207,15 +210,32 @@ function calculate(inputs) {
     effectiveRate: primary.effectiveRate,
   };
 
+  // Convert pounds to pence for consistent cents-based API responses
+  const toPence = (pounds) => Math.round(pounds * 100);
+  const convertBands = (bands) => bands.map(b => ({
+    ...b,
+    from: toPence(b.from),
+    to: toPence(b.to),
+    amount: toPence(b.amount),
+  }));
+
   return {
-    taxAmount: primary.taxAmount,
+    taxAmount: toPence(primary.taxAmount),
     taxName: primary.taxName,
     abbreviation: primary.abbreviation,
-    bands: primary.bands,
+    bands: convertBands(primary.bands),
     effectiveRate: primary.effectiveRate,
-    surcharges: primary.surcharges,
+    surcharges: primary.surcharges.map(s => ({
+      ...s,
+      amount: s.amount != null ? toPence(s.amount) : undefined,
+    })),
     note: primary.note,
-    comparison,
+    comparison: Object.fromEntries(
+      Object.entries(comparison).map(([k, v]) => [k, {
+        ...v,
+        taxAmount: toPence(v.taxAmount),
+      }])
+    ),
   };
 }
 
