@@ -1,0 +1,52 @@
+{
+  "market": "CA",
+  "currency": "CAD",
+  "currencySymbol": "$",
+  "lastUpdated": "2025-01-01",
+  "source": "https://www.canada.ca/en/revenue-agency/services/tax/individuals/frequently-asked-questions-individuals/canadian-income-tax-rates-individuals-current-previous-years.html",
+  "defaultAssessmentRate": 7.25,
+  "serviceabilityBuffer": 2,
+  "termMonths": 300,
+  "studentDebtTreatment": "monthly_payment",
+  "studentDebtLabel": "Student loan repayments (monthly)",
+  "studentDebtHint": "Your total monthly student loan payments",
+  "useHEM": false,
+  "osfiB20StressTest": {
+    "enabled": true,
+    "minimumQualifyingRate": 5.25,
+    "note": "OSFI B-20 requires lenders to qualify at the higher of 5.25% or contract rate + 2%"
+  },
+  "lvrThresholds": [
+    { "lvr": 80, "note": "At 80% LTV (no CMHC)" },
+    { "lvr": 95, "note": "At 95% LTV (CMHC insurance required)" }
+  ],
+  "lvrWarningNote": ">80% LTV — CMHC mortgage default insurance required",
+  "assessmentRateHint": "OSFI B-20 stress test: qualifying rate is the higher of 5.25% or your contract rate + 2%.",
+  "incomeTax": {
+    "type": "brackets",
+    "note": "Canadian federal income tax brackets 2025. Provincial tax not included.",
+    "basicPersonalAmount": 16129,
+    "brackets": [
+      { "min": 0,       "max": 57375,  "base": 0,     "rate": 0.15 },
+      { "min": 57376,   "max": 114750, "base": 8606,  "rate": 0.205 },
+      { "min": 114751,  "max": 158519, "base": 20363, "rate": 0.26 },
+      { "min": 158520,  "max": 220000, "base": 31741, "rate": 0.29 },
+      { "min": 220001,  "max": null,   "base": 49572, "rate": 0.33 }
+    ],
+    "cppContribution": {
+      "note": "Canada Pension Plan employee contribution 2025",
+      "exemption": 3500,
+      "maxPensionableEarnings": 71300,
+      "rate": 0.0595
+    },
+    "eiPremium": {
+      "note": "Employment Insurance premium 2025",
+      "maxInsurableEarnings": 65700,
+      "rate": 0.0166
+    }
+  },
+  "studentDebt": {
+    "type": "monthly_payment",
+    "note": "Canadian student loans are treated as declared monthly payments for serviceability"
+  }
+}

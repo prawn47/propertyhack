@@ -1,0 +1,42 @@
+{
+  "market": "NZ",
+  "currency": "NZD",
+  "currencySymbol": "$",
+  "lastUpdated": "2025-04-01",
+  "source": "https://www.ird.govt.nz/income-tax/income-tax-for-individuals/tax-codes-and-tax-rates-for-individuals/tax-rates-for-individuals",
+  "defaultAssessmentRate": 9.0,
+  "serviceabilityBuffer": 2.5,
+  "termMonths": 360,
+  "studentDebtTreatment": "income_based",
+  "studentDebtLabel": "Student loan",
+  "studentDebtHint": "Tick if you have a New Zealand student loan — repayments are calculated automatically",
+  "useHEM": false,
+  "lvrThresholds": [
+    { "lvr": 80, "note": "At 80% LVR (no LEP)" },
+    { "lvr": 90, "note": "At 90% LVR (Low Equity Premium applies)" }
+  ],
+  "lvrWarningNote": ">80% LVR — Low Equity Premium (LEP) may apply (typically 0.25%–1.0% added to rate or ~1.2% upfront fee)",
+  "assessmentRateHint": "NZ lenders typically stress-test at your rate + 2.5% buffer.",
+  "incomeTax": {
+    "type": "brackets",
+    "note": "New Zealand income tax rates 2025-26",
+    "brackets": [
+      { "min": 0,      "max": 15600,  "base": 0,     "rate": 0.105 },
+      { "min": 15601,  "max": 53500,  "base": 1638,  "rate": 0.175 },
+      { "min": 53501,  "max": 78100,  "base": 8270,  "rate": 0.30 },
+      { "min": 78101,  "max": 180000, "base": 15650, "rate": 0.33 },
+      { "min": 180001, "max": null,   "base": 49283, "rate": 0.39 }
+    ],
+    "accLevy": {
+      "note": "ACC earners' levy 2025-26",
+      "rate": 0.016,
+      "maxEarnings": 142283
+    }
+  },
+  "studentDebt": {
+    "type": "income_threshold",
+    "note": "NZ student loan repayments are 12% of income above $22,828 per year (standard repayment obligation)",
+    "threshold": 22828,
+    "rate": 0.12
+  }
+}
