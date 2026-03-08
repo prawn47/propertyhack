@@ -11,7 +11,17 @@ const CRAWLER_USER_AGENTS = [
 
 const SITE_URL = 'https://propertyhack.com';
 const SITE_NAME = 'PropertyHack';
-const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.';
+const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free property news, market updates, and analysis from around the world.';
+
+function getMarketDescription(country) {
+  const descriptions = {
+    AU: 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.',
+    US: 'Stay informed with property news, market updates, and analysis across New York, Los Angeles, Chicago, Houston, and more US cities.',
+    UK: 'Stay informed with property news, market updates, and analysis across London, Manchester, Birmingham, Edinburgh, and more UK cities.',
+    CA: 'Stay informed with property news, market updates, and analysis across Toronto, Vancouver, Montreal, Calgary, and more Canadian cities.',
+  };
+  return descriptions[country?.toUpperCase()] || DEFAULT_DESCRIPTION;
+}
 
 const COUNTRY_NAMES = {
   AU: 'Australia',
@@ -76,7 +86,7 @@ function escapeHtml(str) {
 
 function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd, article, hreflang }) {
   const tags = [];
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Agenda-free Australian Property News`;
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Agenda-free Property News`;
   const desc = description || DEFAULT_DESCRIPTION;
   const img = image || DEFAULT_IMAGE;
 
@@ -169,10 +179,13 @@ async function getMetaForUrl(url, prisma) {
 
   // Homepage (/ or /:country)
   if (url === '/' || (url.match(/^\/[a-z]{2}$/) && SUPPORTED_COUNTRIES.includes(url.slice(1)))) {
+    const countryCode = url.length === 3 ? url.slice(1).toUpperCase() : null;
+    const countryName = countryCode ? COUNTRY_NAMES[countryCode] : null;
+    const homeTitle = countryName ? `Property News ${countryName}` : null;
     return buildMetaTags({
-      title: null,
-      description: DEFAULT_DESCRIPTION,
-      url: canonicalPath,
+      title: homeTitle,
+      description: getMarketDescription(countryCode),
+      url: url,
       type: 'website',
       jsonLd: buildWebsiteJsonLd(),
       hreflang: buildHreflangTags(url),
@@ -271,11 +284,14 @@ async function getMetaForUrl(url, prisma) {
   // Category page: /category/:slug or /:country/category/:slug
   const categoryMatch = canonicalPath.match(/^\/category\/([^/?#]+)/);
   if (categoryMatch) {
+    const { country: catCountry } = parseCountryAndPath(url);
+    const catCountryCode = catCountry ? catCountry.toUpperCase() : 'AU';
+    const catCountryName = COUNTRY_NAMES[catCountryCode] || catCountryCode;
     const slug = categoryMatch[1];
     const displayName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     return buildMetaTags({
-      title: `${displayName} - Australian Property News`,
-      description: `Latest ${displayName.toLowerCase()} news and analysis from the Australian property market.`,
+      title: `${displayName} - ${catCountryName} Property News`,
+      description: `Latest ${displayName.toLowerCase()} news and analysis from the ${catCountryName} property market.`,
       url: canonicalPath,
       type: 'website',
       hreflang: buildHreflangTags(url),
@@ -389,7 +405,7 @@ async function getMetaForUrl(url, prisma) {
   if (canonicalPath === '/about') {
     return buildMetaTags({
       title: 'About PropertyHack',
-      description: 'PropertyHack delivers agenda-free Australian property news. Learn about our editorial approach and how we curate property market coverage.',
+      description: 'PropertyHack delivers agenda-free property news. Learn about our editorial approach and how we curate property market coverage.',
       url: '/about',
       hreflang: buildHreflangTags(url),
     });
@@ -409,7 +425,7 @@ async function getMetaForUrl(url, prisma) {
   if (canonicalPath === '/terms') {
     return buildMetaTags({
       title: 'Terms of Use — PropertyHack',
-      description: 'Terms and conditions for using PropertyHack, an Australian property news aggregation platform.',
+      description: 'Terms and conditions for using PropertyHack, a property news aggregation platform.',
       url: '/terms',
       hreflang: buildHreflangTags(url),
     });
@@ -453,6 +469,7 @@ function createCrawlerSsrMiddleware(indexHtmlPath) {
       let html = indexHtml;
       html = html.replace(/<title>.*?<\/title>/, '');
       html = html.replace(/<meta name="description"[^>]*\/>/, '');
+      html = html.replace(/<link rel="canonical"[^>]*\/>/, '');
       html = html.replace('</head>', `    ${metaTags}\n</head>`);
 
       res.set('Content-Type', 'text/html');

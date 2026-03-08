@@ -57,7 +57,8 @@ const LocationPage: React.FC = () => {
   const h1 = seoData?.h1Title || `${displayName} Property News & Market Updates`;
 
   const countryLower = country.toLowerCase();
-  const allCities = getCitiesForCountry(country);
+  const cityMap = getCitiesForCountry(country);
+  const allCities = Object.values(cityMap);
   const otherLocations = allCities.filter((c) => c.slug !== location);
 
   return (
