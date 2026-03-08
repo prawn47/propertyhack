@@ -76,8 +76,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'uk-stamp-duty-calculator',
-    path: '/tools/uk/stamp-duty-calculator',
+    slug: 'uk/stamp-duty-calculator',
     name: 'UK Stamp Duty Calculator',
     description: 'Calculate SDLT (England & Northern Ireland), LBTT (Scotland), or LTT (Wales) for UK property purchases, including first-time buyer relief and additional property surcharges.',
     countries: ['UK'],
@@ -88,8 +87,18 @@ const calculators = [
     ),
   },
   {
-    slug: 'nz-buying-costs-calculator',
-    path: '/tools/nz/buying-costs-calculator',
+    slug: 'land-transfer-tax-calculator',
+    name: 'Land Transfer Tax Calculator',
+    description: 'Calculate land transfer tax across all Canadian provinces and territories, including Toronto and Montreal municipal taxes and first-time buyer rebates.',
+    countries: ['CA'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+      </svg>
+    ),
+  },
+  {
+    slug: 'nz/buying-costs-calculator',
     name: 'NZ Buying Costs Calculator',
     description: 'New Zealand has no stamp duty or transfer tax. Estimate your total buying costs — legal fees, building inspections, valuations, LIM reports, and more.',
     countries: ['NZ'],
