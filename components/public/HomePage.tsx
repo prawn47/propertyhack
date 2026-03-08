@@ -8,6 +8,23 @@ import SeoHead, { SITE_URL } from '../shared/SeoHead';
 import type { Filters } from './FilterBar';
 import { useLocationDetection } from '../../hooks/useLocationDetection';
 
+interface UserPreferences {
+  defaultLocation?: string;
+  defaultCategories?: string[];
+  defaultDateRange?: string;
+}
+
+function getStoredPreferences(): UserPreferences | null {
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    return user?.preferences ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const DEFAULT_FILTERS: Filters = {
   search: '',
   location: '',
@@ -18,7 +35,19 @@ const DEFAULT_FILTERS: Filters = {
 const HomePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
-  const [filters, setFilters] = useState<Filters>({ ...DEFAULT_FILTERS, search: initialSearch });
+
+  const prefs = getStoredPreferences();
+  const prefLocation = prefs?.defaultLocation ?? '';
+  const prefCategory = prefs?.defaultCategories?.[0] ?? '';
+  const prefDateRange = (prefs?.defaultDateRange as Filters['dateRange']) ?? 'all';
+
+  const [filters, setFilters] = useState<Filters>({
+    ...DEFAULT_FILTERS,
+    search: initialSearch,
+    location: prefLocation,
+    category: prefCategory,
+    dateRange: prefDateRange,
+  });
   const { location: detectedLocation, loading: locationLoading } = useLocationDetection();
 
   // Sync URL ?search= param into filters when it changes (e.g. Header search from another page)
@@ -29,7 +58,7 @@ const HomePage: React.FC = () => {
     }
   }, [searchParams]);
 
-  // Once detection resolves, apply detected location as default (only if user hasn't already set one)
+  // Once detection resolves, apply detected location as default (only if user hasn't already set one via prefs or manually)
   useEffect(() => {
     if (!locationLoading && detectedLocation && !filters.location) {
       setFilters((prev) => ({ ...prev, location: detectedLocation }));
