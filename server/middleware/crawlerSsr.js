@@ -9,10 +9,31 @@ const CRAWLER_USER_AGENTS = [
   'google-extended', 'amazonbot', 'claudebot',
 ];
 
-const SITE_URL = 'https://propertyhack.com.au';
+const SITE_URL = 'https://propertyhack.com';
 const SITE_NAME = 'PropertyHack';
 const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.';
 const DEFAULT_IMAGE = `${SITE_URL}/ph-logo.jpg`;
+
+const SUPPORTED_COUNTRIES = ['au', 'us', 'uk', 'ca'];
+
+function extractCountryFromPath(urlPath) {
+  const match = urlPath.match(/^\/([a-z]{2})(\/|$)/);
+  if (match && SUPPORTED_COUNTRIES.includes(match[1])) {
+    return { country: match[1], rest: urlPath.slice(match[1].length + 1) || '/' };
+  }
+  return { country: 'au', rest: urlPath };
+}
+
+function buildCanonicalUrl(urlPath, country) {
+  const STATIC_PATHS = ['/about', '/contact', '/terms', '/privacy'];
+  if (STATIC_PATHS.includes(urlPath) || urlPath.startsWith('/tools')) {
+    return `${SITE_URL}${urlPath}`;
+  }
+  if (urlPath === '/') {
+    return `${SITE_URL}/${country}`;
+  }
+  return `${SITE_URL}/${country}${urlPath}`;
+}
 
 function isCrawler(userAgent) {
   if (!userAgent) return false;
@@ -28,21 +49,22 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd, article }) {
+function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd, article, canonicalUrl }) {
   const tags = [];
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Agenda-free Australian Property News`;
   const desc = description || DEFAULT_DESCRIPTION;
   const img = image || DEFAULT_IMAGE;
+  const canonical = canonicalUrl || `${SITE_URL}${url}`;
 
   tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
   tags.push(`<meta name="description" content="${escapeHtml(desc)}" />`);
-  tags.push(`<link rel="canonical" href="${SITE_URL}${url}" />`);
+  tags.push(`<link rel="canonical" href="${canonical}" />`);
 
   // Open Graph
   tags.push(`<meta property="og:title" content="${escapeHtml(fullTitle)}" />`);
   tags.push(`<meta property="og:description" content="${escapeHtml(desc)}" />`);
   tags.push(`<meta property="og:type" content="${type || 'website'}" />`);
-  tags.push(`<meta property="og:url" content="${SITE_URL}${url}" />`);
+  tags.push(`<meta property="og:url" content="${canonical}" />`);
   tags.push(`<meta property="og:site_name" content="${SITE_NAME}" />`);
   tags.push(`<meta property="og:image" content="${img}" />`);
   if (imageAlt) tags.push(`<meta property="og:image:alt" content="${escapeHtml(imageAlt)}" />`);
@@ -68,7 +90,7 @@ function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd,
   return tags.join('\n    ');
 }
 
-function buildArticleJsonLd(article) {
+function buildArticleJsonLd(article, canonicalUrl) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -85,7 +107,7 @@ function buildArticleJsonLd(article) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${SITE_URL}/articles/${article.slug}`,
+      '@id': canonicalUrl || `${SITE_URL}/article/${article.slug}`,
     },
   };
   // Reference original source for proper attribution
@@ -115,19 +137,22 @@ function buildWebsiteJsonLd() {
 }
 
 async function getMetaForUrl(url, prisma) {
-  // Homepage
-  if (url === '/') {
+  const { country, rest } = extractCountryFromPath(url);
+
+  // Country homepage: /au, /us, /uk, /ca
+  if (url === '/' || (SUPPORTED_COUNTRIES.includes(url.slice(1)) && url.length === 3)) {
     return buildMetaTags({
       title: null,
       description: DEFAULT_DESCRIPTION,
       url: '/',
       type: 'website',
       jsonLd: buildWebsiteJsonLd(),
+      canonicalUrl: buildCanonicalUrl('/', country),
     });
   }
 
-  // Article detail: /articles/:slug
-  const articleMatch = url.match(/^\/articles\/([^/?#]+)/);
+  // Article detail: /:country/article/:slug or /article/:slug (legacy)
+  const articleMatch = rest.match(/^\/article\/([^/?#]+)/) || url.match(/^\/articles\/([^/?#]+)/);
   if (articleMatch) {
     const slug = articleMatch[1];
     const article = await prisma.article.findUnique({
@@ -136,7 +161,7 @@ async function getMetaForUrl(url, prisma) {
         title: true, shortBlurb: true, longSummary: true,
         imageUrl: true, imageAltText: true, slug: true,
         category: true, location: true, sourceUrl: true, metadata: true,
-        publishedAt: true, updatedAt: true,
+        publishedAt: true, updatedAt: true, market: true, isEvergreen: true,
       },
     });
     if (article) {
@@ -145,10 +170,13 @@ async function getMetaForUrl(url, prisma) {
         : article.imageUrl
           ? `${SITE_URL}${article.imageUrl}`
           : DEFAULT_IMAGE;
+      // Canonical uses article's market field (for evergreen, prevents duplicate content)
+      const canonicalMarket = (article.market || country).toLowerCase();
+      const canonicalUrl = `${SITE_URL}/${canonicalMarket}/article/${article.slug}`;
       return buildMetaTags({
         title: article.title,
         description: article.shortBlurb || article.longSummary?.substring(0, 160),
-        url: `/articles/${article.slug}`,
+        url: `/article/${article.slug}`,
         image: imgUrl,
         imageAlt: article.imageAltText || article.title,
         type: 'article',
@@ -157,16 +185,18 @@ async function getMetaForUrl(url, prisma) {
           modifiedTime: article.updatedAt?.toISOString(),
           section: article.category,
         },
-        jsonLd: buildArticleJsonLd(article),
+        jsonLd: buildArticleJsonLd(article, canonicalUrl),
+        canonicalUrl,
       });
     }
   }
 
-  // Location page: /property-news/:location
-  const locationMatch = url.match(/^\/property-news\/([^/?#]+)/);
+  // Location page: /:country/property-news/:location or /property-news/:location (legacy)
+  const locationMatch = rest.match(/^\/property-news\/([^/?#]+)/) || url.match(/^\/property-news\/([^/?#]+)/);
   if (locationMatch) {
     const slug = locationMatch[1];
     const locationSeo = await prisma.locationSeo.findUnique({ where: { slug } });
+    const canonicalUrl = buildCanonicalUrl(`/property-news/${slug}`, country);
     if (locationSeo) {
       return buildMetaTags({
         title: locationSeo.metaTitle,
@@ -178,8 +208,9 @@ async function getMetaForUrl(url, prisma) {
           '@type': 'CollectionPage',
           name: locationSeo.h1Title,
           description: locationSeo.metaDescription,
-          url: `${SITE_URL}/property-news/${slug}`,
+          url: canonicalUrl,
         },
+        canonicalUrl,
       });
     }
     // Fallback for locations without SEO config
@@ -189,19 +220,22 @@ async function getMetaForUrl(url, prisma) {
       description: `Latest property news, market updates and analysis for ${displayName}, Australia.`,
       url: `/property-news/${slug}`,
       type: 'website',
+      canonicalUrl,
     });
   }
 
-  // Category page: /category/:slug
-  const categoryMatch = url.match(/^\/category\/([^/?#]+)/);
+  // Category page: /:country/category/:slug or /category/:slug (legacy)
+  const categoryMatch = rest.match(/^\/category\/([^/?#]+)/) || url.match(/^\/category\/([^/?#]+)/);
   if (categoryMatch) {
     const slug = categoryMatch[1];
     const displayName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const canonicalUrl = buildCanonicalUrl(`/category/${slug}`, country);
     return buildMetaTags({
       title: `${displayName} - Australian Property News`,
       description: `Latest ${displayName.toLowerCase()} news and analysis from the Australian property market.`,
       url: `/category/${slug}`,
       type: 'website',
+      canonicalUrl,
     });
   }
 
@@ -268,14 +302,17 @@ async function getMetaForUrl(url, prisma) {
     },
   };
 
-  if (url === '/tools' || url.startsWith('/tools/')) {
-    const meta = CALCULATOR_META[url];
+  const toolsPath = (url === '/tools' || url.startsWith('/tools/')) ? url
+    : (rest === '/tools' || rest.startsWith('/tools/')) ? rest
+    : null;
+  if (toolsPath) {
+    const meta = CALCULATOR_META[toolsPath];
     if (meta) {
       const webAppJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         name: meta.appName,
-        url: `${SITE_URL}${url}`,
+        url: `${SITE_URL}${toolsPath}`,
         description: meta.description,
         applicationCategory: 'FinanceApplication',
         operatingSystem: 'All',
@@ -290,11 +327,11 @@ async function getMetaForUrl(url, prisma) {
       const fullTitle = `${meta.title} | ${SITE_NAME}`;
       tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
       tags.push(`<meta name="description" content="${escapeHtml(meta.description)}" />`);
-      tags.push(`<link rel="canonical" href="${SITE_URL}${url}" />`);
+      tags.push(`<link rel="canonical" href="${SITE_URL}${toolsPath}" />`);
       tags.push(`<meta property="og:title" content="${escapeHtml(fullTitle)}" />`);
       tags.push(`<meta property="og:description" content="${escapeHtml(meta.description)}" />`);
       tags.push(`<meta property="og:type" content="website" />`);
-      tags.push(`<meta property="og:url" content="${SITE_URL}${url}" />`);
+      tags.push(`<meta property="og:url" content="${SITE_URL}${toolsPath}" />`);
       tags.push(`<meta property="og:site_name" content="${SITE_NAME}" />`);
       tags.push(`<meta property="og:image" content="${DEFAULT_IMAGE}" />`);
       tags.push(`<meta name="twitter:card" content="summary_large_image" />`);
