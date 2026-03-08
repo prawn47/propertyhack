@@ -81,4 +81,20 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
-module.exports = { authenticateToken, authenticateRefreshToken, requireSuperAdmin, generateTokens };
+const optionalAuth = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return next();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const user = await req.prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, email: true, superAdmin: true, preferences: true, createdAt: true },
+    });
+    if (user) req.user = user;
+  } catch (e) {
+    // Invalid token — continue without user
+  }
+  next();
+};
+
+module.exports = { authenticateToken, authenticateRefreshToken, requireSuperAdmin, generateTokens, optionalAuth };
