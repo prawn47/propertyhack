@@ -166,6 +166,7 @@ router.get('/sitemap-pages.xml', cached('pages', async (req) => {
     { loc: '/tools/uk/stamp-duty-calculator', priority: '0.8', changefreq: 'monthly' },
     { loc: '/tools/nz/buying-costs-calculator', priority: '0.8', changefreq: 'monthly' },
     { loc: '/tools/ca/land-transfer-tax-calculator', priority: '0.8', changefreq: 'monthly' },
+    { loc: '/tools/us/transfer-tax-calculator', priority: '0.8', changefreq: 'monthly' },
   ];
 
   for (const { category } of categories) {
