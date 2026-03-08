@@ -31,6 +31,7 @@ enum SocialPostStatus {
   SCHEDULED
   PUBLISHED
   FAILED
+  PENDING_APPROVAL
 }
 
 enum IngestionLogStatus {
@@ -117,11 +118,16 @@ model SocialPost {
   imageUrl        String?          @map("image_url")
   platforms       String[]
   platform        String?
+  headline        String?
+  hashtags        String[]
+  processedImage  String?          @map("processed_image")
   articleId       String?          @map("article_id")
   status          SocialPostStatus @default(DRAFT)
   scheduledFor    DateTime?        @map("scheduled_for")
   publishedAt     DateTime?        @map("published_at")
   platformResults Json?            @map("platform_results")
+  errorReason     String?          @map("error_reason")
+  retryCount      Int              @default(0) @map("retry_count")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
@@ -212,6 +218,19 @@ model LocationSeo {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("location_seo")
+}
+
+model SocialConfig {
+  id              String   @id @default(cuid())
+  tonePrompt      String   @default("Informative, concise, neutral news tone. Not salesy or clickbaity.") @map("tone_prompt")
+  defaultHashtags String[] @map("default_hashtags")
+  minPostGapMins  Int      @default(5) @map("min_post_gap_mins")
+  maxDelayMins    Int      @default(60) @map("max_delay_mins")
+  fallbackImageUrl String? @map("fallback_image_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("social_config")
 }
 
 model SocialAccount {
