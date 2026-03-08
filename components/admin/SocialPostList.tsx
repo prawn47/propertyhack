@@ -12,6 +12,7 @@ import EmptyState from '../shared/EmptyState';
 
 const STATUS_LABELS: Record<SocialPostStatus, string> = {
   DRAFT: 'Draft',
+  PENDING_APPROVAL: 'Pending Approval',
   SCHEDULED: 'Scheduled',
   PUBLISHED: 'Published',
   FAILED: 'Failed',
@@ -19,6 +20,7 @@ const STATUS_LABELS: Record<SocialPostStatus, string> = {
 
 const STATUS_CLASSES: Record<SocialPostStatus, string> = {
   DRAFT: 'bg-gray-700 text-gray-200',
+  PENDING_APPROVAL: 'bg-yellow-800 text-yellow-200',
   SCHEDULED: 'bg-blue-800 text-blue-200',
   PUBLISHED: 'bg-green-800 text-green-200',
   FAILED: 'bg-red-800 text-red-200',

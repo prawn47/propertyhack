@@ -3,7 +3,7 @@ import authService from './authService';
 
 const BASE = getApiUrl('/api/admin/social-posts');
 
-export type SocialPostStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'FAILED';
+export type SocialPostStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'SCHEDULED' | 'PUBLISHED' | 'FAILED';
 export type SocialPlatform = 'twitter' | 'facebook' | 'linkedin' | 'instagram';
 
 export interface SocialPostArticle {
@@ -38,6 +38,16 @@ export interface SocialPostListParams {
   page?: number;
   limit?: number;
   status?: SocialPostStatus;
+  platform?: SocialPlatform | '';
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+export interface SocialPostStats {
+  thisWeek: number;
+  byPlatform: Record<SocialPlatform, number>;
+  failed: number;
 }
 
 export interface SocialPostData {
@@ -74,8 +84,24 @@ export async function getSocialPosts(params: SocialPostListParams = {}): Promise
   if (params.page) qs.set('page', String(params.page));
   if (params.limit) qs.set('limit', String(params.limit));
   if (params.status) qs.set('status', params.status);
+  if (params.platform) qs.set('platform', params.platform);
+  if (params.dateFrom) qs.set('dateFrom', params.dateFrom);
+  if (params.dateTo) qs.set('dateTo', params.dateTo);
+  if (params.search) qs.set('search', params.search);
   const url = qs.toString() ? `${BASE}?${qs}` : BASE;
   return request<SocialPostListResponse>(url);
+}
+
+export async function getSocialPostStats(): Promise<SocialPostStats> {
+  return request<SocialPostStats>(`${BASE}/stats`);
+}
+
+export async function retrySocialPost(id: string): Promise<SocialPost> {
+  return request<SocialPost>(`${BASE}/${id}/retry`, { method: 'POST' });
+}
+
+export async function approveSocialPost(id: string): Promise<SocialPost> {
+  return request<SocialPost>(`${BASE}/${id}/approve`, { method: 'POST' });
 }
 
 export async function getSocialPost(id: string): Promise<SocialPost> {
