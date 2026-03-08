@@ -4,12 +4,13 @@ import { getArticles } from '../../services/publicArticleService';
 import type { PublicArticle, GetArticlesParams } from '../../services/publicArticleService';
 import type { Filters } from './FilterBar';
 
-function filtersToParams(filters: Filters): GetArticlesParams {
+function filtersToParams(filters: Filters, country?: string): GetArticlesParams {
   const params: GetArticlesParams = {};
   if (filters.search) params.search = filters.search;
   if (filters.location) params.location = filters.location;
   if (filters.category) params.category = filters.category;
   if (filters.search) params.sort = 'relevance';
+  if (country) params.country = country;
 
   if (filters.dateRange !== 'all') {
     const now = new Date();
@@ -56,9 +57,10 @@ const SkeletonCard: React.FC<{ wide?: boolean }> = ({ wide }) => (
 
 interface ArticleFeedProps {
   filters: Filters;
+  country?: string;
 }
 
-const ArticleFeed: React.FC<ArticleFeedProps> = ({ filters }) => {
+const ArticleFeed: React.FC<ArticleFeedProps> = ({ filters, country }) => {
   const [articles, setArticles] = useState<PublicArticle[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -66,6 +68,7 @@ const ArticleFeed: React.FC<ArticleFeedProps> = ({ filters }) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const filtersRef = useRef(filters);
+  const countryRef = useRef(country);
 
   const load = useCallback(async (pageNum: number, replace: boolean) => {
     if (replace) setLoading(true);
@@ -73,7 +76,7 @@ const ArticleFeed: React.FC<ArticleFeedProps> = ({ filters }) => {
     setError(null);
 
     try {
-      const params = filtersToParams(filtersRef.current);
+      const params = filtersToParams(filtersRef.current, countryRef.current);
       const data = await getArticles({ ...params, page: pageNum, limit: LIMIT });
       setArticles((prev) => (replace ? data.articles : [...prev, ...data.articles]));
       setTotalPages(data.totalPages);
@@ -88,8 +91,9 @@ const ArticleFeed: React.FC<ArticleFeedProps> = ({ filters }) => {
 
   useEffect(() => {
     filtersRef.current = filters;
+    countryRef.current = country;
     load(1, true);
-  }, [filters, load]);
+  }, [filters, country, load]);
 
   const handleLoadMore = () => {
     if (page < totalPages && !loadingMore) {

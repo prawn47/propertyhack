@@ -67,6 +67,7 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
       market: primaryMarket,
       markets: summary.markets,
       isEvergreen: summary.isEvergreen,
+      isGlobal: summary.isGlobal,
       status: 'PUBLISHED',
       publishedAt: new Date(),
     },
@@ -74,9 +75,9 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
 
   await articleImageQueue.add('image-article', { articleId });
 
-  const flags = [categorySlug, ...summary.markets, summary.isEvergreen ? 'evergreen' : 'news'].join(', ');
+  const flags = [categorySlug, ...summary.markets, summary.isEvergreen ? 'evergreen' : 'news', summary.isGlobal ? 'global' : ''].filter(Boolean).join(', ');
   console.log(`[article-summarise] Completed: ${articleId} → ${flags}`);
-  return { articleId, category: categorySlug, markets: summary.markets, isEvergreen: summary.isEvergreen };
+  return { articleId, category: categorySlug, markets: summary.markets, isEvergreen: summary.isEvergreen, isGlobal: summary.isGlobal };
 }, {
   connection,
   concurrency: 1,

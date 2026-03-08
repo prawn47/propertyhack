@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCountryPath, CountryLink } from '../../hooks/useCountryPath';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -21,6 +22,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const countryPath = useCountryPath();
 
   let auth: ReturnType<typeof useAuth> | null = null;
   try {
@@ -52,7 +54,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
     if (onSearch) {
       onSearch(q);
     } else {
-      navigate(`/?search=${encodeURIComponent(q)}`);
+      navigate(`${countryPath('/')}?search=${encodeURIComponent(q)}`);
     }
     setMobileSearchOpen(false);
   };
@@ -74,10 +76,10 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
     <header className="sticky top-0 z-30 bg-brand-primary text-white shadow-medium">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+        <CountryLink to="/" className="flex items-center gap-2 flex-shrink-0">
           <img src="/ph-logo.jpg" alt="PropertyHack" className="h-8 w-8 rounded-lg" />
           <span className="text-brand-gold font-bold text-lg tracking-tight">PropertyHack</span>
-        </Link>
+        </CountryLink>
 
         {/* Desktop search */}
         <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden sm:block">
@@ -118,14 +120,14 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
             {toolsOpen && (
               <div className="absolute right-0 top-full mt-2 w-52 bg-brand-primary border border-white/20 rounded-lg shadow-lg z-50 py-1">
                 {CALCULATORS.map((calc) => (
-                  <Link
+                  <CountryLink
                     key={calc.path}
                     to={calc.path}
                     onClick={() => setToolsOpen(false)}
                     className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     {calc.label}
-                  </Link>
+                  </CountryLink>
                 ))}
               </div>
             )}
@@ -133,9 +135,9 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
 
           {/* User menu */}
           {!auth || !auth.isAuthenticated ? (
-            <Link to="/login" className="text-sm text-white/70 hover:text-brand-gold transition-colors">
+            <CountryLink to="/login" className="text-sm text-white/70 hover:text-brand-gold transition-colors">
               Sign In
-            </Link>
+            </CountryLink>
           ) : (
             <div ref={userMenuRef} className="relative">
               <button
@@ -147,28 +149,28 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
               {userMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-44 bg-brand-primary border border-white/20 rounded-lg shadow-lg z-50 py-1">
                   {auth.isAdmin && (
-                    <Link
+                    <CountryLink
                       to="/admin"
                       onClick={() => setUserMenuOpen(false)}
                       className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                     >
                       Admin Panel
-                    </Link>
+                    </CountryLink>
                   )}
-                  <Link
+                  <CountryLink
                     to="/profile"
                     onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     Profile
-                  </Link>
-                  <Link
+                  </CountryLink>
+                  <CountryLink
                     to="/profile/scenarios"
                     onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     Saved Scenarios
-                  </Link>
+                  </CountryLink>
                   <div className="border-t border-white/20 my-1" />
                   <button
                     onClick={() => { auth!.logout(); setUserMenuOpen(false); }}
@@ -232,49 +234,49 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
         <div className="sm:hidden px-4 pb-4 border-t border-white/10 pt-3 space-y-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2">Tools</p>
           {CALCULATORS.map((calc) => (
-            <Link
+            <CountryLink
               key={calc.path}
               to={calc.path}
               onClick={() => setMobileToolsOpen(false)}
               className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
             >
               {calc.label}
-            </Link>
+            </CountryLink>
           ))}
           <div className="border-t border-white/10 my-2 pt-2">
             {!auth || !auth.isAuthenticated ? (
-              <Link
+              <CountryLink
                 to="/login"
                 onClick={() => setMobileToolsOpen(false)}
                 className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
               >
                 Sign In
-              </Link>
+              </CountryLink>
             ) : (
               <>
                 {auth.isAdmin && (
-                  <Link
+                  <CountryLink
                     to="/admin"
                     onClick={() => setMobileToolsOpen(false)}
                     className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
                   >
                     Admin Panel
-                  </Link>
+                  </CountryLink>
                 )}
-                <Link
+                <CountryLink
                   to="/profile"
                   onClick={() => setMobileToolsOpen(false)}
                   className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
                 >
                   Profile
-                </Link>
-                <Link
+                </CountryLink>
+                <CountryLink
                   to="/profile/scenarios"
                   onClick={() => setMobileToolsOpen(false)}
                   className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
                 >
                   Saved Scenarios
-                </Link>
+                </CountryLink>
                 <button
                   onClick={() => { auth!.logout(); setMobileToolsOpen(false); }}
                   className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getPublicArticle } from '../../services/publicArticleService';
 import type { PublicArticle } from '../../services/publicArticleService';
 import RelatedArticles from './RelatedArticles';
@@ -7,6 +7,7 @@ import SeoHead, { SITE_URL } from '../shared/SeoHead';
 import Breadcrumbs from '../shared/Breadcrumbs';
 import Loader from '../Loader';
 import Footer from '../layout/Footer';
+import { CountryLink, useCountryPath } from '../../hooks/useCountryPath';
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return 'Recently published';
@@ -51,6 +52,7 @@ const ShareButton: React.FC<{ href?: string; onClick?: () => void; label: string
 const ArticleDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const countryPath = useCountryPath();
   const [article, setArticle] = useState<PublicArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -94,14 +96,14 @@ const ArticleDetail: React.FC = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b-2 border-brand-accent sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link to="/" className="flex items-center space-x-3">
+          <CountryLink to="/" className="flex items-center space-x-3">
             <img src="/ph-logo.jpg" alt="PropertyHack" className="h-10 w-10 rounded-[12px]" />
             <span className="text-xl font-bold text-gray-900">PropertyHack</span>
-          </Link>
+          </CountryLink>
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-sm text-content-secondary hover:text-brand-gold transition-colors">
+            <CountryLink to="/" className="text-sm text-content-secondary hover:text-brand-gold transition-colors">
               ← All Articles
-            </Link>
+            </CountryLink>
           </div>
         </div>
       </header>
@@ -173,9 +175,9 @@ const ArticleDetail: React.FC = () => {
           <div className="max-w-4xl mx-auto">
             <Breadcrumbs
               items={[
-                { label: 'Home', href: '/' },
-                ...(article.location ? [{ label: article.location, href: `/property-news/${article.location.toLowerCase().replace(/\s+/g, '-')}` }] : []),
-                ...(article.category ? [{ label: article.category, href: `/category/${article.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}` }] : []),
+                { label: 'Home', href: countryPath('/') },
+                ...(article.location ? [{ label: article.location, href: countryPath(`/property-news/${article.location.toLowerCase().replace(/\s+/g, '-')}`) }] : []),
+                ...(article.category ? [{ label: article.category, href: countryPath(`/category/${article.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`) }] : []),
                 { label: article.title },
               ]}
             />
@@ -325,20 +327,20 @@ const ArticleDetail: React.FC = () => {
             {/* Cross-links */}
             <div className="mt-8 flex flex-wrap gap-3">
               {article.location && (
-                <Link
+                <CountryLink
                   to={`/property-news/${article.location.toLowerCase().replace(/\s+/g, '-')}`}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-brand-gold/10 text-brand-primary border border-brand-gold/30 hover:bg-brand-gold/20 transition-colors"
                 >
                   More {article.location} property news →
-                </Link>
+                </CountryLink>
               )}
               {article.category && (
-                <Link
+                <CountryLink
                   to={`/category/${article.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-base-200 text-content-secondary border border-base-300 hover:border-brand-gold hover:text-brand-gold transition-colors"
                 >
                   More {article.category} →
-                </Link>
+                </CountryLink>
               )}
             </div>
           </div>

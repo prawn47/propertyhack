@@ -19,6 +19,8 @@ export interface Article {
   market: string;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   isFeatured: boolean;
+  isEvergreen: boolean;
+  isGlobal: boolean;
   viewCount: number;
   publishedAt: string | null;
   createdAt: string;
@@ -52,6 +54,8 @@ export interface ArticleUpdateData {
   location?: string;
   market?: string;
   isFeatured?: boolean;
+  isEvergreen?: boolean;
+  isGlobal?: boolean;
   status?: string;
   imageUrl?: string | null;
   imageAltText?: string;

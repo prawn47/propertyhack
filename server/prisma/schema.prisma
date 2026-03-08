@@ -128,6 +128,7 @@ model Article {
   market          String                       @default("AU")
   markets         String[]                     @default(["AU"])
   isEvergreen     Boolean                      @default(false) @map("is_evergreen")
+  isGlobal        Boolean                      @default(false) @map("is_global")
   status          ArticleStatus                @default(DRAFT)
   isFeatured      Boolean                      @default(false) @map("is_featured")
   viewCount       Int                          @default(0) @map("view_count")
@@ -145,6 +146,7 @@ model Article {
   @@index([market])
   @@index([markets])
   @@index([isEvergreen])
+  @@index([isGlobal])
   @@index([category])
   @@index([publishedAt])
   @@map("articles")
@@ -225,6 +227,7 @@ model Market {
   code      String   @unique
   name      String
   currency  String
+  flagEmoji String   @default("") @map("flag_emoji")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -277,6 +280,7 @@ model LocationSeo {
   id              String   @id @default(cuid())
   location        String   @unique
   slug            String   @unique
+  country         String   @default("AU")
   metaTitle       String   @map("meta_title")
   metaDescription String   @map("meta_description")
   h1Title         String   @map("h1_title")
@@ -286,5 +290,6 @@ model LocationSeo {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  @@index([country])
   @@map("location_seo")
 }

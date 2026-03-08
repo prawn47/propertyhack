@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { generateEmbedding } = require('../../services/embeddingService');
 
+const VALID_COUNTRIES = ['AU', 'US', 'UK', 'CA', 'GLOBAL'];
+
 const ARTICLE_SELECT = {
   id: true,
   sourceId: true,
@@ -31,6 +33,7 @@ const ARTICLE_SELECT = {
 
 // GET /api/articles
 router.get('/', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=300');
   try {
     const {
       search,
@@ -41,13 +44,25 @@ router.get('/', async (req, res) => {
       sort = 'newest',
       page = 1,
       limit = 20,
+      country,
     } = req.query;
 
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
     const skip = (pageNum - 1) * limitNum;
 
+    const countryUpper = country && VALID_COUNTRIES.includes(country.toUpperCase()) ? country.toUpperCase() : null;
+    const applyCountryFilter = countryUpper && countryUpper !== 'GLOBAL';
+
     const where = { status: 'PUBLISHED' };
+
+    if (applyCountryFilter) {
+      where.OR = [
+        { market: countryUpper },
+        { isEvergreen: true },
+        { isGlobal: true },
+      ];
+    }
 
     if (location) {
       where.location = { contains: location, mode: 'insensitive' };
@@ -76,6 +91,11 @@ router.get('/', async (req, res) => {
         const filterValues = [];
         let paramIdx = 2;
 
+        if (applyCountryFilter) {
+          filterClauses.push(`(a.market = $${paramIdx} OR a.is_evergreen = true OR a.is_global = true)`);
+          filterValues.push(countryUpper);
+          paramIdx++;
+        }
         if (location) {
           filterClauses.push(`LOWER(a.location) LIKE LOWER($${paramIdx})`);
           filterValues.push(`%${location}%`);
@@ -103,6 +123,11 @@ router.get('/', async (req, res) => {
         const countClauses = [`a.status = 'PUBLISHED'`, `a.embedding IS NOT NULL`];
         const countValues = [];
         let countIdx = 1;
+        if (applyCountryFilter) {
+          countClauses.push(`(a.market = $${countIdx} OR a.is_evergreen = true OR a.is_global = true)`);
+          countValues.push(countryUpper);
+          countIdx++;
+        }
         if (location) {
           countClauses.push(`LOWER(a.location) LIKE LOWER($${countIdx})`);
           countValues.push(`%${location}%`);
@@ -186,10 +211,20 @@ router.get('/', async (req, res) => {
       }
 
       // Fallback: keyword search on title/blurb if embedding failed
-      where.OR = [
+      const keywordOr = [
         { title: { contains: search, mode: 'insensitive' } },
         { shortBlurb: { contains: search, mode: 'insensitive' } },
       ];
+      if (applyCountryFilter) {
+        // country filter already set where.OR — combine both via AND
+        where.AND = [
+          { OR: where.OR },
+          { OR: keywordOr },
+        ];
+        delete where.OR;
+      } else {
+        where.OR = keywordOr;
+      }
     }
 
     const orderBy = sort === 'newest' ? [{ isFeatured: 'desc' }, { publishedAt: 'desc' }] : [{ publishedAt: 'desc' }];
@@ -217,8 +252,43 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/articles/trending
+router.get('/trending', async (req, res) => {
+  try {
+    const { country, limit = 10 } = req.query;
+
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+
+    const countryUpper = country && VALID_COUNTRIES.includes(country.toUpperCase()) ? country.toUpperCase() : null;
+    const applyCountryFilter = countryUpper && countryUpper !== 'GLOBAL';
+
+    const where = { status: 'PUBLISHED' };
+
+    if (applyCountryFilter) {
+      where.OR = [
+        { market: countryUpper },
+        { isEvergreen: true },
+        { isGlobal: true },
+      ];
+    }
+
+    const articles = await req.prisma.article.findMany({
+      where,
+      select: ARTICLE_SELECT,
+      orderBy: [{ viewCount: 'desc' }, { publishedAt: 'desc' }],
+      take: limitNum,
+    });
+
+    return res.json({ articles });
+  } catch (error) {
+    console.error('[Trending Articles] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch trending articles' });
+  }
+});
+
 // GET /api/articles/:slug/related
 router.get('/:slug/related', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=3600');
   try {
     const { slug } = req.params;
 
@@ -264,6 +334,7 @@ router.get('/:slug/related', async (req, res) => {
 
 // GET /api/articles/:slug
 router.get('/:slug', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=3600');
   try {
     const { slug } = req.params;
 

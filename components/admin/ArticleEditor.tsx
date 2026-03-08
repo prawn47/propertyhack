@@ -37,6 +37,8 @@ const ArticleEditor: React.FC = () => {
   const [market, setMarket] = useState('AU');
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>('DRAFT');
   const [isFeatured, setIsFeatured] = useState(false);
+  const [isEvergreen, setIsEvergreen] = useState(false);
+  const [isGlobal, setIsGlobal] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageAltText, setImageAltText] = useState('');
 
@@ -60,6 +62,8 @@ const ArticleEditor: React.FC = () => {
         setMarket(data.market ?? 'AU');
         setStatus(data.status ?? 'DRAFT');
         setIsFeatured(data.isFeatured ?? false);
+        setIsEvergreen(data.isEvergreen ?? false);
+        setIsGlobal(data.isGlobal ?? false);
         setImageUrl(data.imageUrl || '');
         setImageAltText(data.imageAltText || '');
       })
@@ -92,6 +96,8 @@ const ArticleEditor: React.FC = () => {
         market,
         status,
         isFeatured,
+        isEvergreen,
+        isGlobal,
         imageUrl: imageUrl || null,
         imageAltText,
       };
@@ -281,6 +287,34 @@ const ArticleEditor: React.FC = () => {
               </svg>
               Featured
             </span>
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isEvergreen}
+                onChange={e => setIsEvergreen(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-6 bg-base-300 rounded-full peer peer-checked:bg-green-500 transition-colors"></div>
+              <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+            </label>
+            <span className="text-sm font-medium text-content">Evergreen</span>
+            <span className="text-xs text-content-secondary">(timeless tips)</span>
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isGlobal}
+                onChange={e => setIsGlobal(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-6 bg-base-300 rounded-full peer peer-checked:bg-blue-500 transition-colors"></div>
+              <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+            </label>
+            <span className="text-sm font-medium text-content">Global</span>
+            <span className="text-xs text-content-secondary">(macro trends)</span>
           </div>
         </div>
 

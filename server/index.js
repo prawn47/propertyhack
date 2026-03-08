@@ -21,12 +21,14 @@ const adminSocialAccountsRoutes = require('./routes/admin/socialAccounts');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
+const publicMarketsRoutes = require('./routes/public/markets');
 const calculatorRoutes = require('./routes/public/calculators');
 const scenarioRoutes = require('./routes/public/scenarios');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const passport = require('./passport');
 const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
+const { legacyRedirects } = require('./middleware/legacyRedirects');
 const sitemapRoutes = require('./routes/sitemap');
 const feedRoutes = require('./routes/feed');
 const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
@@ -154,7 +156,10 @@ const calculatorLimiter = rateLimit({
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
 app.use('/api/user', authenticateToken, profileRoutes);
 app.use('/api/calculators', isProduction ? calculatorLimiter : noop, calculatorRoutes);
-app.use('/api/admin', authenticateToken, requireSuperAdmin);
+app.use('/api/admin', authenticateToken, requireSuperAdmin, (req, res, next) => {
+  res.set('Cache-Control', 'private, no-store');
+  next();
+});
 app.use('/api/admin/sources', adminSourcesRoutes);
 app.use('/api/admin/articles', adminArticlesRoutes);
 app.use('/api/admin/meta', adminMetaRoutes);
@@ -169,6 +174,7 @@ app.use('/api/scenarios', authenticateToken, scenarioRoutes);
 app.use('/api/articles', publicArticlesRoutes);
 app.use('/api/categories', publicCategoriesRoutes);
 app.use('/api/locations', publicLocationsRoutes);
+app.use('/api/markets', publicMarketsRoutes);
 // Legacy path kept for existing frontend compatibility
 app.use('/api/public/articles', publicArticlesRoutes);
 // Webhooks (no auth, validated by x-webhook-secret header)
@@ -191,6 +197,9 @@ app.get('/api/locations/:slug/seo', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Legacy AU-only URL redirects — 301 to country-prefixed paths
+app.use(legacyRedirects);
 
 // Crawler SSR middleware — serves dynamic meta tags to search engine bots
 const indexHtmlPath = path.join(__dirname, '..', 'frontend-dist', 'index.html');

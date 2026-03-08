@@ -19,9 +19,9 @@ interface SeoHeadProps {
 }
 
 const SITE_NAME = 'PropertyHack';
-const DEFAULT_TITLE = 'PropertyHack - Agenda-free Australian Property News';
-const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.';
-const SITE_URL = 'https://propertyhack.com.au';
+const DEFAULT_TITLE = 'PropertyHack - Agenda-free Property News';
+const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free property news, market updates, and analysis from around the world.';
+const SITE_URL = 'https://propertyhack.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/ph-logo.jpg`;
 
 export default function SeoHead({

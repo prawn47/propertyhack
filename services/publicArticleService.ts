@@ -40,6 +40,7 @@ export interface GetArticlesParams {
   sort?: 'newest' | 'relevance';
   page?: number;
   limit?: number;
+  country?: string;
 }
 
 export interface CategoriesResponse {
@@ -60,6 +61,7 @@ export async function getArticles(params: GetArticlesParams = {}): Promise<Artic
   if (params.sort) query.set('sort', params.sort);
   if (params.page) query.set('page', String(params.page));
   if (params.limit) query.set('limit', String(params.limit));
+  if (params.country) query.set('country', params.country);
 
   const qs = query.toString();
   const url = getApiUrl(`/api/articles${qs ? `?${qs}` : ''}`);
@@ -68,14 +70,16 @@ export async function getArticles(params: GetArticlesParams = {}): Promise<Artic
   return res.json();
 }
 
-export async function getCategories(): Promise<CategoriesResponse> {
-  const res = await fetch(getApiUrl('/api/categories'));
+export async function getCategories(country?: string): Promise<CategoriesResponse> {
+  const qs = country ? `?country=${country}` : '';
+  const res = await fetch(getApiUrl(`/api/categories${qs}`));
   if (!res.ok) throw new Error(`Failed to fetch categories: ${res.status}`);
   return res.json();
 }
 
-export async function getLocations(): Promise<LocationsResponse> {
-  const res = await fetch(getApiUrl('/api/locations'));
+export async function getLocations(country?: string): Promise<LocationsResponse> {
+  const qs = country ? `?country=${country}` : '';
+  const res = await fetch(getApiUrl(`/api/locations${qs}`));
   if (!res.ok) throw new Error(`Failed to fetch locations: ${res.status}`);
   return res.json();
 }

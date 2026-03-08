@@ -40,6 +40,7 @@ Analyse the following article and return a JSON object with these fields:
 - extractedLocation: the primary city/state/region mentioned (e.g. "Sydney, NSW", "London", "New York", "Toronto"), or null if not identifiable
 - markets: an array of market codes this article is relevant to. Use ONLY these codes: "AU", "US", "UK", "CA", "ALL". Use "ALL" for content relevant globally (e.g. universal home-buying tips, decorating/landscaping advice, general investment strategy, global housing trends). An article can belong to multiple specific markets (e.g. ["AU", "UK"]) if it compares or discusses both. Most articles will have exactly one market code.
 - isEvergreen: boolean — true if the content is timeless advice, tips, guides, or educational content that remains useful regardless of when it was published (e.g. "10 tips to sell your home faster", "how to choose an investment property", "landscaping ideas to boost value"). false for time-sensitive news, market reports, auction results, policy announcements, or anything tied to a specific date/event.
+- isGlobal: boolean — true if the content discusses macro trends, cross-market analysis, global housing data, worldwide interest rate commentary, or comparative international property analysis that is relevant to readers in ALL markets (e.g. "global housing bubble fears grow", "how rising rates are cooling markets worldwide", "international property investment trends"). false for country-specific news or timeless tips (those are isEvergreen). An article can be both isGlobal and isEvergreen if it is both timeless AND globally relevant, but most articles will be one or neither.
 
 Respond with valid JSON only. Do not wrap in markdown code fences.
 
@@ -100,6 +101,7 @@ ${inputText}`;
     extractedLocation: parsed.extractedLocation || null,
     markets,
     isEvergreen: parsed.isEvergreen === true,
+    isGlobal: parsed.isGlobal === true,
   };
 }
 
