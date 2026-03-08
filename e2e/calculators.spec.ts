@@ -189,7 +189,7 @@ test.describe('Stamp Duty Calculator', () => {
     // Interact with state selector and price input
     const stateSelect = page.locator('select, [role="combobox"]').first()
     if (await stateSelect.isVisible()) {
-      await stateSelect.selectOption({ label: /NSW/i }).catch(() => stateSelect.selectOption('NSW'))
+      await stateSelect.selectOption('NSW').catch(() => stateSelect.selectOption('New South Wales'))
     }
     // Wait for result to appear
     await expect(page.locator('[data-testid="stamp-duty-result"], .stamp-duty-amount, [data-testid="result-headline"]').first()).toBeVisible({ timeout: 5000 }).catch(async () => {

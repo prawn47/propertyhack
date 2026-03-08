@@ -102,6 +102,7 @@ function DeleteModal({ name, onConfirm, onCancel }: DeleteModalProps) {
 }
 
 interface ScenarioCardProps {
+  key?: React.Key;
   scenario: Scenario;
   onOpen: () => void;
   onDuplicate: () => void;
