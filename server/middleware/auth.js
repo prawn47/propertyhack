@@ -13,7 +13,7 @@ const authenticateToken = async (req, res, next) => {
 
     const user = await req.prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, superAdmin: true, role: true, emailVerified: true, avatarUrl: true, createdAt: true }
+      select: { id: true, email: true, superAdmin: true, createdAt: true }
     });
 
     if (!user) {
@@ -59,24 +59,6 @@ const authenticateRefreshToken = async (req, res, next) => {
   }
 };
 
-const optionalAuth = async (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return next();
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    const user = await req.prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, emailVerified: true, avatarUrl: true }
-    });
-    req.user = user || null;
-  } catch {
-    req.user = null;
-  }
-  next();
-};
-
 const requireSuperAdmin = (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Authentication required' });
   if (!req.user.superAdmin) return res.status(403).json({ error: 'Super admin access required' });
@@ -99,4 +81,4 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
-module.exports = { authenticateToken, authenticateRefreshToken, optionalAuth, requireSuperAdmin, generateTokens };
+module.exports = { authenticateToken, authenticateRefreshToken, requireSuperAdmin, generateTokens };

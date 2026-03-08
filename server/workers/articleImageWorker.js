@@ -105,6 +105,7 @@ const articleImageWorker = new Worker('article-image', async (job) => {
   connection,
   concurrency: 1,
   lockDuration: 120000,
+  stalledInterval: 120000,
 });
 
 articleImageWorker.on('completed', (job) => {

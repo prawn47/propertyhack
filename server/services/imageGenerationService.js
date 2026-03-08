@@ -149,14 +149,13 @@ async function generateArticleImage(title, shortBlurb, category, slug) {
         break;
       }
     } catch (error) {
-      console.log(`[imageGen] ${modelName} failed: ${error.message.substring(0, 100)}`);
+      console.warn(`[imageGen] ${modelName} failed: ${error.message.substring(0, 100)}`);
       continue;
     }
   }
 
   if (!imageData) {
-    console.warn('[imageGen] All image models failed — skipping');
-    return null;
+    throw new Error('All image models failed — will retry');
   }
 
   const fileSlug = slug || generateSlug(title);
@@ -169,8 +168,7 @@ async function generateArticleImage(title, shortBlurb, category, slug) {
     await fs.writeFile(filePath, imageData);
     console.log(`[imageGen] Saved: ${filename} (${(imageData.length / 1024).toFixed(0)}KB)`);
   } catch (err) {
-    console.error(`[imageGen] Failed to save image: ${err.message}`);
-    return null;
+    throw new Error(`Failed to save image: ${err.message}`);
   }
 
   return {

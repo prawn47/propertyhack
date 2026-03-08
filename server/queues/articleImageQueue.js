@@ -7,7 +7,7 @@ const articleImageQueue = new Queue('article-image', {
     attempts: 3,
     backoff: {
       type: 'exponential',
-      delay: 2000,
+      delay: 5000,
     },
     removeOnComplete: { count: 200 },
     removeOnFail: { count: 200 },

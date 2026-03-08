@@ -89,7 +89,7 @@ router.post('/register', authLimiter, registerValidation, handleValidationErrors
         email,
         passwordHash,
         displayName: displayName || null,
-        role: 'user',
+
         emailVerified: false,
         otpCode: otpHash,
         otpExpiresAt,
@@ -100,7 +100,7 @@ router.post('/register', authLimiter, registerValidation, handleValidationErrors
         id: true,
         email: true,
         displayName: true,
-        role: true,
+
         emailVerified: true,
         newsletterOptIn: true,
         avatarUrl: true,
@@ -144,7 +144,7 @@ router.post('/login', authLimiter, loginValidation, handleValidationErrors, asyn
         email: true,
         passwordHash: true,
         displayName: true,
-        role: true,
+
         superAdmin: true,
         emailVerified: true,
         avatarUrl: true,
