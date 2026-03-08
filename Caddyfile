@@ -2,8 +2,11 @@ propertyhack.com {
     trusted_proxies cloudflare
 
     # API routes → Express
+    # flush_interval -1 disables response buffering, required for SSE streaming (Henry AI)
     handle /api/* {
-        reverse_proxy express:3001
+        reverse_proxy express:3001 {
+            flush_interval -1
+        }
     }
     handle /health {
         reverse_proxy express:3001
