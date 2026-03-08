@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import * as henryService from '../services/henryService';
 import type {
@@ -72,12 +72,6 @@ export function useHenry(): UseHenryReturn {
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    return () => {
-      abortRef.current?.abort();
-    };
-  }, []);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -167,8 +161,6 @@ export function useHenry(): UseHenryReturn {
         }
       };
 
-      const signal = abortRef.current?.signal;
-
       try {
         if (isAuthenticated) {
           let convId = activeConversationId;
@@ -181,14 +173,14 @@ export function useHenry(): UseHenryReturn {
               ...prev,
             ]);
           }
-          await henryService.streamMessage(convId, content, onEvent, signal);
+          await henryService.streamMessage(convId, content, onEvent);
         } else {
-          await henryService.streamChat(content, onEvent, signal);
+          await henryService.streamChat(content, onEvent);
         }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
-        const errMessage = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
-        setError(errMessage);
+        const message = err instanceof Error ? err.message : 'Something went wrong';
+        setError(message);
         setIsStreaming(false);
         setIsThinking(false);
         setMessages((prev) =>

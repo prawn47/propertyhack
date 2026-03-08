@@ -38,8 +38,7 @@ export interface Citation {
 export interface CalculatorCall {
   type: string;
   inputs: Record<string, unknown>;
-  outputs: Record<string, unknown> | null;
-  error?: string;
+  outputs: Record<string, unknown>;
 }
 
 export interface ConversationsResponse {
@@ -69,76 +68,47 @@ function getAuthHeaders(required = false): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-const SSE_TIMEOUT_MS = 60000;
-
 async function parseSSEStream(
   response: Response,
-  onEvent: (event: HenryEvent) => void,
-  signal?: AbortSignal
+  onEvent: (event: HenryEvent) => void
 ): Promise<void> {
   const reader = response.body?.getReader();
   if (!reader) throw new Error('No response body');
 
   const decoder = new TextDecoder();
   let buffer = '';
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  let timedOut = false;
 
-  const resetTimeout = () => {
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      timedOut = true;
-      reader.cancel();
-    }, SSE_TIMEOUT_MS);
-  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-  signal?.addEventListener('abort', () => {
-    if (timeoutId) clearTimeout(timeoutId);
-    reader.cancel();
-  });
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split('\n\n');
+    buffer = chunks.pop() ?? '';
 
-  resetTimeout();
+    for (const chunk of chunks) {
+      if (!chunk.trim()) continue;
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        if (timedOut) throw new Error('Response timed out. Please try again.');
-        break;
+      let eventName = '';
+      let dataLine = '';
+
+      for (const line of chunk.split('\n')) {
+        if (line.startsWith('event: ')) {
+          eventName = line.slice('event: '.length).trim();
+        } else if (line.startsWith('data: ')) {
+          dataLine = line.slice('data: '.length).trim();
+        }
       }
 
-      resetTimeout();
+      if (!eventName || !dataLine) continue;
 
-      buffer += decoder.decode(value, { stream: true });
-      const chunks = buffer.split('\n\n');
-      buffer = chunks.pop() ?? '';
-
-      for (const chunk of chunks) {
-        if (!chunk.trim()) continue;
-
-        let eventName = '';
-        let dataLine = '';
-
-        for (const line of chunk.split('\n')) {
-          if (line.startsWith('event: ')) {
-            eventName = line.slice('event: '.length).trim();
-          } else if (line.startsWith('data: ')) {
-            dataLine = line.slice('data: '.length).trim();
-          }
-        }
-
-        if (!eventName || !dataLine) continue;
-
-        try {
-          const data = JSON.parse(dataLine);
-          onEvent({ event: eventName, data } as HenryEvent);
-        } catch {
-          // Malformed SSE chunk — skip
-        }
+      try {
+        const data = JSON.parse(dataLine);
+        onEvent({ event: eventName, data } as HenryEvent);
+      } catch {
+        // Malformed SSE chunk — skip
       }
     }
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
@@ -220,75 +190,51 @@ export async function rateMessage(messageId: string, rating: 1 | 5): Promise<voi
 
 export async function streamChat(
   message: string,
-  onEvent: (event: HenryEvent) => void,
-  signal?: AbortSignal
+  onEvent: (event: HenryEvent) => void
 ): Promise<void> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...getAuthHeaders(),
   };
 
-  let response: Response;
-  try {
-    response = await fetch(getApiUrl('/api/henry/chat'), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ message }),
-      signal,
-    });
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') throw err;
-    throw new Error('Connection lost. Please check your internet and try again.');
-  }
-
-  if (response.status === 429) {
-    throw new Error("You've sent a lot of messages recently. Please wait a few minutes.");
-  }
+  const response = await fetch(getApiUrl('/api/henry/chat'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ message }),
+  });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || 'Chat request failed');
   }
 
-  await parseSSEStream(response, onEvent, signal);
+  await parseSSEStream(response, onEvent);
 }
 
 export async function streamMessage(
   conversationId: string,
   message: string,
-  onEvent: (event: HenryEvent) => void,
-  signal?: AbortSignal
+  onEvent: (event: HenryEvent) => void
 ): Promise<void> {
   const token = authService.getAccessToken();
   if (!token) throw new Error('No access token available');
 
-  let response: Response;
-  try {
-    response = await fetch(
-      getApiUrl(`/api/henry/conversations/${conversationId}/messages`),
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message }),
-        signal,
-      }
-    );
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') throw err;
-    throw new Error('Connection lost. Please check your internet and try again.');
-  }
-
-  if (response.status === 429) {
-    throw new Error("You've sent a lot of messages recently. Please wait a few minutes.");
-  }
+  const response = await fetch(
+    getApiUrl(`/api/henry/conversations/${conversationId}/messages`),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ message }),
+    }
+  );
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || 'Message request failed');
   }
 
-  await parseSSEStream(response, onEvent, signal);
+  await parseSSEStream(response, onEvent);
 }
