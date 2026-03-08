@@ -130,13 +130,18 @@ router.post(
   '/rent-vs-buy/calculate',
   [
     body('purchasePrice').isInt({ min: 0 }).withMessage('purchasePrice must be a non-negative integer (cents)'),
-    body('weeklyRent').isInt({ min: 0 }).withMessage('weeklyRent must be a non-negative integer (cents)'),
+    body('weeklyRent').optional().isInt({ min: 0 }).withMessage('weeklyRent must be a non-negative integer (cents)'),
+    body('monthlyRent').optional().isInt({ min: 0 }).withMessage('monthlyRent must be a non-negative integer (cents)'),
     body('availableDeposit').isInt({ min: 0 }).withMessage('availableDeposit must be a non-negative integer (cents)'),
     body('mortgageRate').isFloat({ min: 0, max: 100 }).withMessage('mortgageRate must be between 0 and 100'),
     body('loanTermYears').optional().isInt({ min: 1, max: 50 }).withMessage('loanTermYears must be between 1 and 50'),
     body('propertyGrowthRate').optional().isFloat({ min: 0, max: 100 }).withMessage('propertyGrowthRate must be between 0 and 100'),
     body('rentIncreaseRate').optional().isFloat({ min: 0, max: 100 }).withMessage('rentIncreaseRate must be between 0 and 100'),
     body('investmentReturnRate').optional().isFloat({ min: 0, max: 100 }).withMessage('investmentReturnRate must be between 0 and 100'),
+    body('market').optional().isIn(['AU', 'US', 'UK', 'CA', 'NZ']).withMessage('market must be AU, US, UK, CA, or NZ'),
+    body('propertyTaxRate').optional().isFloat({ min: 0, max: 10 }).withMessage('propertyTaxRate must be between 0 and 10'),
+    body('useTaxDeduction').optional().isBoolean().withMessage('useTaxDeduction must be a boolean'),
+    body('marginalTaxBracket').optional().isFloat({ min: 0, max: 37 }).withMessage('marginalTaxBracket must be between 0 and 37'),
   ],
   (req, res) => {
     const validationError = handleValidation(req, res);

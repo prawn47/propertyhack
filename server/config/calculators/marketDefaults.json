@@ -1,0 +1,71 @@
+{
+  "rentVsBuy": {
+    "AU": {
+      "propertyGrowthRate": 5,
+      "rentIncreaseRate": 3,
+      "investmentReturnRate": 7,
+      "rentFrequency": "weekly",
+      "defaultMortgageRate": 6.5,
+      "defaultLoanTermYears": 30,
+      "buyingCosts": {
+        "legalFees": 200000,
+        "inspectionFees": 50000,
+        "includeStampDuty": true,
+        "stampDutyState": "NSW"
+      }
+    },
+    "NZ": {
+      "propertyGrowthRate": 5,
+      "rentIncreaseRate": 3,
+      "investmentReturnRate": 7,
+      "rentFrequency": "weekly",
+      "defaultMortgageRate": 6.5,
+      "defaultLoanTermYears": 30,
+      "buyingCosts": {
+        "legalFees": 200000,
+        "inspectionFees": 80000,
+        "includeStampDuty": false
+      }
+    },
+    "US": {
+      "propertyGrowthRate": 4,
+      "rentIncreaseRate": 3,
+      "investmentReturnRate": 7,
+      "rentFrequency": "monthly",
+      "defaultMortgageRate": 7.0,
+      "defaultLoanTermYears": 30,
+      "buyingCosts": {
+        "legalFees": 150000,
+        "inspectionFees": 50000,
+        "includeStampDuty": false,
+        "defaultPropertyTaxRate": 1.1
+      }
+    },
+    "UK": {
+      "propertyGrowthRate": 4,
+      "rentIncreaseRate": 3,
+      "investmentReturnRate": 6,
+      "rentFrequency": "monthly",
+      "defaultMortgageRate": 4.5,
+      "defaultLoanTermYears": 25,
+      "buyingCosts": {
+        "legalFees": 200000,
+        "inspectionFees": 60000,
+        "includeStampDuty": false
+      }
+    },
+    "CA": {
+      "propertyGrowthRate": 4,
+      "rentIncreaseRate": 3,
+      "investmentReturnRate": 6,
+      "rentFrequency": "monthly",
+      "defaultMortgageRate": 5.5,
+      "defaultLoanTermYears": 25,
+      "buyingCosts": {
+        "legalFees": 200000,
+        "inspectionFees": 50000,
+        "includeStampDuty": false
+      }
+    }
+  }
+}
