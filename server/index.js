@@ -155,7 +155,10 @@ const calculatorLimiter = rateLimit({
 app.use('/api/auth', isProduction ? authLimiter : noop, authRoutes);
 app.use('/api/user', authenticateToken, profileRoutes);
 app.use('/api/calculators', isProduction ? calculatorLimiter : noop, calculatorRoutes);
-app.use('/api/admin', authenticateToken, requireSuperAdmin);
+app.use('/api/admin', authenticateToken, requireSuperAdmin, (req, res, next) => {
+  res.set('Cache-Control', 'private, no-store');
+  next();
+});
 app.use('/api/admin/sources', adminSourcesRoutes);
 app.use('/api/admin/articles', adminArticlesRoutes);
 app.use('/api/admin/meta', adminMetaRoutes);

@@ -31,6 +31,7 @@ const ARTICLE_SELECT = {
 
 // GET /api/articles
 router.get('/', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=300');
   try {
     const {
       search,
@@ -219,6 +220,7 @@ router.get('/', async (req, res) => {
 
 // GET /api/articles/:slug/related
 router.get('/:slug/related', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=3600');
   try {
     const { slug } = req.params;
 
@@ -264,6 +266,7 @@ router.get('/:slug/related', async (req, res) => {
 
 // GET /api/articles/:slug
 router.get('/:slug', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=3600');
   try {
     const { slug } = req.params;
 

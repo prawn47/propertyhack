@@ -10,6 +10,7 @@ const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 function cached(key, generator) {
   return async (req, res) => {
     const now = Date.now();
+    res.set('Cache-Control', 'public, s-maxage=3600');
     if (cache[key] && now - cache[key].time < CACHE_TTL) {
       res.set('Content-Type', 'application/xml');
       return res.send(cache[key].data);

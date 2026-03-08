@@ -3,6 +3,7 @@ const router = express.Router();
 
 // GET /api/categories
 router.get('/', async (req, res) => {
+  res.set('Cache-Control', 'public, s-maxage=86400');
   try {
     const result = await req.prisma.$queryRaw`
       SELECT DISTINCT category FROM articles
