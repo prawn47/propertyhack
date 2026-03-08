@@ -66,6 +66,7 @@ const calculators = [
   },
   {
     slug: 'land-transfer-tax-calculator',
+    path: '/tools/ca/land-transfer-tax-calculator',
     name: 'Land Transfer Tax Calculator',
     description: 'Calculate land transfer tax across all Canadian provinces and territories, including Toronto and Montreal municipal taxes and first-time buyer rebates.',
     countries: ['CA'],
@@ -146,7 +147,7 @@ const ToolsIndex: React.FC = () => {
             {filteredCalculators.map((calc) => (
               <Link
                 key={calc.slug}
-                to={`/tools/${calc.slug}`}
+                to={'path' in calc ? (calc as { path: string }).path : `/tools/${calc.slug}`}
                 className="group bg-base-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-lg hover:border-brand-gold border border-transparent"
               >
                 <div className="text-brand-gold">

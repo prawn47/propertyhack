@@ -180,7 +180,7 @@ function AppInner() {
         <Route path="tools/rent-vs-buy-calculator" element={<RentVsBuyCalculator />} />
         <Route path="tools/borrowing-power-calculator" element={<BorrowingPowerCalculator />} />
         <Route path="tools/rental-yield-calculator" element={<RentalYieldCalculator />} />
-        <Route path="tools/land-transfer-tax-calculator" element={<CaTransferTaxCalculator />} />
+        <Route path="tools/ca/land-transfer-tax-calculator" element={<CaTransferTaxCalculator />} />
         <Route path="tools/nz/buying-costs-calculator" element={<NzBuyingCostsCalculator />} />
       </Route>
 
