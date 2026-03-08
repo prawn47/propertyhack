@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useCountry } from '../../contexts/CountryContext';
 import CurrencyInput from './shared/CurrencyInput';
 import PercentageInput from './shared/PercentageInput';
 import SliderInput from './shared/SliderInput';
@@ -22,15 +23,93 @@ import ExpandableSection from './shared/ExpandableSection';
 import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 
+// Per-market defaults matching marketDefaults.json
+const MARKET_DEFAULTS: Record<string, {
+  propertyGrowthRate: number;
+  rentIncreaseRate: number;
+  investmentReturnRate: number;
+  rentFrequency: 'weekly' | 'monthly';
+  defaultMortgageRate: number;
+  defaultLoanTermYears: number;
+  defaultPropertyPrice: number;
+  defaultDeposit: number;
+  defaultRent: number;
+}> = {
+  AU: {
+    propertyGrowthRate: 5,
+    rentIncreaseRate: 3,
+    investmentReturnRate: 7,
+    rentFrequency: 'weekly',
+    defaultMortgageRate: 6.5,
+    defaultLoanTermYears: 30,
+    defaultPropertyPrice: 80000000,  // $800,000
+    defaultDeposit: 16000000,        // $160,000
+    defaultRent: 60000,              // $600/week
+  },
+  NZ: {
+    propertyGrowthRate: 5,
+    rentIncreaseRate: 3,
+    investmentReturnRate: 7,
+    rentFrequency: 'weekly',
+    defaultMortgageRate: 6.5,
+    defaultLoanTermYears: 30,
+    defaultPropertyPrice: 80000000,
+    defaultDeposit: 16000000,
+    defaultRent: 60000,              // $600/week
+  },
+  US: {
+    propertyGrowthRate: 4,
+    rentIncreaseRate: 3,
+    investmentReturnRate: 7,
+    rentFrequency: 'monthly',
+    defaultMortgageRate: 7.0,
+    defaultLoanTermYears: 30,
+    defaultPropertyPrice: 45000000,  // $450,000
+    defaultDeposit: 9000000,         // $90,000
+    defaultRent: 250000,             // $2,500/month
+  },
+  UK: {
+    propertyGrowthRate: 4,
+    rentIncreaseRate: 3,
+    investmentReturnRate: 6,
+    rentFrequency: 'monthly',
+    defaultMortgageRate: 4.5,
+    defaultLoanTermYears: 25,
+    defaultPropertyPrice: 35000000,  // £350,000
+    defaultDeposit: 7000000,         // £70,000
+    defaultRent: 175000,             // £1,750/month
+  },
+  CA: {
+    propertyGrowthRate: 4,
+    rentIncreaseRate: 3,
+    investmentReturnRate: 6,
+    rentFrequency: 'monthly',
+    defaultMortgageRate: 5.5,
+    defaultLoanTermYears: 25,
+    defaultPropertyPrice: 75000000,  // $750,000
+    defaultDeposit: 15000000,        // $150,000
+    defaultRent: 240000,             // $2,400/month
+  },
+};
+
+const US_TAX_BRACKETS = [10, 12, 22, 24, 32, 35, 37];
+
 interface RentVsBuyInputs extends Record<string, unknown> {
   purchasePrice: number;
+  // weeklyRent used for AU/NZ (weekly), monthlyRent used for US/UK/CA
   weeklyRent: number;
+  monthlyRent: number;
   availableDeposit: number;
   mortgageRate: number;
   loanTermYears: number;
   propertyGrowthRate: number;
   rentIncreaseRate: number;
   investmentReturnRate: number;
+  market: string;
+  // US-specific
+  propertyTaxRate: number;
+  useTaxDeduction: boolean;
+  marginalTaxBracket: number;
 }
 
 interface SnapshotRow {
@@ -61,19 +140,31 @@ interface RentVsBuyOutputs {
     buyEquity: number;
     annualRent: number;
     investmentValue: number;
+    annualPropertyTax?: number;
+    annualTaxDeductionBenefit?: number;
   }>;
 }
 
-const DEFAULT_INPUTS: RentVsBuyInputs = {
-  purchasePrice: 80000000,
-  weeklyRent: 60000,
-  availableDeposit: 16000000,
-  mortgageRate: 6.5,
-  loanTermYears: 30,
-  propertyGrowthRate: 5,
-  rentIncreaseRate: 3,
-  investmentReturnRate: 7,
-};
+function getDefaultInputs(market: string): RentVsBuyInputs {
+  const mkt = MARKET_DEFAULTS[market] || MARKET_DEFAULTS['AU'];
+  return {
+    purchasePrice: mkt.defaultPropertyPrice,
+    weeklyRent: mkt.rentFrequency === 'weekly' ? mkt.defaultRent : 0,
+    monthlyRent: mkt.rentFrequency === 'monthly' ? mkt.defaultRent : 0,
+    availableDeposit: mkt.defaultDeposit,
+    mortgageRate: mkt.defaultMortgageRate,
+    loanTermYears: mkt.defaultLoanTermYears,
+    propertyGrowthRate: mkt.propertyGrowthRate,
+    rentIncreaseRate: mkt.rentIncreaseRate,
+    investmentReturnRate: mkt.investmentReturnRate,
+    market,
+    propertyTaxRate: 1.1,
+    useTaxDeduction: false,
+    marginalTaxBracket: 22,
+  };
+}
+
+const AU_DEFAULT_INPUTS = getDefaultInputs('AU');
 
 const MILESTONE_YEARS = [5, 10, 15, 20, 25, 30];
 
@@ -117,12 +208,20 @@ const CustomTooltip = ({ active, payload, label }: {
 };
 
 const RentVsBuyCalculator: React.FC = () => {
+  const { country } = useCountry();
+  const market = ['AU', 'US', 'UK', 'CA', 'NZ'].includes(country) ? country : 'AU';
+  const mktDefaults = MARKET_DEFAULTS[market] || MARKET_DEFAULTS['AU'];
+
+  const defaultInputs = useMemo(() => getDefaultInputs(market), [market]);
+
   const { inputs, outputs, isCalculating, error, setInput, reset } =
-    useCalculator<RentVsBuyInputs, RentVsBuyOutputs>('rent-vs-buy', DEFAULT_INPUTS);
+    useCalculator<RentVsBuyInputs, RentVsBuyOutputs>('rent-vs-buy', defaultInputs);
 
   const [showFullBreakdown, setShowFullBreakdown] = useState(false);
 
   const typedOutputs = outputs as RentVsBuyOutputs | null;
+  const isWeekly = mktDefaults.rentFrequency === 'weekly';
+  const isUS = market === 'US';
 
   const headlineValue = typedOutputs
     ? typedOutputs.breakEvenYear
@@ -133,7 +232,7 @@ const RentVsBuyCalculator: React.FC = () => {
   const breakevenSubtitle = typedOutputs
     ? typedOutputs.breakEvenYear
       ? `Buying becomes financially advantageous after ${typedOutputs.breakEvenYear} years`
-      : 'Renting + investing outperforms buying over 30 years'
+      : `Renting + investing outperforms buying over ${inputs.loanTermYears} years`
     : undefined;
 
   const jsonLd = {
@@ -141,7 +240,7 @@ const RentVsBuyCalculator: React.FC = () => {
     '@type': 'WebApplication',
     name: 'Rent vs Buy Calculator',
     description:
-      'Compare the financial outcome of renting vs buying property in Australia. See your breakeven year and wealth comparison over 30 years.',
+      'Compare the financial outcome of renting vs buying property. See your breakeven year and wealth comparison over time.',
     url: 'https://propertyhack.com.au/tools/rent-vs-buy-calculator',
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Any',
@@ -174,7 +273,7 @@ const RentVsBuyCalculator: React.FC = () => {
         <title>Rent vs Buy Calculator | PropertyHack</title>
         <meta
           name="description"
-          content="Should you rent or buy? Compare the long-term financial outcome with our free Australian rent vs buy calculator. See your breakeven year and wealth comparison chart."
+          content="Should you rent or buy? Compare the long-term financial outcome with our free rent vs buy calculator. See your breakeven year and wealth comparison chart."
         />
         <link rel="canonical" href="https://propertyhack.com.au/tools/rent-vs-buy-calculator" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
@@ -214,8 +313,7 @@ const RentVsBuyCalculator: React.FC = () => {
               Rent vs Buy Calculator
             </h1>
             <p className="mt-2 text-content-secondary">
-              Compare the long-term financial outcome of renting and investing versus buying
-              property in Australia.
+              Compare the long-term financial outcome of renting and investing versus buying property.
             </p>
           </div>
         </div>
@@ -224,7 +322,7 @@ const RentVsBuyCalculator: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-            {/* ─── Input panel ─── */}
+            {/* Input panel */}
             <div className="w-full lg:w-[420px] flex-shrink-0">
               <div className="bg-base-100 rounded-xl shadow-soft p-6 flex flex-col gap-5">
                 <h2 className="text-base font-semibold text-brand-primary">Your Details</h2>
@@ -245,13 +343,23 @@ const RentVsBuyCalculator: React.FC = () => {
                   hint="Upfront deposit amount"
                 />
 
-                <CurrencyInput
-                  label="Weekly Rent"
-                  value={inputs.weeklyRent}
-                  onChange={(v) => setInput('weeklyRent', v)}
-                  min={100}
-                  hint="Current weekly rent you pay (or would pay)"
-                />
+                {isWeekly ? (
+                  <CurrencyInput
+                    label="Weekly Rent"
+                    value={inputs.weeklyRent}
+                    onChange={(v) => setInput('weeklyRent', v)}
+                    min={100}
+                    hint="Current weekly rent you pay (or would pay)"
+                  />
+                ) : (
+                  <CurrencyInput
+                    label="Monthly Rent"
+                    value={inputs.monthlyRent}
+                    onChange={(v) => setInput('monthlyRent', v)}
+                    min={100}
+                    hint="Current monthly rent you pay (or would pay)"
+                  />
+                )}
 
                 <PercentageInput
                   label="Mortgage Interest Rate"
@@ -271,6 +379,67 @@ const RentVsBuyCalculator: React.FC = () => {
                   step={1}
                   unit="yrs"
                 />
+
+                {/* US-specific: Property Tax */}
+                {isUS && (
+                  <PercentageInput
+                    label="Annual Property Tax Rate"
+                    value={inputs.propertyTaxRate}
+                    onChange={(v) => setInput('propertyTaxRate', v)}
+                    min={0}
+                    max={5}
+                    step={0.05}
+                    hint="Annual property tax as % of property value (typically 0.5%–2.5%)"
+                  />
+                )}
+
+                {/* US-specific: Tax deduction toggle */}
+                {isUS && (
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={inputs.useTaxDeduction}
+                          onChange={(e) => setInput('useTaxDeduction', e.target.checked)}
+                        />
+                        <div
+                          className={`w-10 h-6 rounded-full transition-colors ${
+                            inputs.useTaxDeduction ? 'bg-brand-gold' : 'bg-base-300'
+                          }`}
+                        />
+                        <div
+                          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                            inputs.useTaxDeduction ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-content">Tax deduction benefit</span>
+                    </label>
+                    <p className="text-xs text-content-secondary -mt-2">
+                      US homeowners can deduct mortgage interest + property taxes from federal taxable income.
+                    </p>
+
+                    {inputs.useTaxDeduction && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-content">Marginal Tax Bracket</label>
+                        <select
+                          value={inputs.marginalTaxBracket}
+                          onChange={(e) => setInput('marginalTaxBracket', Number(e.target.value))}
+                          className="w-full px-3 py-2.5 bg-base-200 border border-base-300 rounded-lg text-content text-sm focus:outline-none focus:border-brand-gold transition-colors"
+                        >
+                          {US_TAX_BRACKETS.map((bracket) => (
+                            <option key={bracket} value={bracket}>{bracket}%</option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-content-secondary">
+                          Annual benefit = (mortgage interest + property tax) × bracket rate
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <ExpandableSection title="Advanced assumptions">
                   <PercentageInput
@@ -315,10 +484,9 @@ const RentVsBuyCalculator: React.FC = () => {
               </div>
             </div>
 
-            {/* ─── Results panel ─── */}
+            {/* Results panel */}
             <div className="flex-1 min-w-0 flex flex-col gap-6">
 
-              {/* Error */}
               {error && (
                 <div
                   role="alert"
@@ -328,7 +496,6 @@ const RentVsBuyCalculator: React.FC = () => {
                 </div>
               )}
 
-              {/* Loading shimmer */}
               {isCalculating && !typedOutputs && (
                 <div className="bg-base-100 rounded-xl shadow-soft p-6 animate-pulse">
                   <div className="h-5 bg-base-300 rounded w-32 mb-3" />
@@ -338,7 +505,6 @@ const RentVsBuyCalculator: React.FC = () => {
 
               {typedOutputs && (
                 <>
-                  {/* Headline + summary */}
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
                       <ResultCard
@@ -421,7 +587,7 @@ const RentVsBuyCalculator: React.FC = () => {
                   {typedOutputs.chartData?.length > 0 && (
                     <div className="bg-base-100 rounded-xl shadow-soft p-5">
                       <h2 className="text-sm font-semibold text-brand-primary mb-4">
-                        Wealth Comparison Over 30 Years
+                        Wealth Comparison Over {inputs.loanTermYears} Years
                       </h2>
                       <ResponsiveContainer width="100%" height={280}>
                         <LineChart
@@ -496,6 +662,12 @@ const RentVsBuyCalculator: React.FC = () => {
                                 <th className="text-right py-2 px-2 text-content-secondary font-medium">Loan balance</th>
                                 <th className="text-right py-2 px-2 text-content-secondary font-medium">Buy equity</th>
                                 <th className="text-right py-2 px-2 text-content-secondary font-medium">Annual rent</th>
+                                {isUS && (
+                                  <th className="text-right py-2 px-2 text-content-secondary font-medium">Property tax</th>
+                                )}
+                                {isUS && inputs.useTaxDeduction && (
+                                  <th className="text-right py-2 px-2 text-content-secondary font-medium">Tax deduction</th>
+                                )}
                                 <th className="text-right py-2 px-2 text-content-secondary font-medium">Rent portfolio</th>
                               </tr>
                             </thead>
@@ -513,6 +685,18 @@ const RentVsBuyCalculator: React.FC = () => {
                                   <td className="py-2 px-2 text-right text-content">{formatDollars(row.loanBalance)}</td>
                                   <td className="py-2 px-2 text-right text-content">{formatDollars(row.buyEquity)}</td>
                                   <td className="py-2 px-2 text-right text-content">{formatDollars(row.annualRent)}</td>
+                                  {isUS && (
+                                    <td className="py-2 px-2 text-right text-content">
+                                      {row.annualPropertyTax !== undefined ? formatDollars(row.annualPropertyTax) : '—'}
+                                    </td>
+                                  )}
+                                  {isUS && inputs.useTaxDeduction && (
+                                    <td className="py-2 px-2 text-right text-green-600">
+                                      {row.annualTaxDeductionBenefit !== undefined
+                                        ? `-${formatDollars(row.annualTaxDeductionBenefit)}`
+                                        : '—'}
+                                    </td>
+                                  )}
                                   <td className="py-2 px-2 text-right text-content">{formatDollars(row.investmentValue)}</td>
                                 </tr>
                               ))}
@@ -537,14 +721,14 @@ const RentVsBuyCalculator: React.FC = () => {
                   {/* Disclaimer */}
                   <p className="text-xs text-content-secondary leading-relaxed">
                     This calculator provides estimates only and does not constitute financial advice.
-                    Figures assume constant growth rates and do not account for taxes, transaction costs,
-                    maintenance, insurance, or other ownership expenses. Consult a qualified financial
-                    adviser before making property decisions.
+                    Figures assume constant growth rates and do not account for all taxes, transaction costs,
+                    maintenance, insurance, or other ownership expenses.
+                    {isUS && ' US tax deduction estimates are simplified — actual deductibility depends on itemisation and other factors.'}
+                    {' '}Consult a qualified financial adviser before making property decisions.
                   </p>
                 </>
               )}
 
-              {/* Empty state when no results yet */}
               {!isCalculating && !typedOutputs && !error && (
                 <div className="bg-base-100 rounded-xl shadow-soft p-10 text-center text-content-secondary text-sm">
                   Enter your details on the left to see a wealth comparison.

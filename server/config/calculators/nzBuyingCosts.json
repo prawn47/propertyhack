@@ -1,0 +1,60 @@
+{
+  "jurisdiction": "NZ",
+  "lastUpdated": "2025-04-01",
+  "source": "https://www.settled.govt.nz/buying-home/costs-of-buying/",
+  "noTransferTax": true,
+  "noTransferTaxNote": "New Zealand has no stamp duty or transfer tax. This is the estimated cost of other buying expenses.",
+  "costs": {
+    "legal": {
+      "label": "Legal/conveyancing fees",
+      "min": 1400,
+      "max": 2500,
+      "note": "Costs vary based on complexity of the transaction and solicitor rates."
+    },
+    "buildingInspection": {
+      "label": "Building inspection",
+      "min": 500,
+      "max": 800,
+      "note": "Recommended for all purchases. May be higher for larger or older properties."
+    },
+    "valuation": {
+      "label": "Valuation (registered valuer)",
+      "min": 500,
+      "max": 800,
+      "note": "Required by most lenders. Cost varies by property type and location."
+    },
+    "lim": {
+      "label": "LIM report (Land Information Memorandum)",
+      "min": 300,
+      "max": 400,
+      "note": "Issued by the local council. Price set by the council — varies by district."
+    }
+  },
+  "lowEquityPremium": {
+    "triggerDepositThreshold": 0.20,
+    "firstHomeLoan": {
+      "label": "Low equity premium (First Home Loan)",
+      "rate": 0.012,
+      "note": "First Home Loan backed by Kāinga Ora. A one-off premium of approximately 1.2% of the loan amount is charged by the lender."
+    },
+    "standard": {
+      "label": "Low equity premium (standard)",
+      "minRate": 0.005,
+      "maxRate": 0.02,
+      "note": "When deposit is less than 20%, most lenders charge a low equity premium (LEP) or margin of approximately 0.5%–2% of the loan amount as a one-off fee or rate add-on. Exact amount varies by lender."
+    }
+  },
+  "gst": {
+    "rate": 0.15,
+    "newBuildNote": "15% GST may be included in the purchase price of new builds. Check with your solicitor whether the price is GST-inclusive or GST-exclusive."
+  },
+  "brightLineTest": {
+    "periodYears": 2,
+    "investorNote": "If you sell this property within 2 years, any profit may be taxed as income under the bright-line test."
+  },
+  "interestDeductibility": {
+    "fullyDeductibleFrom": "2025-04-01",
+    "rate": 1.0,
+    "investorNote": "From April 2025, 100% of mortgage interest is deductible against rental income for residential investment properties."
+  }
+}

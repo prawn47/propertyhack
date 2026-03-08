@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { useCalculator } from '../../hooks/useCalculator';
+import { useMarketCurrency } from '../../hooks/useMarketCurrency';
+import { useCountry } from '../../contexts/CountryContext';
 import CurrencyInput from './shared/CurrencyInput';
 import PercentageInput from './shared/PercentageInput';
 import ExpandableSection from './shared/ExpandableSection';
@@ -11,7 +13,77 @@ import SaveScenarioButton from './shared/SaveScenarioButton';
 import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 
+// Market defaults — assessment rate and student debt treatment per market
+const MARKET_DEFAULTS: Record<string, {
+  assessmentRate: number;
+  studentDebtTreatment: 'income_based' | 'income_threshold' | 'monthly_payment' | 'uk_plan';
+  studentDebtLabel: string;
+  studentDebtHint: string;
+  lvrNote80: string;
+  lvrNote90: string;
+  assessmentRateHint: string;
+  showUkStudentLoanPlan?: boolean;
+  showOsfiNote?: boolean;
+}> = {
+  AU: {
+    assessmentRate: 9.5,
+    studentDebtTreatment: 'income_based',
+    studentDebtLabel: 'HECS/HELP debt (total)',
+    studentDebtHint: 'Your current HECS or HELP student loan balance',
+    lvrNote80: 'At 80% LVR (no LMI)',
+    lvrNote90: 'At 90% LVR (LMI applies)',
+    assessmentRateHint: 'APRA requires lenders to assess at your rate + 3% buffer. Default is 9.5%.',
+  },
+  US: {
+    assessmentRate: 9.0,
+    studentDebtTreatment: 'monthly_payment',
+    studentDebtLabel: 'Student loans (monthly payment)',
+    studentDebtHint: 'Your total monthly student loan payments',
+    lvrNote80: 'At 80% LTV (no PMI)',
+    lvrNote90: 'At 90% LTV (PMI applies)',
+    assessmentRateHint: 'Lenders typically qualify you at your contract rate plus a 2% buffer.',
+  },
+  UK: {
+    assessmentRate: 7.5,
+    studentDebtTreatment: 'uk_plan',
+    studentDebtLabel: 'Student loan',
+    studentDebtHint: 'UK student loan repayments are automatically deducted above income thresholds',
+    lvrNote80: 'At 80% LTV',
+    lvrNote90: 'At 90% LTV (higher rates likely)',
+    assessmentRateHint: 'PRA stress test requires lenders to assess at your rate + 3%.',
+    showUkStudentLoanPlan: true,
+  },
+  CA: {
+    assessmentRate: 7.25,
+    studentDebtTreatment: 'monthly_payment',
+    studentDebtLabel: 'Student loans (monthly payment)',
+    studentDebtHint: 'Your total monthly student loan payments',
+    lvrNote80: 'At 80% LTV (no CMHC)',
+    lvrNote90: 'At 95% LTV (CMHC required)',
+    assessmentRateHint: 'OSFI B-20 stress test: qualifying rate is the higher of 5.25% or your rate + 2%.',
+    showOsfiNote: true,
+  },
+  NZ: {
+    assessmentRate: 9.0,
+    studentDebtTreatment: 'income_threshold',
+    studentDebtLabel: 'Student loan',
+    studentDebtHint: 'Tick if you have a NZ student loan — repayments calculated automatically at 12% above $22,828',
+    lvrNote80: 'At 80% LVR (standard rates)',
+    lvrNote90: 'At 90% LVR (low equity premium likely)',
+    assessmentRateHint: 'NZ lenders typically stress-test at your rate + 2.5%.',
+  },
+};
+
+const UK_STUDENT_LOAN_PLANS = [
+  { id: 'plan1', label: 'Plan 1 (pre-2012 / Northern Ireland)' },
+  { id: 'plan2', label: 'Plan 2 (England/Wales from 2012)' },
+  { id: 'plan4', label: 'Plan 4 (Scotland)' },
+  { id: 'plan5', label: 'Plan 5 (England from 2023)' },
+  { id: 'postgrad', label: 'Postgraduate loan' },
+];
+
 interface BorrowingPowerInputs extends Record<string, unknown> {
+  market: string;
   applicants: number;
   grossIncome1: number;
   grossIncome2: number;
@@ -20,56 +92,85 @@ interface BorrowingPowerInputs extends Record<string, unknown> {
   dependants: number;
   creditCardLimits: number;
   existingLoanRepayments: number;
-  hecsDebt: number;
+  studentDebt: number | boolean;
+  ukStudentLoanPlan: string;
   assessmentRate: number;
+}
+
+interface LvrThreshold {
+  lvr: number;
+  note: string;
+  deposit: number;
 }
 
 interface BorrowingPowerOutputs extends Record<string, unknown> {
   maxBorrowing: number;
   monthlyRepayment: number;
+  depositNeeded: LvrThreshold[];
   depositNeeded80LVR: number;
   depositNeeded90LVR: number;
   netMonthlyIncome: number;
   totalMonthlyCommitments: number;
   availableSurplus: number;
-}
-
-const DEFAULT_ASSESSMENT_RATE = 9.5;
-
-const DEFAULT_INPUTS: BorrowingPowerInputs = {
-  applicants: 1,
-  grossIncome1: 10000000,
-  grossIncome2: 0,
-  otherIncome: 0,
-  monthlyLivingExpenses: 300000,
-  dependants: 0,
-  creditCardLimits: 0,
-  existingLoanRepayments: 0,
-  hecsDebt: 0,
-  assessmentRate: DEFAULT_ASSESSMENT_RATE,
-};
-
-function formatDollars(cents: number): string {
-  const dollars = Math.round(cents) / 100;
-  return dollars.toLocaleString('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-    maximumFractionDigits: 0,
-  });
+  effectiveAssessmentRate: number;
 }
 
 const BorrowingPowerCalculator: React.FC = () => {
+  const { country } = useCountry();
+  const market = (country || 'AU').toUpperCase();
+  const marketDefaults = MARKET_DEFAULTS[market] ?? MARKET_DEFAULTS.AU;
+
+  const DEFAULT_INPUTS: BorrowingPowerInputs = {
+    market,
+    applicants: 1,
+    grossIncome1: 10000000, // $100k in cents
+    grossIncome2: 0,
+    otherIncome: 0,
+    monthlyLivingExpenses: 300000, // $3k in cents
+    dependants: 0,
+    creditCardLimits: 0,
+    existingLoanRepayments: 0,
+    studentDebt: 0,
+    ukStudentLoanPlan: 'plan2',
+    assessmentRate: marketDefaults.assessmentRate,
+  };
+
   const { inputs, outputs, isCalculating, error, setInput, reset } =
     useCalculator<BorrowingPowerInputs, BorrowingPowerOutputs>(
       'borrowing-power',
       DEFAULT_INPUTS
     );
+  const { locale, currencySymbol, formatCents: formatDollars } = useMarketCurrency();
 
   const typedOutputs = outputs as BorrowingPowerOutputs | null;
-
   const maxBorrowing = typedOutputs?.maxBorrowing ?? 0;
-
   const capacityPercent = maxBorrowing > 0 ? Math.min(100, (maxBorrowing / 200000000) * 100) : 0;
+
+  // Keep market in sync when country changes
+  const currentMarket = inputs.market as string;
+  if (currentMarket !== market) {
+    setInput('market', market);
+    setInput('assessmentRate', marketDefaults.assessmentRate);
+  }
+
+  const isUkMarket = market === 'UK';
+  const isAuMarket = market === 'AU';
+  const isNzMarket = market === 'NZ';
+  const isMonthlyStudentDebt = market === 'US' || market === 'CA';
+  const isIncomeBasedStudentDebt = isAuMarket || isNzMarket;
+
+  // LVR deposit rows from API output
+  const depositRows = useMemo(() => {
+    if (!typedOutputs) return null;
+    if (typedOutputs.depositNeeded && Array.isArray(typedOutputs.depositNeeded)) {
+      return typedOutputs.depositNeeded as LvrThreshold[];
+    }
+    // Fallback using named fields
+    return [
+      { lvr: 80, note: marketDefaults.lvrNote80, deposit: typedOutputs.depositNeeded80LVR },
+      { lvr: 90, note: marketDefaults.lvrNote90, deposit: typedOutputs.depositNeeded90LVR },
+    ];
+  }, [typedOutputs, marketDefaults]);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -146,6 +247,13 @@ const BorrowingPowerCalculator: React.FC = () => {
             </p>
           </div>
 
+          {/* CA OSFI B-20 info banner */}
+          {marketDefaults.showOsfiNote && (
+            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              <strong>OSFI B-20 Stress Test:</strong> Canadian lenders must qualify you at the higher of 5.25% or your contract rate + 2%. The assessment rate below reflects this.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             {/* ── Inputs ── */}
             <section
@@ -180,6 +288,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                 value={inputs.grossIncome1}
                 onChange={(v) => setInput('grossIncome1', v)}
                 hint="Gross annual salary or wages"
+                locale={locale}
+                currencySymbol={currencySymbol}
               />
 
               {/* Secondary income — conditional */}
@@ -190,6 +300,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                     value={inputs.grossIncome2}
                     onChange={(v) => setInput('grossIncome2', v)}
                     hint="Gross annual salary or wages for second applicant"
+                    locale={locale}
+                    currencySymbol={currencySymbol}
                   />
                 </div>
               )}
@@ -200,6 +312,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                 value={inputs.otherIncome}
                 onChange={(v) => setInput('otherIncome', v)}
                 hint="Rental income, dividends, etc."
+                locale={locale}
+                currencySymbol={currencySymbol}
               />
 
               {/* Monthly expenses */}
@@ -207,7 +321,13 @@ const BorrowingPowerCalculator: React.FC = () => {
                 label="Monthly living expenses"
                 value={inputs.monthlyLivingExpenses}
                 onChange={(v) => setInput('monthlyLivingExpenses', v)}
-                hint="Food, utilities, transport, subscriptions, etc."
+                hint={
+                  isAuMarket
+                    ? 'Food, utilities, transport, subscriptions, etc. (HEM floor applies)'
+                    : 'Food, utilities, transport, subscriptions, etc.'
+                }
+                locale={locale}
+                currencySymbol={currencySymbol}
               />
 
               {/* Dependants */}
@@ -236,19 +356,97 @@ const BorrowingPowerCalculator: React.FC = () => {
                   value={inputs.creditCardLimits}
                   onChange={(v) => setInput('creditCardLimits', v)}
                   hint="Combined limit across all credit cards (lenders use 3% as monthly commitment)"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
                 <CurrencyInput
                   label="Existing loan repayments (monthly)"
                   value={inputs.existingLoanRepayments}
                   onChange={(v) => setInput('existingLoanRepayments', v)}
                   hint="Car loans, personal loans, existing mortgage repayments"
+                  locale={locale}
+                  currencySymbol={currencySymbol}
                 />
-                <CurrencyInput
-                  label="HECS/HELP debt (total)"
-                  value={inputs.hecsDebt}
-                  onChange={(v) => setInput('hecsDebt', v)}
-                  hint="Your current HECS or HELP student loan balance"
-                />
+
+                {/* Student debt — different UI per market */}
+                {isAuMarket && (
+                  <CurrencyInput
+                    label={marketDefaults.studentDebtLabel}
+                    value={inputs.studentDebt as number}
+                    onChange={(v) => setInput('studentDebt', v)}
+                    hint={marketDefaults.studentDebtHint}
+                    locale={locale}
+                    currencySymbol={currencySymbol}
+                  />
+                )}
+
+                {isNzMarket && (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-3">
+                      <input
+                        id="nz-student-loan"
+                        type="checkbox"
+                        checked={Boolean(inputs.studentDebt)}
+                        onChange={(e) => setInput('studentDebt', e.target.checked ? 1 : 0)}
+                        className="accent-brand-gold w-4 h-4"
+                      />
+                      <label htmlFor="nz-student-loan" className="text-sm font-medium text-content cursor-pointer">
+                        {marketDefaults.studentDebtLabel}
+                      </label>
+                    </div>
+                    {inputs.studentDebt ? (
+                      <p className="text-xs text-content-secondary ml-7">{marketDefaults.studentDebtHint}</p>
+                    ) : null}
+                  </div>
+                )}
+
+                {isMonthlyStudentDebt && (
+                  <CurrencyInput
+                    label={marketDefaults.studentDebtLabel}
+                    value={inputs.studentDebt as number}
+                    onChange={(v) => setInput('studentDebt', v)}
+                    hint={marketDefaults.studentDebtHint}
+                    locale={locale}
+                    currencySymbol={currencySymbol}
+                  />
+                )}
+
+                {isUkMarket && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        id="uk-student-loan"
+                        type="checkbox"
+                        checked={Boolean(inputs.studentDebt)}
+                        onChange={(e) => setInput('studentDebt', e.target.checked ? 1 : 0)}
+                        className="accent-brand-gold w-4 h-4"
+                      />
+                      <label htmlFor="uk-student-loan" className="text-sm font-medium text-content cursor-pointer">
+                        {marketDefaults.studentDebtLabel}
+                      </label>
+                    </div>
+                    {Boolean(inputs.studentDebt) && (
+                      <div className="ml-7 flex flex-col gap-1">
+                        <label htmlFor="uk-plan" className="text-xs font-medium text-content-secondary">
+                          Plan type
+                        </label>
+                        <select
+                          id="uk-plan"
+                          value={inputs.ukStudentLoanPlan}
+                          onChange={(e) => setInput('ukStudentLoanPlan', e.target.value)}
+                          className="w-full px-3 py-2 bg-base-200 border border-base-300 rounded-lg text-content text-sm focus:outline-none focus:border-brand-gold transition-colors"
+                        >
+                          {UK_STUDENT_LOAN_PLANS.map((plan) => (
+                            <option key={plan.id} value={plan.id}>
+                              {plan.label}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-content-secondary">{marketDefaults.studentDebtHint}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </ExpandableSection>
 
               {/* Assessment rate */}
@@ -259,7 +457,7 @@ const BorrowingPowerCalculator: React.FC = () => {
                 min={1}
                 max={20}
                 step={0.25}
-                hint="APRA requires lenders to assess at your rate + 3% buffer. Default is 9.5%."
+                hint={marketDefaults.assessmentRateHint}
               />
 
               {/* Actions */}
@@ -318,8 +516,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                       />
                     </div>
                     <div className="flex justify-between mt-1.5 text-xs text-content-secondary">
-                      <span>$0</span>
-                      <span>$2,000,000</span>
+                      <span>{currencySymbol}0</span>
+                      <span>{currencySymbol}2,000,000</span>
                     </div>
                   </div>
                 )}
@@ -344,23 +542,29 @@ const BorrowingPowerCalculator: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* LVR deposit thresholds */}
                     <div className="bg-base-100 border border-base-300 rounded-xl p-5">
                       <p className="text-sm font-medium text-content mb-3">Deposit needed</p>
                       <div className="flex flex-col gap-2.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-content-secondary">At 80% LVR (no LMI)</span>
-                          <span className="text-sm font-semibold text-brand-primary">
-                            {formatDollars(typedOutputs.depositNeeded80LVR)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-content-secondary">At 90% LVR (LMI applies)</span>
-                          <span className="text-sm font-semibold text-brand-primary">
-                            {formatDollars(typedOutputs.depositNeeded90LVR)}
-                          </span>
-                        </div>
+                        {depositRows
+                          ? depositRows.map((row) => (
+                              <div key={row.lvr} className="flex items-center justify-between">
+                                <span className="text-sm text-content-secondary">{row.note}</span>
+                                <span className="text-sm font-semibold text-brand-primary">
+                                  {formatDollars(row.deposit)}
+                                </span>
+                              </div>
+                            ))
+                          : null}
                       </div>
                     </div>
+
+                    {/* CA OSFI qualifying rate note */}
+                    {marketDefaults.showOsfiNote && typedOutputs.effectiveAssessmentRate && (
+                      <p className="text-xs text-content-secondary">
+                        Qualifying rate used: {typedOutputs.effectiveAssessmentRate.toFixed(2)}% (OSFI B-20 minimum)
+                      </p>
+                    )}
                   </>
                 )}
 

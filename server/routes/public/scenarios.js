@@ -3,7 +3,8 @@ const { body, query, validationResult } = require('express-validator');
 
 const router = express.Router();
 
-const CALCULATOR_TYPES = ['MORTGAGE', 'STAMP_DUTY', 'RENTAL_YIELD', 'BORROWING_POWER', 'RENT_VS_BUY'];
+const CALCULATOR_TYPES = ['MORTGAGE', 'STAMP_DUTY', 'RENTAL_YIELD', 'BORROWING_POWER', 'RENT_VS_BUY', 'BUYING_COSTS'];
+const VALID_MARKETS = ['AU', 'US', 'UK', 'CA', 'NZ'];
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -18,6 +19,7 @@ router.get(
   '/',
   [
     query('type').optional().isIn(CALCULATOR_TYPES).withMessage('Invalid calculator type'),
+    query('market').optional().isIn(VALID_MARKETS).withMessage('Invalid market'),
     query('search').optional().isString().trim(),
   ],
   async (req, res) => {
@@ -25,10 +27,11 @@ router.get(
     if (validationError) return;
 
     try {
-      const { type, search } = req.query;
+      const { type, market, search } = req.query;
 
       const where = { userId: req.user.id };
       if (type) where.calculatorType = type;
+      if (market) where.market = market;
       if (search) {
         where.name = { contains: search, mode: 'insensitive' };
       }
@@ -39,6 +42,7 @@ router.get(
           id: true,
           name: true,
           calculatorType: true,
+          market: true,
           headlineLabel: true,
           headlineValue: true,
           createdAt: true,
@@ -61,6 +65,7 @@ router.post(
   [
     body('name').notEmpty().isString().trim().isLength({ max: 200 }).withMessage('Name is required and must be at most 200 characters'),
     body('calculatorType').isIn(CALCULATOR_TYPES).withMessage('Invalid calculator type'),
+    body('market').optional().isIn(VALID_MARKETS).withMessage('Invalid market'),
     body('inputs').notEmpty().isObject().withMessage('inputs must be an object'),
     body('outputs').notEmpty().isObject().withMessage('outputs must be an object'),
     body('headlineLabel').notEmpty().isString().withMessage('headlineLabel is required'),
@@ -79,13 +84,14 @@ router.post(
         return res.status(429).json({ error: 'Scenario limit reached. Maximum 100 scenarios per user.' });
       }
 
-      const { name, calculatorType, inputs, outputs, headlineLabel, headlineValue } = req.body;
+      const { name, calculatorType, market, inputs, outputs, headlineLabel, headlineValue } = req.body;
 
       const scenario = await req.prisma.savedScenario.create({
         data: {
           userId: req.user.id,
           name,
           calculatorType,
+          market: market || 'AU',
           inputs,
           outputs,
           headlineLabel,
@@ -175,6 +181,7 @@ router.post('/:id/duplicate', async (req, res) => {
         userId: req.user.id,
         name: `${original.name} (copy)`,
         calculatorType: original.calculatorType,
+        market: original.market || 'AU',
         inputs: original.inputs,
         outputs: original.outputs,
         headlineLabel: original.headlineLabel,

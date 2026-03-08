@@ -301,11 +301,156 @@ async function getMetaForUrl(url, prisma) {
   }
 
   // Tools index and calculator pages
+  const CURRENCY_BY_MARKET = { au: 'AUD', us: 'USD', uk: 'GBP', ca: 'CAD', nz: 'NZD' };
+
+  // Market-specific tools index pages: /:market/tools
+  const toolsMarketMatch = url.match(/^\/([a-z]{2})\/tools$/);
+  if (toolsMarketMatch && SUPPORTED_COUNTRIES.includes(toolsMarketMatch[1])) {
+    const mkt = toolsMarketMatch[1];
+    const countryName = COUNTRY_NAMES[mkt.toUpperCase()];
+    const title = `Free Property Calculators ${countryName} 2026`;
+    const description = `Free property calculators for ${countryName} — mortgage repayments, rental yield, borrowing power, rent vs buy, and more. Updated for 2026.`;
+    const webAppJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: title,
+      url: `${SITE_URL}/${mkt}/tools`,
+      description,
+    };
+    const breadcrumbJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/${mkt}/tools` },
+        { '@type': 'ListItem', position: 3, name: `${countryName} Calculators`, item: `${SITE_URL}/${mkt}/tools` },
+      ],
+    };
+    const tags = [];
+    const fullTitle = `${title} | ${SITE_NAME}`;
+    tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
+    tags.push(`<meta name="description" content="${escapeHtml(description)}" />`);
+    tags.push(`<link rel="canonical" href="${SITE_URL}/${mkt}/tools" />`);
+    tags.push(buildHreflangTags(url));
+    tags.push(`<meta property="og:title" content="${escapeHtml(fullTitle)}" />`);
+    tags.push(`<meta property="og:description" content="${escapeHtml(description)}" />`);
+    tags.push(`<meta property="og:type" content="website" />`);
+    tags.push(`<meta property="og:url" content="${SITE_URL}/${mkt}/tools" />`);
+    tags.push(`<meta property="og:site_name" content="${SITE_NAME}" />`);
+    tags.push(`<meta property="og:image" content="${DEFAULT_IMAGE}" />`);
+    tags.push(`<meta name="twitter:card" content="summary_large_image" />`);
+    tags.push(`<meta name="twitter:title" content="${escapeHtml(fullTitle)}" />`);
+    tags.push(`<meta name="twitter:description" content="${escapeHtml(description)}" />`);
+    tags.push(`<meta name="twitter:image" content="${DEFAULT_IMAGE}" />`);
+    tags.push(`<script type="application/ld+json">${JSON.stringify(webAppJsonLd)}</script>`);
+    tags.push(`<script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd)}</script>`);
+    return tags.join('\n    ');
+  }
+
+  // Market-specific calculator pages: /:market/tools/:calculator-slug
+  const toolsMarketCalcMatch = url.match(/^\/([a-z]{2})\/tools\/([^/?#]+)$/);
+  if (toolsMarketCalcMatch && SUPPORTED_COUNTRIES.includes(toolsMarketCalcMatch[1])) {
+    const mkt = toolsMarketCalcMatch[1];
+    const calcSlug = toolsMarketCalcMatch[2];
+    const countryName = COUNTRY_NAMES[mkt.toUpperCase()];
+    const currency = CURRENCY_BY_MARKET[mkt];
+
+    const MARKET_CALC_META = {
+      'mortgage-calculator': {
+        au: { title: 'Mortgage Repayment Calculator Australia 2026', description: 'Calculate Australian mortgage repayments across different loan terms and rates. Includes LMI indicator, fortnightly/weekly payments, and amortisation schedule.' },
+        us: { title: 'Mortgage Calculator USA 2026', description: 'Calculate US mortgage payments with PMI estimates, amortization schedule, and monthly/bi-weekly payment options.' },
+        uk: { title: 'Mortgage Calculator UK 2026', description: 'Calculate UK mortgage repayments including stress test rates, monthly payments, and total interest over the mortgage term.' },
+        ca: { title: 'Mortgage Calculator Canada 2026', description: 'Calculate Canadian mortgage payments including CMHC insurance, amortization period options, and OSFI stress test rate.' },
+        nz: { title: 'Mortgage Calculator NZ 2026', description: 'Calculate New Zealand mortgage repayments with low equity premium notes, weekly/fortnightly payment options, and amortisation schedule.' },
+      },
+      'rental-yield-calculator': {
+        au: { title: 'Rental Yield Calculator Australia 2026', description: 'Calculate gross and net rental yield for Australian investment properties including council rates, strata fees, and management costs.' },
+        us: { title: 'Rental Yield Calculator USA 2026', description: 'Calculate gross and net rental yield for US investment properties including property tax, HOA fees, and management costs.' },
+        uk: { title: 'Rental Yield Calculator UK 2026', description: 'Calculate gross and net rental yield for UK investment properties including council tax, service charges, and management costs.' },
+        ca: { title: 'Rental Yield Calculator Canada 2026', description: 'Calculate gross and net rental yield for Canadian investment properties including property tax, condo fees, and management costs.' },
+        nz: { title: 'Rental Yield Calculator NZ 2026', description: 'Calculate gross and net rental yield for New Zealand investment properties with interest deductibility toggle and council rates.' },
+      },
+      'borrowing-power-calculator': {
+        au: { title: 'Borrowing Power Calculator Australia 2026', description: 'Find out how much you can borrow from Australian lenders based on income, expenses, and the APRA 3% serviceability buffer.' },
+        us: { title: 'Borrowing Power Calculator USA 2026', description: 'Estimate your US mortgage borrowing capacity based on income, debts, and lender debt-to-income ratio guidelines.' },
+        uk: { title: 'Borrowing Power Calculator UK 2026', description: 'Estimate UK mortgage affordability based on income, expenses, and the PRA 3% stress test requirement.' },
+        ca: { title: 'Borrowing Power Calculator Canada 2026', description: 'Calculate Canadian mortgage borrowing capacity with the OSFI B-20 stress test at the higher of 5.25% or contract rate plus 2%.' },
+        nz: { title: 'Borrowing Power Calculator NZ 2026', description: 'Find out how much you can borrow from New Zealand lenders based on income, expenses, and the standard 2.5% serviceability buffer.' },
+      },
+      'rent-vs-buy-calculator': {
+        au: { title: 'Rent vs Buy Calculator Australia 2026', description: 'Compare renting vs buying in Australia over the long term, including stamp duty, council rates, and capital growth assumptions.' },
+        us: { title: 'Rent vs Buy Calculator USA 2026', description: 'Compare renting vs buying in the US including property tax, HOA fees, PMI, and optional mortgage interest tax deduction.' },
+        uk: { title: 'Rent vs Buy Calculator UK 2026', description: 'Compare renting vs buying in the UK including SDLT, council tax, and long-term capital growth assumptions.' },
+        ca: { title: 'Rent vs Buy Calculator Canada 2026', description: 'Compare renting vs buying in Canada including land transfer tax, property tax, and long-term capital growth assumptions.' },
+        nz: { title: 'Rent vs Buy Calculator NZ 2026', description: 'Compare renting vs buying in New Zealand including council rates, insurance costs, and long-term capital growth assumptions.' },
+      },
+      'stamp-duty-calculator': {
+        au: { title: 'Stamp Duty Calculator Australia 2026 — Calculate by State', description: 'Calculate stamp duty for every Australian state and territory. Includes first home buyer concessions, foreign buyer surcharges, and investment property rates.' },
+      },
+      'sdlt-calculator': {
+        uk: { title: 'Stamp Duty Calculator UK 2026 — SDLT, LBTT & LTT Rates', description: 'Calculate UK property stamp duty for England & Northern Ireland (SDLT), Scotland (LBTT), and Wales (LTT). Includes first-time buyer relief and additional property surcharges.' },
+      },
+      'land-transfer-tax-calculator': {
+        ca: { title: 'Land Transfer Tax Calculator Canada 2026 — All Provinces', description: 'Calculate Canadian land transfer tax for all 13 provinces and territories including Ontario, BC, Quebec, and Toronto/Montreal municipal taxes.' },
+      },
+      'transfer-tax-calculator': {
+        us: { title: 'Transfer Tax Calculator USA 2026 — All 50 States', description: 'Calculate US property transfer tax and estimated closing costs for all 50 states, including title insurance and mortgage recording tax.' },
+      },
+      'buying-costs-calculator': {
+        nz: { title: 'Buying Costs Calculator NZ 2026 — No Stamp Duty', description: 'Estimate total property buying costs in New Zealand. NZ has no stamp duty or transfer tax — this calculator covers legal fees, inspections, LIM reports, and low equity premiums.' },
+      },
+    };
+
+    const calcMeta = MARKET_CALC_META[calcSlug]?.[mkt];
+    if (calcMeta) {
+      const calcDisplayName = calcSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const webAppJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: calcMeta.title,
+        url: `${SITE_URL}/${mkt}/tools/${calcSlug}`,
+        description: calcMeta.description,
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'All',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: currency },
+      };
+      const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+          { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
+          { '@type': 'ListItem', position: 3, name: `${countryName} Calculators`, item: `${SITE_URL}/${mkt}/tools` },
+          { '@type': 'ListItem', position: 4, name: calcDisplayName, item: `${SITE_URL}/${mkt}/tools/${calcSlug}` },
+        ],
+      };
+      const tags = [];
+      const fullTitle = `${calcMeta.title} | ${SITE_NAME}`;
+      tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
+      tags.push(`<meta name="description" content="${escapeHtml(calcMeta.description)}" />`);
+      tags.push(`<link rel="canonical" href="${SITE_URL}/tools/${mkt}/${calcSlug}" />`);
+      tags.push(buildHreflangTags(url));
+      tags.push(`<meta property="og:title" content="${escapeHtml(fullTitle)}" />`);
+      tags.push(`<meta property="og:description" content="${escapeHtml(calcMeta.description)}" />`);
+      tags.push(`<meta property="og:type" content="website" />`);
+      tags.push(`<meta property="og:url" content="${SITE_URL}/tools/${mkt}/${calcSlug}" />`);
+      tags.push(`<meta property="og:site_name" content="${SITE_NAME}" />`);
+      tags.push(`<meta property="og:image" content="${DEFAULT_IMAGE}" />`);
+      tags.push(`<meta name="twitter:card" content="summary_large_image" />`);
+      tags.push(`<meta name="twitter:title" content="${escapeHtml(fullTitle)}" />`);
+      tags.push(`<meta name="twitter:description" content="${escapeHtml(calcMeta.description)}" />`);
+      tags.push(`<meta name="twitter:image" content="${DEFAULT_IMAGE}" />`);
+      tags.push(`<script type="application/ld+json">${JSON.stringify(webAppJsonLd)}</script>`);
+      tags.push(`<script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd)}</script>`);
+      return tags.join('\n    ');
+    }
+  }
+
   const CALCULATOR_META = {
     '/tools': {
-      title: 'Property Calculators Australia',
+      title: 'Property Calculators',
       description: 'Free property calculators — mortgage repayments, stamp duty, rental yield, borrowing power, rent vs buy.',
-      appName: 'Property Calculators Australia',
+      appName: 'Property Calculators',
       breadcrumb: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
         { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },

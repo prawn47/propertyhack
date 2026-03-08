@@ -18,12 +18,14 @@ const adminDashboardRoutes = require('./routes/admin/dashboard');
 const adminSeoRoutes = require('./routes/admin/seo');
 const adminSocialConfigRoutes = require('./routes/admin/socialConfig');
 const adminSocialAccountsRoutes = require('./routes/admin/socialAccounts');
+const adminSubscribersRoutes = require('./routes/admin/subscribers');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
 const publicMarketsRoutes = require('./routes/public/markets');
 const calculatorRoutes = require('./routes/public/calculators');
 const scenarioRoutes = require('./routes/public/scenarios');
+const publicSubscribeRoutes = require('./routes/public/subscribe');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
 const passport = require('./passport');
@@ -177,12 +179,14 @@ app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/seo', adminSeoRoutes);
 app.use('/api/admin/social-config', adminSocialConfigRoutes);
 app.use('/api/admin/social-accounts', adminSocialAccountsRoutes);
+app.use('/api/admin/subscribers', adminSubscribersRoutes);
 app.use('/api/scenarios', authenticateToken, scenarioRoutes);
 // Spec-required public API paths
 app.use('/api/articles', publicArticlesRoutes);
 app.use('/api/categories', publicCategoriesRoutes);
 app.use('/api/locations', publicLocationsRoutes);
 app.use('/api/markets', publicMarketsRoutes);
+app.use('/api/subscribe', publicSubscribeRoutes);
 // Legacy path kept for existing frontend compatibility
 app.use('/api/public/articles', publicArticlesRoutes);
 // Webhooks (no auth, validated by x-webhook-secret header)

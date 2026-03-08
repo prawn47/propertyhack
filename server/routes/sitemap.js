@@ -153,6 +153,29 @@ router.get('/sitemap-pages.xml', cached('pages', async (req) => {
     distinct: ['category'],
   });
 
+  // Market-specific calculator URLs
+  // Global calculators available in all 5 markets
+  const globalCalcs = ['mortgage-calculator', 'rental-yield-calculator', 'borrowing-power-calculator', 'rent-vs-buy-calculator'];
+  // Jurisdiction-specific calculators
+  const jurisdictionCalcs = {
+    au: ['stamp-duty-calculator'],
+    uk: ['sdlt-calculator'],
+    ca: ['land-transfer-tax-calculator'],
+    us: ['transfer-tax-calculator'],
+    nz: ['buying-costs-calculator'],
+  };
+
+  const marketCalcUrls = [];
+  for (const mkt of SUPPORTED_COUNTRIES) {
+    marketCalcUrls.push({ loc: `/${mkt}/tools`, priority: '0.7', changefreq: 'monthly' });
+    for (const calc of globalCalcs) {
+      marketCalcUrls.push({ loc: `/${mkt}/tools/${calc}`, priority: '0.8', changefreq: 'monthly' });
+    }
+    for (const calc of (jurisdictionCalcs[mkt] || [])) {
+      marketCalcUrls.push({ loc: `/${mkt}/tools/${calc}`, priority: '0.8', changefreq: 'monthly' });
+    }
+  }
+
   const urls = [
     { loc: '/', priority: '1.0', changefreq: 'hourly' },
     { loc: '/about', priority: '0.5', changefreq: 'monthly' },
@@ -163,6 +186,7 @@ router.get('/sitemap-pages.xml', cached('pages', async (req) => {
     { loc: '/tools/rental-yield-calculator', priority: '0.8', changefreq: 'monthly' },
     { loc: '/tools/borrowing-power-calculator', priority: '0.8', changefreq: 'monthly' },
     { loc: '/tools/rent-vs-buy-calculator', priority: '0.8', changefreq: 'monthly' },
+    ...marketCalcUrls,
   ];
 
   for (const { category } of categories) {

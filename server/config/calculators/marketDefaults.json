@@ -1,0 +1,297 @@
+{
+  "AU": {
+    "currency": "AUD",
+    "currencySymbol": "$",
+    "locale": "en-AU",
+    "mortgage": {
+      "defaultLoanTermYears": 30,
+      "defaultInterestRate": 6.5,
+      "defaultFrequency": "monthly",
+      "frequencies": ["weekly", "fortnightly", "monthly"],
+      "maxLoanTermYears": 30,
+      "lvrThreshold": 80,
+      "lvrThresholdNote": "LMI likely applies",
+      "lvrThresholdDetail": "Lenders typically require Lenders Mortgage Insurance above 80% LVR.",
+      "terminology": {
+        "loanTerm": "Loan term",
+        "repayments": "Repayments",
+        "repayment": "Repayment",
+        "lvrLabel": "LVR",
+        "depositToggleLabel": "AUD"
+      }
+    },
+    "rentalYield": {
+      "rentFrequency": "weekly",
+      "rentInputLabel": "Weekly Rent",
+      "managementFeeDefault": 8.5,
+      "managementFeeHint": "Typically 7–12% of annual rent",
+      "labels": {
+        "propertyTax": "Council Rates",
+        "strata": "Strata / Body Corporate Fees",
+        "landTax": "Land Tax",
+        "groundRent": null
+      },
+      "showLandTax": true
+    },
+    "borrowingPower": {
+      "serviceabilityBuffer": 3.0,
+      "defaultAssessmentRate": 9.5,
+      "assessmentRateHint": "APRA requires lenders to assess at your rate + 3% buffer. Default is 9.5%.",
+      "studentDebtLabel": "HECS/HELP debt (total)",
+      "studentDebtHint": "Your current HECS or HELP student loan balance",
+      "studentDebtTreatment": "income_threshold",
+      "maxLvr": 80,
+      "lvrLabel": "LVR",
+      "lmiLabel": "LMI",
+      "lvrNote80": "At 80% LVR (no LMI)",
+      "lvrNote90": "At 90% LVR (LMI applies)"
+    },
+    "rentVsBuy": {
+      "rentFrequency": "weekly",
+      "rentInputLabel": "Weekly Rent",
+      "defaultPropertyGrowthRate": 5,
+      "defaultRentIncreaseRate": 3,
+      "defaultInvestmentReturnRate": 7
+    }
+  },
+  "US": {
+    "currency": "USD",
+    "currencySymbol": "$",
+    "locale": "en-US",
+    "mortgage": {
+      "defaultLoanTermYears": 30,
+      "defaultInterestRate": 7.0,
+      "defaultFrequency": "monthly",
+      "frequencies": ["monthly", "bi-weekly"],
+      "maxLoanTermYears": 30,
+      "lvrThreshold": 80,
+      "lvrThresholdNote": "PMI may apply",
+      "lvrThresholdDetail": "PMI can typically be removed once you reach 20% equity.",
+      "terminology": {
+        "loanTerm": "Loan term",
+        "repayments": "Payments",
+        "repayment": "Payment",
+        "lvrLabel": "LTV",
+        "depositToggleLabel": "USD"
+      }
+    },
+    "rentalYield": {
+      "rentFrequency": "monthly",
+      "rentInputLabel": "Monthly Rent",
+      "managementFeeDefault": 9.0,
+      "managementFeeHint": "Typically 8–10% of annual rent",
+      "labels": {
+        "propertyTax": "Property Tax",
+        "strata": "HOA Fees",
+        "landTax": null,
+        "groundRent": null
+      },
+      "showLandTax": false,
+      "propertyTaxRequired": true
+    },
+    "borrowingPower": {
+      "serviceabilityBuffer": 2.0,
+      "defaultAssessmentRate": 9.0,
+      "assessmentRateHint": "Lenders typically qualify you at your contract rate plus a 2% buffer.",
+      "studentDebtLabel": "Student loans (monthly payment)",
+      "studentDebtHint": "Monthly student loan payment amount",
+      "studentDebtTreatment": "monthly_payment",
+      "maxLvr": 80,
+      "lvrLabel": "LTV",
+      "lmiLabel": "PMI",
+      "lvrNote80": "At 80% LTV (no PMI)",
+      "lvrNote90": "At 90% LTV (PMI applies)"
+    },
+    "rentVsBuy": {
+      "rentFrequency": "monthly",
+      "rentInputLabel": "Monthly Rent",
+      "defaultPropertyGrowthRate": 4,
+      "defaultRentIncreaseRate": 3,
+      "defaultInvestmentReturnRate": 7,
+      "propertyTaxRequired": true
+    }
+  },
+  "UK": {
+    "currency": "GBP",
+    "currencySymbol": "£",
+    "locale": "en-GB",
+    "mortgage": {
+      "defaultLoanTermYears": 25,
+      "defaultInterestRate": 4.5,
+      "defaultFrequency": "monthly",
+      "frequencies": ["monthly"],
+      "maxLoanTermYears": 35,
+      "lvrThreshold": 75,
+      "lvrThresholdNote": "Higher rates likely",
+      "lvrThresholdDetail": "Above 75% LTV, lenders typically charge higher interest rates.",
+      "terminology": {
+        "loanTerm": "Mortgage term",
+        "repayments": "Repayments",
+        "repayment": "Repayment",
+        "lvrLabel": "LTV",
+        "depositToggleLabel": "GBP"
+      }
+    },
+    "rentalYield": {
+      "rentFrequency": "monthly",
+      "rentInputLabel": "Monthly Rent (PCM)",
+      "managementFeeDefault": 11.0,
+      "managementFeeHint": "Typically 10–12% of annual rent",
+      "labels": {
+        "propertyTax": "Council Tax",
+        "strata": "Service Charge / Ground Rent",
+        "landTax": null,
+        "groundRent": "Ground Rent"
+      },
+      "showLandTax": false,
+      "showGroundRent": true
+    },
+    "borrowingPower": {
+      "serviceabilityBuffer": 3.0,
+      "defaultAssessmentRate": 7.5,
+      "assessmentRateHint": "PRA stress test requires lenders to assess at your rate + 3%.",
+      "studentDebtLabel": "Student loan (plan type)",
+      "studentDebtHint": "UK student loan repayments are automatically deducted above income thresholds",
+      "studentDebtTreatment": "uk_plan",
+      "studentLoanPlans": [
+        { "plan": "plan1", "label": "Plan 1", "threshold": 24990, "rate": 0.09 },
+        { "plan": "plan2", "label": "Plan 2", "threshold": 27295, "rate": 0.09 },
+        { "plan": "plan4", "label": "Plan 4 (Scotland)", "threshold": 31395, "rate": 0.09 },
+        { "plan": "plan5", "label": "Plan 5", "threshold": 25000, "rate": 0.09 },
+        { "plan": "postgrad", "label": "Postgraduate", "threshold": 21000, "rate": 0.06 }
+      ],
+      "maxLvr": 80,
+      "lvrLabel": "LTV",
+      "lmiLabel": "Higher Rate Mortgage",
+      "lvrNote80": "At 80% LTV",
+      "lvrNote90": "At 90% LTV (higher rates likely)"
+    },
+    "rentVsBuy": {
+      "rentFrequency": "monthly",
+      "rentInputLabel": "Monthly Rent (PCM)",
+      "defaultPropertyGrowthRate": 4,
+      "defaultRentIncreaseRate": 3,
+      "defaultInvestmentReturnRate": 6
+    }
+  },
+  "CA": {
+    "currency": "CAD",
+    "currencySymbol": "$",
+    "locale": "en-CA",
+    "mortgage": {
+      "defaultLoanTermYears": 25,
+      "defaultInterestRate": 5.5,
+      "defaultFrequency": "monthly",
+      "frequencies": ["monthly", "bi-weekly", "accelerated-bi-weekly"],
+      "maxLoanTermYears": 30,
+      "maxInsuredLoanTermYears": 25,
+      "lvrThreshold": 80,
+      "lvrThresholdNote": "CMHC insurance required",
+      "lvrThresholdDetail": "CMHC mortgage default insurance is required for down payments below 20%.",
+      "cmhcPremiums": [
+        { "minDownPercent": 5, "maxDownPercent": 9.99, "rate": 0.04, "label": "5% down — 4.00% premium" },
+        { "minDownPercent": 10, "maxDownPercent": 14.99, "rate": 0.031, "label": "10% down — 3.10% premium" },
+        { "minDownPercent": 15, "maxDownPercent": 19.99, "rate": 0.028, "label": "15% down — 2.80% premium" }
+      ],
+      "terminology": {
+        "loanTerm": "Amortization period",
+        "repayments": "Payments",
+        "repayment": "Payment",
+        "lvrLabel": "LTV",
+        "depositToggleLabel": "CAD"
+      }
+    },
+    "rentalYield": {
+      "rentFrequency": "monthly",
+      "rentInputLabel": "Monthly Rent",
+      "managementFeeDefault": 9.0,
+      "managementFeeHint": "Typically 8–10% of annual rent",
+      "labels": {
+        "propertyTax": "Property Tax",
+        "strata": "Condo Fees / Strata Fees",
+        "landTax": null,
+        "groundRent": null
+      },
+      "showLandTax": false
+    },
+    "borrowingPower": {
+      "serviceabilityBuffer": 2.0,
+      "defaultAssessmentRate": 7.25,
+      "assessmentRateHint": "OSFI B-20 stress test: qualify at the higher of 5.25% or your rate + 2%.",
+      "stressTestFloor": 5.25,
+      "studentDebtLabel": "Student loans (monthly payment)",
+      "studentDebtHint": "Monthly student loan payment amount",
+      "studentDebtTreatment": "monthly_payment",
+      "maxLvr": 80,
+      "lvrLabel": "LTV",
+      "lmiLabel": "CMHC Insurance",
+      "lvrNote80": "At 80% LTV (no CMHC)",
+      "lvrNote90": "At 90% LTV (CMHC required)"
+    },
+    "rentVsBuy": {
+      "rentFrequency": "monthly",
+      "rentInputLabel": "Monthly Rent",
+      "defaultPropertyGrowthRate": 4,
+      "defaultRentIncreaseRate": 3,
+      "defaultInvestmentReturnRate": 6
+    }
+  },
+  "NZ": {
+    "currency": "NZD",
+    "currencySymbol": "$",
+    "locale": "en-NZ",
+    "mortgage": {
+      "defaultLoanTermYears": 30,
+      "defaultInterestRate": 6.5,
+      "defaultFrequency": "monthly",
+      "frequencies": ["weekly", "fortnightly", "monthly"],
+      "maxLoanTermYears": 30,
+      "lvrThreshold": 80,
+      "lvrThresholdNote": "Low equity premium may apply",
+      "lvrThresholdDetail": "NZ banks charge a Low Equity Premium (LEP) — typically 0.25% to 1.0% added to the interest rate, or a one-off fee of roughly 1.2% of the loan. Structures vary by lender.",
+      "terminology": {
+        "loanTerm": "Loan term",
+        "repayments": "Repayments",
+        "repayment": "Repayment",
+        "lvrLabel": "LVR",
+        "depositToggleLabel": "NZD"
+      }
+    },
+    "rentalYield": {
+      "rentFrequency": "weekly",
+      "rentInputLabel": "Weekly Rent",
+      "managementFeeDefault": 8.0,
+      "managementFeeHint": "Typically 7–10% of annual rent",
+      "labels": {
+        "propertyTax": "Council Rates",
+        "strata": "Body Corporate",
+        "landTax": null,
+        "groundRent": null
+      },
+      "showLandTax": false,
+      "showInterestDeductibilityToggle": true
+    },
+    "borrowingPower": {
+      "serviceabilityBuffer": 2.5,
+      "defaultAssessmentRate": 9.0,
+      "assessmentRateHint": "NZ lenders typically stress test at your rate + 2.5%.",
+      "studentDebtLabel": "Student loan (total balance)",
+      "studentDebtHint": "Repayments are automatically deducted at 12% above $22,828 annual income",
+      "studentDebtTreatment": "nz_threshold",
+      "nzStudentLoanThreshold": 22828,
+      "nzStudentLoanRate": 0.12,
+      "maxLvr": 80,
+      "lvrLabel": "LVR",
+      "lmiLabel": "Low Equity Premium",
+      "lvrNote80": "At 80% LVR (standard rates)",
+      "lvrNote90": "At 90% LVR (low equity premium likely)"
+    },
+    "rentVsBuy": {
+      "rentFrequency": "weekly",
+      "rentInputLabel": "Weekly Rent",
+      "defaultPropertyGrowthRate": 5,
+      "defaultRentIncreaseRate": 3,
+      "defaultInvestmentReturnRate": 7
+    }
+  }
+}

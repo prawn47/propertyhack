@@ -1,0 +1,80 @@
+{
+  "market": "UK",
+  "currency": "GBP",
+  "currencySymbol": "£",
+  "lastUpdated": "2025-04-06",
+  "source": "https://www.gov.uk/income-tax-rates",
+  "defaultAssessmentRate": 7.5,
+  "serviceabilityBuffer": 3,
+  "termMonths": 300,
+  "studentDebtTreatment": "income_based",
+  "studentDebtLabel": "Student loan",
+  "studentDebtHint": "Select your student loan plan type",
+  "useHEM": false,
+  "lvrThresholds": [
+    { "lvr": 75, "note": "At 75% LTV" },
+    { "lvr": 90, "note": "At 90% LTV (higher rates likely)" }
+  ],
+  "lvrWarningNote": ">75% LTV — higher rates are likely; >90% LTV — very limited lender options",
+  "assessmentRateHint": "PRA stress test requires lenders to assess at your rate + 3% buffer.",
+  "incomeTax": {
+    "type": "brackets",
+    "note": "UK income tax bands 2025-26 (England, Wales & Northern Ireland). Scotland uses different rates.",
+    "personalAllowance": 12570,
+    "personalAllowanceTaperThreshold": 100000,
+    "brackets": [
+      { "min": 0,      "max": 12570,  "base": 0,     "rate": 0 },
+      { "min": 12571,  "max": 50270,  "base": 0,     "rate": 0.20 },
+      { "min": 50271,  "max": 125140, "base": 7540,  "rate": 0.40 },
+      { "min": 125141, "max": null,   "base": 42540, "rate": 0.45 }
+    ],
+    "nationalInsurance": {
+      "note": "NI Class 1 employee contributions 2025-26",
+      "primaryThreshold": 12570,
+      "upperEarningsLimit": 50270,
+      "rateBelowUEL": 0.08,
+      "rateAboveUEL": 0.02
+    }
+  },
+  "studentDebt": {
+    "type": "income_threshold",
+    "note": "UK student loan repayments are automatically deducted at 9% (Plan 1/2/4/5) or 6% (Postgrad) above the plan threshold",
+    "plans": [
+      {
+        "id": "plan1",
+        "label": "Plan 1",
+        "threshold": 24990,
+        "rate": 0.09,
+        "note": "England/Wales pre-2012 or Northern Ireland"
+      },
+      {
+        "id": "plan2",
+        "label": "Plan 2",
+        "threshold": 27295,
+        "rate": 0.09,
+        "note": "England/Wales from 2012"
+      },
+      {
+        "id": "plan4",
+        "label": "Plan 4 (Scotland)",
+        "threshold": 31395,
+        "rate": 0.09,
+        "note": "Scottish undergraduate loans"
+      },
+      {
+        "id": "plan5",
+        "label": "Plan 5",
+        "threshold": 25000,
+        "rate": 0.09,
+        "note": "England undergraduate loans from 2023"
+      },
+      {
+        "id": "postgrad",
+        "label": "Postgraduate",
+        "threshold": 21000,
+        "rate": 0.06,
+        "note": "Postgraduate Master's or Doctoral loan"
+      }
+    ]
+  }
+}

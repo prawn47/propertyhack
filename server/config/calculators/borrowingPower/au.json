@@ -1,0 +1,67 @@
+{
+  "market": "AU",
+  "currency": "AUD",
+  "currencySymbol": "$",
+  "lastUpdated": "2025-04-01",
+  "source": "https://www.ato.gov.au/rates/individual-income-tax-rates/",
+  "defaultAssessmentRate": 9.5,
+  "serviceabilityBuffer": 3,
+  "termMonths": 360,
+  "studentDebtTreatment": "income_based",
+  "studentDebtLabel": "HECS/HELP debt (total)",
+  "studentDebtHint": "Your current HECS or HELP student loan balance",
+  "useHEM": true,
+  "lvrThresholds": [
+    { "lvr": 80, "note": "At 80% LVR (no LMI)" },
+    { "lvr": 90, "note": "At 90% LVR (LMI applies)" }
+  ],
+  "lvrWarningNote": ">80% LVR — Lenders Mortgage Insurance (LMI) may apply",
+  "assessmentRateHint": "APRA requires lenders to assess at your rate + 3% buffer. Default is 9.5%.",
+  "incomeTax": {
+    "type": "brackets",
+    "note": "ATO 2024-25 individual income tax brackets (resident)",
+    "brackets": [
+      { "min": 0,      "max": 18200,  "base": 0,     "rate": 0 },
+      { "min": 18201,  "max": 45000,  "base": 0,     "rate": 0.19 },
+      { "min": 45001,  "max": 120000, "base": 5092,  "rate": 0.325 },
+      { "min": 120001, "max": 180000, "base": 29467, "rate": 0.37 },
+      { "min": 180001, "max": null,   "base": 51667, "rate": 0.45 }
+    ],
+    "medicareLevy": 0.02,
+    "lito": {
+      "enabled": true,
+      "tiers": [
+        { "maxIncome": 37500,  "offset": 700,  "taperRate": 0,     "taperFrom": 0 },
+        { "maxIncome": 45000,  "offset": 700,  "taperRate": 0.05,  "taperFrom": 37500 },
+        { "maxIncome": 66667,  "offset": 150,  "taperRate": 0.015, "taperFrom": 45000 },
+        { "maxIncome": null,   "offset": 0,    "taperRate": 0,     "taperFrom": 0 }
+      ]
+    }
+  },
+  "studentDebt": {
+    "type": "income_percentage",
+    "note": "ATO HECS-HELP compulsory repayment thresholds 2025-26",
+    "creditCardCommitmentRate": 0.03,
+    "thresholds": [
+      { "min": 0,      "max": 54434, "rate": 0 },
+      { "min": 54435,  "max": 62945, "rate": 0.01 },
+      { "min": 62946,  "max": 66000, "rate": 0.02 },
+      { "min": 66001,  "max": 72753, "rate": 0.025 },
+      { "min": 72754,  "max": 78053, "rate": 0.03 },
+      { "min": 78054,  "max": 83736, "rate": 0.035 },
+      { "min": 83737,  "max": 89833, "rate": 0.04 },
+      { "min": 89834,  "max": 96389, "rate": 0.045 },
+      { "min": 96390,  "max": 103440, "rate": 0.05 },
+      { "min": 103441, "max": 111027, "rate": 0.055 },
+      { "min": 111028, "max": 119202, "rate": 0.06 },
+      { "min": 119203, "max": 128012, "rate": 0.065 },
+      { "min": 128013, "max": 137513, "rate": 0.07 },
+      { "min": 137514, "max": 147764, "rate": 0.075 },
+      { "min": 147765, "max": 158845, "rate": 0.08 },
+      { "min": 158846, "max": 170756, "rate": 0.085 },
+      { "min": 170757, "max": 183503, "rate": 0.09 },
+      { "min": 183504, "max": 197189, "rate": 0.095 },
+      { "min": 197190, "max": null,   "rate": 0.10 }
+    ]
+  }
+}

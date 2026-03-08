@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ArticleCard from './ArticleCard';
+import SubscribeForm from './SubscribeForm';
 import { getArticles } from '../../services/publicArticleService';
 import type { PublicArticle, GetArticlesParams } from '../../services/publicArticleService';
 import type { Filters } from './FilterBar';
@@ -157,9 +158,16 @@ const ArticleFeed: React.FC<ArticleFeedProps> = ({ filters, country }) => {
           </div>
         ))}
 
-        {/* Regular articles in grid */}
-        {regular.map((article) => (
-          <ArticleCard key={article.id} article={article} />
+        {/* Regular articles in grid with subscribe CTA */}
+        {regular.map((article, index) => (
+          <React.Fragment key={article.id}>
+            <ArticleCard article={article} />
+            {index === 4 && (
+              <div className="col-span-full">
+                <SubscribeForm variant="inline" />
+              </div>
+            )}
+          </React.Fragment>
         ))}
       </div>
 

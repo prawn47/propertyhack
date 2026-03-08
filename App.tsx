@@ -36,6 +36,7 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
+import SubscriberList from './components/admin/SubscriberList';
 import RegisterPage from './components/auth/RegisterPage';
 import VerifyEmailPage from './components/auth/VerifyEmailPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
@@ -48,6 +49,10 @@ import ScenarioDashboard from './components/user/ScenarioDashboard';
 import ProfilePage from './components/user/ProfilePage';
 import RentVsBuyCalculator from './components/calculators/RentVsBuyCalculator';
 import BorrowingPowerCalculator from './components/calculators/BorrowingPowerCalculator';
+import UkTransferTaxCalculator from './components/calculators/UkTransferTaxCalculator';
+import CaTransferTaxCalculator from './components/calculators/CaTransferTaxCalculator';
+import NzBuyingCostsCalculator from './components/calculators/NzBuyingCostsCalculator';
+import UsTransferTaxCalculator from './components/calculators/UsTransferTaxCalculator';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -177,6 +182,10 @@ function AppInner() {
         <Route path="tools/rent-vs-buy-calculator" element={<RentVsBuyCalculator />} />
         <Route path="tools/borrowing-power-calculator" element={<BorrowingPowerCalculator />} />
         <Route path="tools/rental-yield-calculator" element={<RentalYieldCalculator />} />
+        <Route path="tools/sdlt-calculator" element={<UkTransferTaxCalculator />} />
+        <Route path="tools/land-transfer-tax-calculator" element={<CaTransferTaxCalculator />} />
+        <Route path="tools/transfer-tax-calculator" element={<UsTransferTaxCalculator />} />
+        <Route path="tools/buying-costs-calculator" element={<NzBuyingCostsCalculator />} />
       </Route>
 
       {/* Auth routes */}
@@ -330,6 +339,14 @@ function AppInner() {
         element={
           <RequireAdmin>
             <AdminPage onLogout={handleLogout}><SocialSettings /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/subscribers"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><SubscriberList /></AdminPage>
           </RequireAdmin>
         }
       />

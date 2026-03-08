@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 import SeoHead from '../shared/SeoHead';
 import Breadcrumbs from '../shared/Breadcrumbs';
-import { useCountryDetection } from '../../hooks/useCountryDetection';
+import { useCountry } from '../../contexts/CountryContext';
 
 const SITE_URL = 'https://propertyhack.com.au';
 
@@ -46,10 +46,21 @@ const calculators = [
     slug: 'borrowing-power-calculator',
     name: 'Borrowing Power Calculator',
     description: 'Find out how much you could borrow based on your income, expenses, and existing debts.',
-    countries: ['AU'],
+    countries: null as string[] | null,
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
+    slug: 'transfer-tax-calculator',
+    name: 'US Transfer Tax Calculator',
+    description: 'Estimate transfer taxes, mortgage recording tax, and closing costs for property purchases across all 50 US states.',
+    countries: ['US'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
       </svg>
     ),
   },
@@ -61,6 +72,39 @@ const calculators = [
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />
+      </svg>
+    ),
+  },
+  {
+    slug: 'sdlt-calculator',
+    name: 'UK Stamp Duty Calculator',
+    description: 'Calculate SDLT (England & Northern Ireland), LBTT (Scotland), or LTT (Wales) for UK property purchases, including first-time buyer relief and additional property surcharges.',
+    countries: ['UK'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+      </svg>
+    ),
+  },
+  {
+    slug: 'land-transfer-tax-calculator',
+    name: 'Land Transfer Tax Calculator',
+    description: 'Calculate land transfer tax across all Canadian provinces and territories, including Toronto and Montreal municipal taxes and first-time buyer rebates.',
+    countries: ['CA'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+      </svg>
+    ),
+  },
+  {
+    slug: 'buying-costs-calculator',
+    name: 'NZ Buying Costs Calculator',
+    description: 'New Zealand has no stamp duty or transfer tax. Estimate your total buying costs — legal fees, building inspections, valuations, LIM reports, and more.',
+    countries: ['NZ'],
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
       </svg>
     ),
   },
@@ -96,20 +140,24 @@ const breadcrumbJsonLd = {
 };
 
 const ToolsIndex: React.FC = () => {
-  const { country, loading: countryLoading } = useCountryDetection();
+  const { country: countryParam } = useParams<{ country: string }>();
+  const { country, loading: countryLoading } = useCountry();
   const [showAll, setShowAll] = useState(false);
+  const countryPrefix = countryParam || country?.toLowerCase() || 'au';
+
+  const activeCountry = countryParam?.toUpperCase() || country || 'AU';
 
   const filteredCalculators = useMemo(() => {
-    if (showAll || !country || countryLoading) return calculators;
-    return calculators.filter((calc) => !calc.countries || calc.countries.includes(country));
-  }, [country, countryLoading, showAll]);
+    if (showAll) return calculators;
+    return calculators.filter((calc) => !calc.countries || calc.countries.includes(activeCountry));
+  }, [activeCountry, showAll]);
 
   const hasHidden = filteredCalculators.length < calculators.length;
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col">
       <SeoHead
-        title="Property Calculators Australia"
+        title={`Property Calculators ${activeCountry === 'AU' ? 'Australia' : activeCountry === 'US' ? 'USA' : activeCountry === 'UK' ? 'UK' : activeCountry === 'CA' ? 'Canada' : activeCountry === 'NZ' ? 'New Zealand' : ''}`}
         description="Free property calculators — mortgage repayments, stamp duty, rental yield, borrowing power, rent vs buy. Make smarter property decisions."
         canonicalUrl="/tools"
         jsonLd={[jsonLd, breadcrumbJsonLd]}
@@ -135,7 +183,7 @@ const ToolsIndex: React.FC = () => {
             {filteredCalculators.map((calc) => (
               <Link
                 key={calc.slug}
-                to={`/tools/${calc.slug}`}
+                to={`/${countryPrefix}/tools/${calc.slug}`}
                 className="group bg-base-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-lg hover:border-brand-gold border border-transparent"
               >
                 <div className="text-brand-gold">
