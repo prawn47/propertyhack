@@ -174,16 +174,20 @@ function getFirstTimeBuyerExemption(stateConfig, price, buyerType) {
 
 function calculate(inputs) {
   const {
-    propertyPrice,
+    propertyPrice: priceCents,
     state,
-    loanAmount = 0,
+    loanAmount: loanCents = 0,
     buyerType = 'standard',
     propertyType = 'primary',
     whoPays,
   } = inputs;
 
   if (!state) throw new Error('state is required');
-  if (!propertyPrice || propertyPrice < 0) throw new Error('propertyPrice must be a positive number');
+  if (!priceCents || priceCents < 0) throw new Error('propertyPrice must be a positive number');
+
+  // API sends propertyPrice in cents; engine operates in dollars
+  const propertyPrice = Math.round(priceCents / 100);
+  const loanAmount = Math.round(loanCents / 100);
 
   const stateConfig = stateMap[state];
   if (!stateConfig) throw new Error(`Unknown state: ${state}`);
@@ -208,23 +212,26 @@ function calculate(inputs) {
 
   const resolvedWhoPays = whoPays || stateConfig.whoPaysDefault;
 
+  // Convert dollars to cents for consistent API response
+  const toCents = (d) => Math.round(d * 100);
+
   return {
-    stateTransferTax: Math.round(stateTransferTax * 100) / 100,
-    mortgageRecordingTax: Math.round(mortgageRecordingTax * 100) / 100,
+    stateTransferTax: toCents(stateTransferTax),
+    mortgageRecordingTax: toCents(mortgageRecordingTax),
     estimatedTitleInsurance: {
-      min: Math.round(titleMin * 100) / 100,
-      max: Math.round(titleMax * 100) / 100,
+      min: toCents(titleMin),
+      max: toCents(titleMax),
     },
     estimatedTotalClosingCosts: {
-      min: Math.round(closingMin * 100) / 100,
-      max: Math.round(closingMax * 100) / 100,
+      min: toCents(closingMin),
+      max: toCents(closingMax),
     },
     effectiveRate,
     hasTransferTax: stateConfig.hasTransferTax,
     whoPays: resolvedWhoPays,
     stateName: stateConfig.name,
     disclaimer: config._meta.disclaimer,
-    firstTimeBuyerExemption: Math.round(firstTimeBuyerExemption * 100) / 100,
+    firstTimeBuyerExemption: toCents(firstTimeBuyerExemption),
   };
 }
 

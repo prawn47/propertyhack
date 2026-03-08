@@ -37,7 +37,7 @@ interface NzBuyingCostsOutputs {
 }
 
 const DEFAULT_INPUTS: NzBuyingCostsInputs = {
-  propertyPrice: 750000,
+  propertyPrice: 75000000,
   buyerType: 'owner_occupier',
   firstHomeBuyer: false,
   depositPercentage: 20,
@@ -78,13 +78,13 @@ const jsonLd = [
   },
 ];
 
-function formatNZD(amount: number): string {
+function formatNZD(cents: number): string {
   return new Intl.NumberFormat('en-NZ', {
     style: 'currency',
     currency: 'NZD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(cents / 100);
 }
 
 function computeLocally(inputs: NzBuyingCostsInputs): NzBuyingCostsOutputs {
@@ -92,10 +92,10 @@ function computeLocally(inputs: NzBuyingCostsInputs): NzBuyingCostsOutputs {
   const lvrPercent = 100 - inputs.depositPercentage;
 
   const lineItems: LineItem[] = [
-    { label: 'Legal / conveyancing fees', min: 1400, max: 2500, note: 'Varies by complexity and solicitor' },
-    { label: 'Building inspection', min: 500, max: 800, note: 'Recommended for all purchases' },
-    { label: 'Valuation / registered valuer', min: 500, max: 800, note: 'Required by most lenders' },
-    { label: 'LIM report', min: 300, max: 400, note: 'Land Information Memorandum from the council' },
+    { label: 'Legal / conveyancing fees', min: 140000, max: 250000, note: 'Varies by complexity and solicitor' },
+    { label: 'Building inspection', min: 50000, max: 80000, note: 'Recommended for all purchases' },
+    { label: 'Valuation / registered valuer', min: 50000, max: 80000, note: 'Required by most lenders' },
+    { label: 'LIM report', min: 30000, max: 40000, note: 'Land Information Memorandum from the council' },
   ];
 
   let lowEquityPremium: number | null = null;
@@ -167,8 +167,8 @@ const NzBuyingCostsCalculator: React.FC = () => {
         label="Property Price (NZD)"
         value={inputs.propertyPrice}
         onChange={(v) => setInput('propertyPrice', v)}
-        min={100_000}
-        max={20_000_000}
+        min={10_000_000}
+        max={2_000_000_000}
         hint="Enter the purchase price in New Zealand dollars"
       />
 

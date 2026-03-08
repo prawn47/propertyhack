@@ -66,13 +66,13 @@ const REGION_LABELS: Record<string, string> = {
   wales: 'Wales',
 };
 
-function formatGBP(amount: number): string {
+function formatGBP(pence: number): string {
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(pence / 100);
 }
 
 function formatRate(rate: number): string {
@@ -344,7 +344,7 @@ const UkTransferTaxCalculator: React.FC = () => {
           <div className="text-right">
             <p className="text-xs text-content-secondary">of property price</p>
             <p className="text-sm font-medium text-content">
-              {formatGBP(inputs.propertyPrice / 100)}
+              {formatGBP(inputs.propertyPrice)}
             </p>
           </div>
         </div>
