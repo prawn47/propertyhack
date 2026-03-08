@@ -29,6 +29,7 @@ const { articleSummariseWorker } = require('./workers/articleSummariseWorker');
 const { articleImageWorker } = require('./workers/articleImageWorker');
 const { articleEmbedWorker } = require('./workers/articleEmbedWorker');
 const { socialPublishWorker } = require('./workers/socialPublishWorker');
+const { socialGenerateWorker } = require('./workers/socialGenerateWorker');
 
 const { sourceFetchQueue } = require('./queues/sourceFetchQueue');
 const { articleProcessQueue } = require('./queues/articleProcessQueue');
@@ -36,6 +37,7 @@ const { articleSummariseQueue } = require('./queues/articleSummariseQueue');
 const { articleImageQueue } = require('./queues/articleImageQueue');
 const { articleEmbedQueue } = require('./queues/articleEmbedQueue');
 const { socialPublishQueue } = require('./queues/socialPublishQueue');
+const { socialGenerateQueue } = require('./queues/socialGenerateQueue');
 
 const { startScheduler } = require('./jobs/ingestionScheduler');
 
@@ -104,6 +106,7 @@ app.get('/system/queue-status', async (req, res) => {
       articleImageCounts,
       articleEmbedCounts,
       socialPublishCounts,
+      socialGenerateCounts,
     ] = await Promise.all([
       sourceFetchQueue.getJobCounts(),
       articleProcessQueue.getJobCounts(),
@@ -111,6 +114,7 @@ app.get('/system/queue-status', async (req, res) => {
       articleImageQueue.getJobCounts(),
       articleEmbedQueue.getJobCounts(),
       socialPublishQueue.getJobCounts(),
+      socialGenerateQueue.getJobCounts(),
     ]);
 
     res.json({
@@ -121,6 +125,7 @@ app.get('/system/queue-status', async (req, res) => {
         'article-image': articleImageCounts,
         'article-embed': articleEmbedCounts,
         'social-publish': socialPublishCounts,
+        'social-generate': socialGenerateCounts,
       },
     });
   } catch (err) {
@@ -206,6 +211,7 @@ const allWorkers = [
   articleImageWorker,
   articleEmbedWorker,
   socialPublishWorker,
+  socialGenerateWorker,
 ];
 
 async function shutdown(signal) {
@@ -232,4 +238,5 @@ app.listen(PORT, () => {
   console.log('  - article-image worker (concurrency: 1)');
   console.log('  - article-embed worker (concurrency: 3)');
   console.log('  - social-publish worker (concurrency: 1)');
+  console.log('  - social-generate worker (concurrency: 1)');
 });
