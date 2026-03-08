@@ -9,7 +9,7 @@ const SITE_URL = 'https://propertyhack.com.au';
 
 const calculators = [
   {
-    slug: 'mortgage',
+    slug: 'mortgage-calculator',
     name: 'Mortgage Calculator',
     description: 'Calculate your mortgage repayments across different loan terms, rates, and payment frequencies.',
     icon: (
@@ -19,7 +19,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'stamp-duty',
+    slug: 'stamp-duty-calculator',
     name: 'Stamp Duty Calculator',
     description: 'Estimate stamp duty costs for every Australian state and territory, including first home buyer concessions.',
     icon: (
@@ -29,7 +29,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'rental-yield',
+    slug: 'rental-yield-calculator',
     name: 'Rental Yield Calculator',
     description: 'Analyse your investment property\'s gross and net rental yield with detailed expense tracking.',
     icon: (
@@ -39,7 +39,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'borrowing-power',
+    slug: 'borrowing-power-calculator',
     name: 'Borrowing Power Calculator',
     description: 'Find out how much you could borrow based on your income, expenses, and existing debts.',
     icon: (
@@ -49,7 +49,7 @@ const calculators = [
     ),
   },
   {
-    slug: 'rent-vs-buy',
+    slug: 'rent-vs-buy-calculator',
     name: 'Rent vs Buy Calculator',
     description: 'Compare the long-term financial outcome of renting and investing versus buying a home.',
     icon: (

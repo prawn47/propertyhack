@@ -13,10 +13,10 @@ import Footer from '../layout/Footer';
 
 interface BorrowingPowerInputs extends Record<string, unknown> {
   applicants: number;
-  primaryIncome: number;
-  secondaryIncome: number;
+  grossIncome1: number;
+  grossIncome2: number;
   otherIncome: number;
-  monthlyExpenses: number;
+  monthlyLivingExpenses: number;
   dependants: number;
   creditCardLimits: number;
   existingLoanRepayments: number;
@@ -25,10 +25,10 @@ interface BorrowingPowerInputs extends Record<string, unknown> {
 }
 
 interface BorrowingPowerOutputs extends Record<string, unknown> {
-  maxBorrowingAmount: number;
+  maxBorrowing: number;
   monthlyRepayment: number;
-  depositNeeded80: number;
-  depositNeeded90: number;
+  depositNeeded80LVR: number;
+  depositNeeded90LVR: number;
   netMonthlyIncome: number;
   totalMonthlyCommitments: number;
   availableSurplus: number;
@@ -38,10 +38,10 @@ const DEFAULT_ASSESSMENT_RATE = 9.5;
 
 const DEFAULT_INPUTS: BorrowingPowerInputs = {
   applicants: 1,
-  primaryIncome: 10000000,
-  secondaryIncome: 0,
+  grossIncome1: 10000000,
+  grossIncome2: 0,
   otherIncome: 0,
-  monthlyExpenses: 300000,
+  monthlyLivingExpenses: 300000,
   dependants: 0,
   creditCardLimits: 0,
   existingLoanRepayments: 0,
@@ -67,7 +67,7 @@ const BorrowingPowerCalculator: React.FC = () => {
 
   const typedOutputs = outputs as BorrowingPowerOutputs | null;
 
-  const maxBorrowing = typedOutputs?.maxBorrowingAmount ?? 0;
+  const maxBorrowing = typedOutputs?.maxBorrowing ?? 0;
 
   const capacityPercent = maxBorrowing > 0 ? Math.min(100, (maxBorrowing / 200000000) * 100) : 0;
 
@@ -177,8 +177,8 @@ const BorrowingPowerCalculator: React.FC = () => {
               {/* Primary income */}
               <CurrencyInput
                 label="Primary applicant income (annual)"
-                value={inputs.primaryIncome}
-                onChange={(v) => setInput('primaryIncome', v)}
+                value={inputs.grossIncome1}
+                onChange={(v) => setInput('grossIncome1', v)}
                 hint="Gross annual salary or wages"
               />
 
@@ -187,8 +187,8 @@ const BorrowingPowerCalculator: React.FC = () => {
                 <div className="animate-in fade-in duration-200">
                   <CurrencyInput
                     label="Second applicant income (annual)"
-                    value={inputs.secondaryIncome}
-                    onChange={(v) => setInput('secondaryIncome', v)}
+                    value={inputs.grossIncome2}
+                    onChange={(v) => setInput('grossIncome2', v)}
                     hint="Gross annual salary or wages for second applicant"
                   />
                 </div>
@@ -205,8 +205,8 @@ const BorrowingPowerCalculator: React.FC = () => {
               {/* Monthly expenses */}
               <CurrencyInput
                 label="Monthly living expenses"
-                value={inputs.monthlyExpenses}
-                onChange={(v) => setInput('monthlyExpenses', v)}
+                value={inputs.monthlyLivingExpenses}
+                onChange={(v) => setInput('monthlyLivingExpenses', v)}
                 hint="Food, utilities, transport, subscriptions, etc."
               />
 
@@ -294,7 +294,7 @@ const BorrowingPowerCalculator: React.FC = () => {
                     isCalculating
                       ? 'Calculating…'
                       : typedOutputs
-                      ? formatDollars(typedOutputs.maxBorrowingAmount)
+                      ? formatDollars(typedOutputs.maxBorrowing)
                       : '—'
                   }
                   subtitle="Estimated based on your income, expenses and assessment rate"
@@ -350,13 +350,13 @@ const BorrowingPowerCalculator: React.FC = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-content-secondary">At 80% LVR (no LMI)</span>
                           <span className="text-sm font-semibold text-brand-primary">
-                            {formatDollars(typedOutputs.depositNeeded80)}
+                            {formatDollars(typedOutputs.depositNeeded80LVR)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-content-secondary">At 90% LVR (LMI applies)</span>
                           <span className="text-sm font-semibold text-brand-primary">
-                            {formatDollars(typedOutputs.depositNeeded90)}
+                            {formatDollars(typedOutputs.depositNeeded90LVR)}
                           </span>
                         </div>
                       </div>
@@ -372,7 +372,7 @@ const BorrowingPowerCalculator: React.FC = () => {
                     outputs={typedOutputs as unknown as Record<string, unknown> | null}
                     headlineLabel="Max borrowing"
                     headlineValue={
-                      typedOutputs ? formatDollars(typedOutputs.maxBorrowingAmount) : '—'
+                      typedOutputs ? formatDollars(typedOutputs.maxBorrowing) : '—'
                     }
                   />
                 </div>

@@ -25,7 +25,7 @@ interface RentalYieldInputs extends Record<string, unknown> {
   insurance: number;
   maintenance: number;
   strataFees: number;
-  managementFeePercent: number;
+  managementFeeRate: number;
   landTax: number;
   otherExpenses: number;
 }
@@ -35,18 +35,8 @@ interface RentalYieldOutputs {
   netYield: number;
   annualRentalIncome: number;
   managementFees: number;
-  totalExpenses: number;
-  netIncome: number;
-  expenseBreakdown: {
-    councilRates: number;
-    waterRates: number;
-    insurance: number;
-    maintenance: number;
-    strataFees: number;
-    managementFees: number;
-    landTax: number;
-    otherExpenses: number;
-  };
+  totalAnnualExpenses: number;
+  netAnnualIncome: number;
 }
 
 const DEFAULT_INPUTS: RentalYieldInputs = {
@@ -57,7 +47,7 @@ const DEFAULT_INPUTS: RentalYieldInputs = {
   insurance: 150000,
   maintenance: 100000,
   strataFees: 0,
-  managementFeePercent: 850,
+  managementFeeRate: 8.5,
   landTax: 0,
   otherExpenses: 0,
 };
@@ -67,7 +57,7 @@ function formatDollars(cents: number): string {
 }
 
 function formatPercent(pct: number): string {
-  return (pct / 100).toFixed(2) + '%';
+  return pct.toFixed(2) + '%';
 }
 
 const JSON_LD = {
@@ -107,8 +97,8 @@ const RentalYieldCalculator: React.FC = () => {
 
   const chartData = out
     ? [
-        { name: 'Gross Yield', yield: Number((out.grossYield / 100).toFixed(2)) },
-        { name: 'Net Yield', yield: Number((out.netYield / 100).toFixed(2)) },
+        { name: 'Gross Yield', yield: Number(out.grossYield.toFixed(2)) },
+        { name: 'Net Yield', yield: Number(out.netYield.toFixed(2)) },
       ]
     : [];
 
@@ -172,8 +162,8 @@ const RentalYieldCalculator: React.FC = () => {
               min={0}
               max={20}
               step={0.1}
-              value={(inputs.managementFeePercent / 100).toFixed(1)}
-              onChange={(e) => setInput('managementFeePercent', Math.round(parseFloat(e.target.value || '0') * 100))}
+              value={inputs.managementFeeRate}
+              onChange={(e) => setInput('managementFeeRate', parseFloat(e.target.value || '0'))}
               className="w-full pr-8 pl-3 py-2.5 bg-base-200 border border-base-300 rounded-lg text-content text-sm focus:outline-none focus:border-brand-gold transition-colors"
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-content-secondary text-sm select-none">%</span>
@@ -234,65 +224,65 @@ const RentalYieldCalculator: React.FC = () => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-content-secondary">Total Annual Expenses</span>
-              <span className="font-semibold text-brand-primary">{formatDollars(out.totalExpenses)}</span>
+              <span className="font-semibold text-brand-primary">{formatDollars(out.totalAnnualExpenses)}</span>
             </div>
             <div className="pt-2 border-t border-base-300 flex justify-between text-sm">
               <span className="text-content font-medium">Net Annual Income</span>
-              <span className={`font-bold ${out.netIncome >= 0 ? 'text-brand-primary' : 'text-red-600'}`}>
-                {formatDollars(out.netIncome)}
+              <span className={`font-bold ${out.netAnnualIncome >= 0 ? 'text-brand-primary' : 'text-red-600'}`}>
+                {formatDollars(out.netAnnualIncome)}
               </span>
             </div>
           </div>
 
-          {out.totalExpenses > 0 && (
+          {out.totalAnnualExpenses > 0 && (
             <div className="bg-base-100 border border-base-300 rounded-xl p-5 flex flex-col gap-2">
               <h2 className="text-sm font-semibold text-brand-primary mb-1">Expense Breakdown</h2>
-              {out.expenseBreakdown.councilRates > 0 && (
+              {inputs.councilRates > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Council Rates</span>
-                  <span>{formatDollars(out.expenseBreakdown.councilRates)}</span>
+                  <span>{formatDollars(inputs.councilRates)}</span>
                 </div>
               )}
-              {out.expenseBreakdown.waterRates > 0 && (
+              {inputs.waterRates > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Water Rates</span>
-                  <span>{formatDollars(out.expenseBreakdown.waterRates)}</span>
+                  <span>{formatDollars(inputs.waterRates)}</span>
                 </div>
               )}
-              {out.expenseBreakdown.insurance > 0 && (
+              {inputs.insurance > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Insurance</span>
-                  <span>{formatDollars(out.expenseBreakdown.insurance)}</span>
+                  <span>{formatDollars(inputs.insurance)}</span>
                 </div>
               )}
-              {out.expenseBreakdown.maintenance > 0 && (
+              {inputs.maintenance > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Maintenance</span>
-                  <span>{formatDollars(out.expenseBreakdown.maintenance)}</span>
+                  <span>{formatDollars(inputs.maintenance)}</span>
                 </div>
               )}
-              {out.expenseBreakdown.strataFees > 0 && (
+              {inputs.strataFees > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Strata Fees</span>
-                  <span>{formatDollars(out.expenseBreakdown.strataFees)}</span>
+                  <span>{formatDollars(inputs.strataFees)}</span>
                 </div>
               )}
-              {out.expenseBreakdown.managementFees > 0 && (
+              {out.managementFees > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Management Fees</span>
-                  <span>{formatDollars(out.expenseBreakdown.managementFees)}</span>
+                  <span>{formatDollars(out.managementFees)}</span>
                 </div>
               )}
-              {out.expenseBreakdown.landTax > 0 && (
+              {inputs.landTax > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Land Tax</span>
-                  <span>{formatDollars(out.expenseBreakdown.landTax)}</span>
+                  <span>{formatDollars(inputs.landTax)}</span>
                 </div>
               )}
-              {out.expenseBreakdown.otherExpenses > 0 && (
+              {inputs.otherExpenses > 0 && (
                 <div className="flex justify-between text-xs text-content-secondary">
                   <span>Other</span>
-                  <span>{formatDollars(out.expenseBreakdown.otherExpenses)}</span>
+                  <span>{formatDollars(inputs.otherExpenses)}</span>
                 </div>
               )}
             </div>

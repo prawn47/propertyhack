@@ -18,8 +18,8 @@ const STATES = [
   { value: 'NT', label: 'Northern Territory' },
 ];
 
-type BuyerType = 'standard' | 'first-home' | 'foreign';
-type PropertyType = 'residential' | 'commercial';
+type BuyerType = 'standard' | 'firstHomeBuyer' | 'foreign';
+type PropertyType = 'established' | 'new' | 'vacant_land';
 
 interface StampDutyInputs extends Record<string, unknown> {
   propertyPrice: number;
@@ -32,21 +32,19 @@ interface StampDutyInputs extends Record<string, unknown> {
 
 interface StampDutyOutputs {
   stampDuty: number;
-  concessionAmount: number;
-  concessionNote: string | null;
-  foreignSurcharge: number;
-  totalDuty: number;
-  legalFees: number;
-  inspectionFees: number;
+  concessionApplied: string | null;
   totalUpfrontCost: number;
   effectiveRate: number;
+  legalFees: number;
+  inspectionCosts: number;
+  notes: string[];
 }
 
 const DEFAULT_INPUTS: StampDutyInputs = {
   propertyPrice: 75000000,
   state: 'NSW',
   buyerType: 'standard',
-  propertyType: 'residential',
+  propertyType: 'established',
   primaryResidence: true,
   vicOffThePlan: false,
 };
@@ -98,7 +96,7 @@ const StampDutyCalculator: React.FC = () => {
 
   const isVic = inputs.state === 'VIC';
 
-  const headlineValue = outputs ? formatDollars(outputs.totalDuty) : '—';
+  const headlineValue = outputs ? formatDollars(outputs.stampDuty) : '—';
 
   const inputPanel = (
     <>
@@ -144,7 +142,7 @@ const StampDutyCalculator: React.FC = () => {
           {(
             [
               { value: 'standard', label: 'Standard Buyer' },
-              { value: 'first-home', label: 'First Home Buyer' },
+              { value: 'firstHomeBuyer', label: 'First Home Buyer' },
               { value: 'foreign', label: 'Foreign Buyer' },
             ] as { value: BuyerType; label: string }[]
           ).map((option) => (
@@ -169,8 +167,9 @@ const StampDutyCalculator: React.FC = () => {
         <div className="flex gap-3">
           {(
             [
-              { value: 'residential', label: 'Residential' },
-              { value: 'commercial', label: 'Commercial' },
+              { value: 'established', label: 'Established' },
+              { value: 'new', label: 'New Build' },
+              { value: 'vacant_land', label: 'Vacant Land' },
             ] as { value: PropertyType; label: string }[]
           ).map((option) => (
             <label key={option.value} className="flex items-center gap-2 cursor-pointer">
@@ -261,16 +260,20 @@ const StampDutyCalculator: React.FC = () => {
         </div>
       )}
 
-      {/* Concession/exemption note */}
-      {outputs?.concessionNote && (
+      {/* Concession note */}
+      {outputs?.concessionApplied && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <p className="text-sm font-medium text-amber-800 mb-1">Concession Applied</p>
-          <p className="text-sm text-amber-700">{outputs.concessionNote}</p>
-          {outputs.concessionAmount > 0 && (
-            <p className="text-sm font-semibold text-amber-800 mt-1">
-              Saving: {formatDollars(outputs.concessionAmount)}
-            </p>
-          )}
+          <p className="text-sm text-amber-700">{outputs.concessionApplied}</p>
+        </div>
+      )}
+
+      {/* Notes from calculator */}
+      {outputs?.notes && outputs.notes.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          {outputs.notes.map((note, i) => (
+            <p key={i} className="text-sm text-blue-700">{note}</p>
+          ))}
         </div>
       )}
 
@@ -280,24 +283,8 @@ const StampDutyCalculator: React.FC = () => {
           <h3 className="text-sm font-semibold text-brand-primary">Total Upfront Cost Breakdown</h3>
           <dl className="flex flex-col gap-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-content-secondary">Base stamp duty</dt>
+              <dt className="text-content-secondary">Stamp duty</dt>
               <dd className="font-medium text-content">{formatDollars(outputs.stampDuty)}</dd>
-            </div>
-            {outputs.foreignSurcharge > 0 && (
-              <div className="flex justify-between">
-                <dt className="text-content-secondary">Foreign buyer surcharge</dt>
-                <dd className="font-medium text-content">{formatDollars(outputs.foreignSurcharge)}</dd>
-              </div>
-            )}
-            {outputs.concessionAmount > 0 && (
-              <div className="flex justify-between">
-                <dt className="text-content-secondary">Concession / exemption</dt>
-                <dd className="font-medium text-green-700">−{formatDollars(outputs.concessionAmount)}</dd>
-              </div>
-            )}
-            <div className="flex justify-between border-t border-base-300 pt-2">
-              <dt className="font-semibold text-content">Total stamp duty</dt>
-              <dd className="font-bold text-content">{formatDollars(outputs.totalDuty)}</dd>
             </div>
             <div className="flex justify-between pt-1">
               <dt className="text-content-secondary">Legal fees (est.)</dt>
@@ -305,7 +292,7 @@ const StampDutyCalculator: React.FC = () => {
             </div>
             <div className="flex justify-between">
               <dt className="text-content-secondary">Building & pest inspection (est.)</dt>
-              <dd className="font-medium text-content">{formatDollars(outputs.inspectionFees)}</dd>
+              <dd className="font-medium text-content">{formatDollars(outputs.inspectionCosts)}</dd>
             </div>
             <div className="flex justify-between border-t border-base-300 pt-2">
               <dt className="font-semibold text-content">Total upfront costs</dt>
