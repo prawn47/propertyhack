@@ -17,6 +17,16 @@ const CALCULATOR_TYPES = [
   { value: 'RENTAL_YIELD', label: 'Rental Yield' },
   { value: 'BORROWING_POWER', label: 'Borrowing Power' },
   { value: 'RENT_VS_BUY', label: 'Rent vs Buy' },
+  { value: 'BUYING_COSTS', label: 'Buying Costs' },
+];
+
+const MARKETS = [
+  { value: '', label: 'All markets' },
+  { value: 'AU', label: '🇦🇺 AU' },
+  { value: 'US', label: '🇺🇸 US' },
+  { value: 'UK', label: '🇬🇧 UK' },
+  { value: 'CA', label: '🇨🇦 CA' },
+  { value: 'NZ', label: '🇳🇿 NZ' },
 ];
 
 const CALCULATOR_ROUTES: Record<string, string> = {
@@ -25,6 +35,7 @@ const CALCULATOR_ROUTES: Record<string, string> = {
   RENTAL_YIELD: 'rental-yield-calculator',
   BORROWING_POWER: 'borrowing-power-calculator',
   RENT_VS_BUY: 'rent-vs-buy-calculator',
+  BUYING_COSTS: 'buying-costs-calculator',
 };
 
 const TYPE_BADGE_CLASSES: Record<string, string> = {
@@ -33,6 +44,7 @@ const TYPE_BADGE_CLASSES: Record<string, string> = {
   RENTAL_YIELD: 'bg-green-100 text-green-800',
   BORROWING_POWER: 'bg-orange-100 text-orange-800',
   RENT_VS_BUY: 'bg-teal-100 text-teal-800',
+  BUYING_COSTS: 'bg-yellow-100 text-yellow-800',
 };
 
 function typeLabel(type: string): string {
@@ -159,11 +171,16 @@ function ScenarioCard({ scenario, onOpen, onDuplicate, onDeleteRequest, onRename
             </button>
           )}
         </div>
-        <span
-          className={`flex-shrink-0 text-xs font-medium px-2.5 py-0.5 rounded-full ${badgeClass}`}
-        >
-          {typeLabel(scenario.calculatorType)}
-        </span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+            {scenario.market || 'AU'}
+          </span>
+          <span
+            className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${badgeClass}`}
+          >
+            {typeLabel(scenario.calculatorType)}
+          </span>
+        </div>
       </div>
 
       <div>
@@ -233,17 +250,19 @@ const ScenarioDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeType, setActiveType] = useState('');
+  const [activeMarket, setActiveMarket] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Scenario | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = useCallback(async (type: string, q: string) => {
+  const load = useCallback(async (type: string, market: string, q: string) => {
     setLoading(true);
     setError(null);
     try {
       const data = await listScenarios({
         type: type || undefined,
+        market: market || undefined,
         search: q || undefined,
       });
       setScenarios(data);
@@ -255,8 +274,8 @@ const ScenarioDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    load(activeType, search);
-  }, [load, activeType, search]);
+    load(activeType, activeMarket, search);
+  }, [load, activeType, activeMarket, search]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -315,30 +334,47 @@ const ScenarioDashboard: React.FC = () => {
         </div>
 
         {/* Filters + Search */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-wrap gap-2">
+              {CALCULATOR_TYPES.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => setActiveType(t.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    activeType === t.value
+                      ? 'bg-brand-gold text-white border-brand-gold'
+                      : 'bg-base-100 text-gray-600 border-gray-200 hover:border-brand-gold hover:text-brand-gold'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="sm:ml-auto">
+              <input
+                type="search"
+                value={searchInput}
+                onChange={handleSearchChange}
+                placeholder="Search by name..."
+                className="w-full sm:w-56 border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-base-100 focus:outline-none focus:border-brand-gold transition-colors"
+              />
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
-            {CALCULATOR_TYPES.map((t) => (
+            {MARKETS.map((m) => (
               <button
-                key={t.value}
-                onClick={() => setActiveType(t.value)}
+                key={m.value}
+                onClick={() => setActiveMarket(m.value)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                  activeType === t.value
-                    ? 'bg-brand-gold text-white border-brand-gold'
-                    : 'bg-base-100 text-gray-600 border-gray-200 hover:border-brand-gold hover:text-brand-gold'
+                  activeMarket === m.value
+                    ? 'bg-brand-primary text-white border-brand-primary'
+                    : 'bg-base-100 text-gray-600 border-gray-200 hover:border-brand-primary hover:text-brand-primary'
                 }`}
               >
-                {t.label}
+                {m.label}
               </button>
             ))}
-          </div>
-          <div className="sm:ml-auto">
-            <input
-              type="search"
-              value={searchInput}
-              onChange={handleSearchChange}
-              placeholder="Search by name..."
-              className="w-full sm:w-56 border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-base-100 focus:outline-none focus:border-brand-gold transition-colors"
-            />
           </div>
         </div>
 
@@ -368,11 +404,11 @@ const ScenarioDashboard: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2M9 7a3 3 0 1 0 6 0 3 3 0 0 0-6 0M3 21h18" />
             </svg>
             <p className="text-gray-500 text-sm max-w-xs mx-auto">
-              {search || activeType
+              {search || activeType || activeMarket
                 ? 'No scenarios match your filters.'
                 : 'No saved scenarios yet. Use our calculators to save and compare different scenarios.'}
             </p>
-            {!search && !activeType && (
+            {!search && !activeType && !activeMarket && (
               <Link
                 to="/tools"
                 className="mt-4 inline-block text-sm font-medium text-brand-gold hover:underline"
