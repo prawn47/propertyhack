@@ -28,6 +28,8 @@ import IngestionMonitor from './components/admin/IngestionMonitor';
 import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
+import RentalYieldCalculator from './components/calculators/RentalYieldCalculator';
+import { AuthProvider } from './contexts/AuthContext';
 import type { AuthState } from './types';
 import authService from './services/authService';
 
@@ -205,6 +207,9 @@ function AppInner({ authState, onLogin, onLogout }: AppInnerProps) {
         }
       />
 
+      {/* Calculator routes (public) */}
+      <Route path="/tools/rental-yield-calculator" element={<RentalYieldCalculator />} />
+
       {/* 404 catch-all */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
@@ -250,11 +255,13 @@ const App: React.FC = () => {
   return (
     <HelmetProvider>
       <BrowserRouter>
-        <AppInner
-          authState={authState}
-          onLogin={handleLogin}
-          onLogout={handleLogout}
-        />
+        <AuthProvider>
+          <AppInner
+            authState={authState}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+          />
+        </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>
   );
