@@ -10,15 +10,26 @@ function generateSlug(title) {
     .substring(0, 100);
 }
 
+const ENGLISH_VARIANT = {
+  AU: 'British English (Australian/UK spelling and phrasing, e.g. "organisation", "centre", "labour", "metres")',
+  UK: 'British English (UK spelling and phrasing, e.g. "organisation", "centre", "labour", "metres")',
+  US: 'American English (US spelling and phrasing, e.g. "organization", "center", "labor", "meters")',
+  CA: 'American English (US/Canadian spelling and phrasing, e.g. "organization", "center", "labor", "meters")',
+};
+
 async function generateArticleSummary(articleContent) {
-  const { title, content, sourceUrl, sourceName } = articleContent;
+  const { title, content, sourceUrl, sourceName, sourceMarket } = articleContent;
 
   const hasContent = content && content.trim().length > 50;
   const inputText = hasContent
     ? `Title: ${title}\nSource: ${sourceName || sourceUrl}\nContent:\n${content}`
     : `Title: ${title}\nSource: ${sourceName || sourceUrl}\n(Full article content not available — summarise from title only)`;
 
+  const englishVariant = ENGLISH_VARIANT[sourceMarket] || ENGLISH_VARIANT.AU;
+
   const prompt = `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is authoritative, factual, and data-driven.
+
+IMPORTANT: Write all summaries in ${englishVariant}.
 
 Analyse the following article and return a JSON object with these fields:
 

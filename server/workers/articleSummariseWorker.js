@@ -17,7 +17,7 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
       title: true,
       originalContent: true,
       sourceUrl: true,
-      source: { select: { name: true } },
+      source: { select: { name: true, market: true } },
     },
   });
 
@@ -33,6 +33,7 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
     content: article.originalContent,
     sourceUrl: article.sourceUrl,
     sourceName: article.source?.name,
+    sourceMarket: article.source?.market,
   });
 
   if (!summary.isPropertyRelated) {
