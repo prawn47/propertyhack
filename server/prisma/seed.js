@@ -35,24 +35,29 @@ async function main() {
   }
   console.log('Created markets: AU, US, UK, CA');
 
-  const categories = [
-    { name: 'Property Market', slug: 'property-market', description: 'Overall property market trends and analysis', market: 'AU' },
-    { name: 'Residential', slug: 'residential', description: 'Residential property news and sales', market: 'AU' },
-    { name: 'Commercial', slug: 'commercial', description: 'Commercial property and development news', market: 'AU' },
-    { name: 'Investment', slug: 'investment', description: 'Property investment strategies and tips', market: 'AU' },
-    { name: 'Development', slug: 'development', description: 'New developments and construction news', market: 'AU' },
-    { name: 'Policy', slug: 'policy', description: 'Government policy and regulatory changes', market: 'AU' },
-    { name: 'Finance', slug: 'finance', description: 'Interest rates, mortgages and property finance', market: 'AU' },
+  const baseCategories = [
+    { name: 'Property Market', baseSlug: 'property-market', description: 'Overall property market trends and analysis' },
+    { name: 'Residential', baseSlug: 'residential', description: 'Residential property news and sales' },
+    { name: 'Commercial', baseSlug: 'commercial', description: 'Commercial property and development news' },
+    { name: 'Investment', baseSlug: 'investment', description: 'Property investment strategies and tips' },
+    { name: 'Development', baseSlug: 'development', description: 'New developments and construction news' },
+    { name: 'Policy', baseSlug: 'policy', description: 'Government policy and regulatory changes' },
+    { name: 'Finance', baseSlug: 'finance', description: 'Interest rates, mortgages and property finance' },
   ];
 
-  for (const cat of categories) {
-    await prisma.articleCategory.upsert({
-      where: { slug: cat.slug },
-      update: {},
-      create: { ...cat, isActive: true },
-    });
+  const categoryMarkets = ['AU', 'US', 'UK', 'CA'];
+
+  for (const market of categoryMarkets) {
+    for (const cat of baseCategories) {
+      const slug = market === 'AU' ? cat.baseSlug : `${cat.baseSlug}-${market.toLowerCase()}`;
+      await prisma.articleCategory.upsert({
+        where: { slug },
+        update: {},
+        create: { name: cat.name, slug, description: cat.description, market, isActive: true },
+      });
+    }
   }
-  console.log('Created 7 article categories');
+  console.log('Created 28 article categories (7 per market: AU, US, UK, CA)');
 
   await prisma.ingestionSource.upsert({
     where: { id: 'seed-domain-rss' },
