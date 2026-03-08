@@ -12,6 +12,13 @@ const CRAWLER_USER_AGENTS = [
 const SITE_URL = 'https://propertyhack.com.au';
 const SITE_NAME = 'PropertyHack';
 const DEFAULT_DESCRIPTION = 'Stay informed with agenda-free Australian property news, market updates, and analysis across Sydney, Melbourne, Brisbane, Perth, Adelaide and more.';
+
+const COUNTRY_NAMES = {
+  AU: 'Australia',
+  US: 'United States',
+  UK: 'United Kingdom',
+  CA: 'Canada',
+};
 const DEFAULT_IMAGE = `${SITE_URL}/ph-logo.jpg`;
 
 function isCrawler(userAgent) {
@@ -162,32 +169,45 @@ async function getMetaForUrl(url, prisma) {
     }
   }
 
-  // Location page: /property-news/:location
-  const locationMatch = url.match(/^\/property-news\/([^/?#]+)/);
-  if (locationMatch) {
-    const slug = locationMatch[1];
-    const locationSeo = await prisma.locationSeo.findUnique({ where: { slug } });
+  // Location page: /:country/property-news/:location or legacy /property-news/:location
+  const countryLocationMatch = url.match(/^\/([a-z]{2})\/property-news\/([^/?#]+)/);
+  const legacyLocationMatch = !countryLocationMatch && url.match(/^\/property-news\/([^/?#]+)/);
+  if (countryLocationMatch || legacyLocationMatch) {
+    const countryCode = countryLocationMatch
+      ? countryLocationMatch[1].toUpperCase()
+      : 'AU';
+    const slug = countryLocationMatch ? countryLocationMatch[2] : legacyLocationMatch[1];
+    const canonicalPath = countryLocationMatch
+      ? `/${countryLocationMatch[1]}/property-news/${slug}`
+      : `/property-news/${slug}`;
+
+    const locationSeo = await prisma.locationSeo.findFirst({
+      where: { slug, country: countryCode },
+    });
+
     if (locationSeo) {
       return buildMetaTags({
         title: locationSeo.metaTitle,
         description: locationSeo.metaDescription,
-        url: `/property-news/${slug}`,
+        url: canonicalPath,
         type: 'website',
         jsonLd: {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           name: locationSeo.h1Title,
           description: locationSeo.metaDescription,
-          url: `${SITE_URL}/property-news/${slug}`,
+          url: `${SITE_URL}${canonicalPath}`,
         },
       });
     }
+
     // Fallback for locations without SEO config
+    const countryName = COUNTRY_NAMES[countryCode] || countryCode;
     const displayName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     return buildMetaTags({
-      title: `${displayName} Property News`,
-      description: `Latest property news, market updates and analysis for ${displayName}, Australia.`,
-      url: `/property-news/${slug}`,
+      title: `Property News ${displayName}, ${countryName}`,
+      description: `Latest property news, market updates and analysis for ${displayName}, ${countryName}.`,
+      url: canonicalPath,
       type: 'website',
     });
   }
