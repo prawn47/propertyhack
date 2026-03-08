@@ -42,6 +42,7 @@ const { socialPublishQueue } = require('./queues/socialPublishQueue');
 const { socialGenerateQueue } = require('./queues/socialGenerateQueue');
 
 const { startScheduler } = require('./jobs/ingestionScheduler');
+const { startSocialHealthCheck } = require('./jobs/socialHealthCheck');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -207,6 +208,7 @@ app.use((req, res) => {
 });
 
 startScheduler();
+startSocialHealthCheck();
 
 const allWorkers = [
   sourceFetchWorker,
