@@ -20,6 +20,7 @@ const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
+const passport = require('./passport');
 const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
 const sitemapRoutes = require('./routes/sitemap');
 const feedRoutes = require('./routes/feed');
@@ -83,6 +84,7 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(passport.initialize());
 
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
