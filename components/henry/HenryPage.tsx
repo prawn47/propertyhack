@@ -47,7 +47,7 @@ const HenryPage: React.FC = () => {
           {isAuthenticated && (
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="sm:hidden p-1.5 rounded-lg hover:bg-base-200 transition-colors"
+              className="sm:hidden p-2 rounded-lg hover:bg-base-200 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Toggle conversation list"
             >
               <svg className="w-5 h-5 text-content" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -82,22 +82,22 @@ const HenryPage: React.FC = () => {
                 />
               </aside>
 
-              {/* Mobile: overlay drawer */}
+              {/* Mobile: full-screen overlay drawer */}
               {sidebarOpen && (
                 <>
                   <div
                     className="sm:hidden fixed inset-0 bg-black/50 z-20"
                     onClick={() => setSidebarOpen(false)}
                   />
-                  <aside className="sm:hidden fixed left-0 top-0 bottom-0 w-72 bg-brand-primary z-30 flex flex-col shadow-strong">
+                  <aside className="sm:hidden fixed left-0 top-0 bottom-0 w-4/5 max-w-xs bg-brand-primary z-30 flex flex-col shadow-strong">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                       <span className="text-white text-sm font-semibold">Conversations</span>
                       <button
                         onClick={() => setSidebarOpen(false)}
-                        className="p-1 rounded hover:bg-white/10 transition-colors"
+                        className="p-2 rounded hover:bg-white/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label="Close sidebar"
                       >
-                        <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
@@ -115,8 +115,8 @@ const HenryPage: React.FC = () => {
             </>
           )}
 
-          {/* Chat window */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Chat window — full width on mobile */}
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             <HenryChatWindow
               messages={messages}
               isStreaming={isStreaming}

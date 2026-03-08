@@ -26,7 +26,7 @@ function ChatIcon() {
   );
 }
 
-function CloseIcon({ className = 'w-4 h-4' }: { className?: string }) {
+function CloseIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -45,7 +45,7 @@ function MinimiseIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="w-4 h-4"
+      className="w-5 h-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -86,7 +86,14 @@ function SidebarWidget() {
     }
   }, [isOpen]);
 
-  // Mobile backdrop click closes the panel
+  // Trap body scroll when mobile overlay is open
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 768) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isOpen]);
+
   function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) {
       setIsOpen(false);
@@ -95,7 +102,7 @@ function SidebarWidget() {
 
   return (
     <>
-      {/* Floating button — always visible when closed (and on desktop always visible) */}
+      {/* Floating button — visible when panel is closed */}
       {!isOpen && (
         <button
           type="button"
@@ -107,25 +114,26 @@ function SidebarWidget() {
         </button>
       )}
 
-      {/* Mobile: full-screen overlay */}
+      {/* Mobile: full-screen overlay (< md) */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-black/40 flex flex-col"
+          className="md:hidden fixed inset-0 z-50 bg-black/40"
           onClick={handleBackdropClick}
         >
-          <div className="flex flex-col bg-white w-full h-full">
-            <div className="flex items-center justify-between px-4 py-3 bg-brand-primary text-white shrink-0">
+          <div className="flex flex-col bg-white w-full h-full safe-area-inset">
+            {/* Header with large close button for touch */}
+            <div className="flex items-center justify-between px-4 bg-brand-primary text-white shrink-0" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))', paddingBottom: '12px' }}>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-brand-gold flex items-center justify-center text-brand-primary text-xs font-bold">
+                <div className="w-7 h-7 rounded-full bg-brand-gold flex items-center justify-center text-brand-primary text-sm font-bold">
                   H
                 </div>
-                <span className="font-semibold text-sm">Henry</span>
+                <span className="font-semibold">Henry</span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close Henry"
-                className="p-1 rounded hover:bg-white/10 transition-colors"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
               >
                 <CloseIcon />
               </button>
@@ -145,7 +153,7 @@ function SidebarWidget() {
         </div>
       )}
 
-      {/* Desktop: slide-up panel */}
+      {/* Desktop: slide-up panel (>= md) */}
       {isOpen && (
         <div
           ref={panelRef}
@@ -193,8 +201,6 @@ function SidebarWidget() {
           </div>
         </div>
       )}
-
-      {/* Desktop floating button when open (not shown — panel replaces it) */}
     </>
   );
 }

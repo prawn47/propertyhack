@@ -1,107 +1,93 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface HenryInputProps {
-  onSend: (message: string) => void;
+  onSend: (content: string) => Promise<void>;
   disabled?: boolean;
-  placeholder?: string;
+  compact?: boolean;
 }
 
-const MAX_CHARS = 2000;
-const CHAR_WARN_THRESHOLD = 1800;
-
-const HenryInput: React.FC<HenryInputProps> = ({
-  onSend,
-  disabled = false,
-  placeholder = 'Ask Henry about property...',
-}) => {
+export default function HenryInput({ onSend, disabled = false, compact = false }: HenryInputProps) {
+  const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [value, setValue] = React.useState('');
 
+  // Auto-resize textarea
   useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
-
-  const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    const lineHeight = 24;
-    const maxHeight = lineHeight * 4 + 24;
-    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
-  }, []);
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [value]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setValue(e.target.value);
-    adjustHeight();
-  };
-
-  const handleSend = () => {
+  async function handleSend() {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
-    onSend(trimmed);
     setValue('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-  };
+    await onSend(trimmed);
+  }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Desktop: Enter sends, Shift+Enter newline
+    // Mobile: never auto-send on Enter (virtual keyboard sends Enter as newline)
+    if (e.key === 'Enter' && !e.shiftKey && !isMobile()) {
       e.preventDefault();
       handleSend();
     }
-  };
+  }
 
-  const charCount = value.length;
-  const showCharCount = charCount >= CHAR_WARN_THRESHOLD;
-  const isOverLimit = charCount > MAX_CHARS;
-  const canSend = value.trim().length > 0 && !disabled && !isOverLimit;
+  function isMobile(): boolean {
+    return window.matchMedia('(pointer: coarse)').matches;
+  }
+
+  const canSend = value.trim().length > 0 && !disabled;
+  const padding = compact ? 'px-3 py-2' : 'px-4 py-3';
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-end gap-2 bg-white border border-base-300 rounded-xl px-3 py-2.5 focus-within:border-brand-gold transition-colors shadow-soft">
+    <div className={`border-t border-base-300 bg-white ${padding}`}>
+      <div className="flex items-end gap-2">
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={handleChange}
+          onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          maxLength={MAX_CHARS}
+          placeholder="Ask Henry anything..."
           rows={1}
-          aria-label="Message Henry"
-          className="flex-1 resize-none bg-transparent text-content text-sm leading-6 placeholder:text-content-secondary focus:outline-none disabled:opacity-50 overflow-y-auto"
-          style={{ minHeight: '24px', maxHeight: '120px' }}
+          disabled={disabled}
+          className={[
+            'flex-1 resize-none rounded-xl border border-base-300 bg-base-200 text-content placeholder-content-secondary',
+            'focus:outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold/60',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            'leading-relaxed overflow-y-hidden',
+            compact ? 'text-sm px-3 py-2' : 'text-sm px-3 py-2.5',
+          ].join(' ')}
+          style={{ minHeight: compact ? '36px' : '42px', maxHeight: '120px' }}
         />
         <button
           type="button"
           onClick={handleSend}
           disabled={!canSend}
           aria-label="Send message"
-          className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-brand-gold text-brand-primary transition-opacity disabled:opacity-30 hover:enabled:opacity-90"
+          className={[
+            'flex-shrink-0 rounded-xl bg-brand-gold text-brand-primary font-semibold transition-all duration-150',
+            'disabled:opacity-40 disabled:cursor-not-allowed',
+            'enabled:hover:brightness-110 enabled:active:scale-95',
+            'focus:outline-none focus:ring-2 focus:ring-brand-gold focus:ring-offset-1',
+            // Min 44px tap target on all screen sizes
+            'min-w-[44px] min-h-[44px] flex items-center justify-center',
+          ].join(' ')}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-4 h-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M22 2L11 13" />
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
         </button>
       </div>
-      {showCharCount && (
-        <p className={`text-xs text-right pr-1 ${isOverLimit ? 'text-red-500' : 'text-content-secondary'}`}>
-          {charCount}/{MAX_CHARS}
+      {!compact && (
+        <p className="text-xs text-content-secondary mt-1.5 text-center">
+          Henry may make mistakes. Always verify important information.
         </p>
       )}
     </div>
   );
-};
-
-export default HenryInput;
+}

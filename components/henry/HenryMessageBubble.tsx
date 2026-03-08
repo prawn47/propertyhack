@@ -90,7 +90,6 @@ export default function HenryMessageBubble({ message, onRate, compact }: HenryMe
   const isAssistant = message.role === 'assistant';
 
   const paddingClass = compact ? 'px-3 py-2' : 'px-4 py-3';
-  const textClass = compact ? 'text-sm' : 'text-sm';
 
   async function handleCopy() {
     try {
@@ -109,12 +108,13 @@ export default function HenryMessageBubble({ message, onRate, compact }: HenryMe
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
-      <div className={`relative max-w-[80%] group ${isUser ? '' : ''}`}>
-        {/* Copy button for assistant messages */}
+      {/* 90% max-width on mobile, 80% on larger screens */}
+      <div className="relative max-w-[90%] sm:max-w-[80%] group w-full sm:w-auto">
+        {/* Copy button — always visible on mobile (no hover on touch), hover-only on desktop */}
         {isAssistant && (
           <button
             onClick={handleCopy}
-            className="absolute -top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-md px-1.5 py-0.5 text-xs text-gray-500 hover:text-gray-700 hover:border-gray-300 z-10 flex items-center gap-1"
+            className="absolute -top-2 right-2 sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-opacity bg-white border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:border-gray-300 z-10 flex items-center gap-1 min-h-[32px]"
             title="Copy message"
           >
             {copied ? (
@@ -138,9 +138,8 @@ export default function HenryMessageBubble({ message, onRate, compact }: HenryMe
         {/* Message bubble */}
         <div
           className={[
-            'rounded-2xl',
+            'rounded-2xl text-sm',
             paddingClass,
-            textClass,
             isUser
               ? 'bg-brand-primary text-white'
               : 'bg-base-200 text-gray-900',
@@ -160,16 +159,16 @@ export default function HenryMessageBubble({ message, onRate, compact }: HenryMe
           )}
         </div>
 
-        {/* Citations */}
+        {/* Citations — stack vertically, each full-width of bubble */}
         {isAssistant && message.citations && message.citations.length > 0 && (
-          <div className={`mt-2 space-y-1.5 ${compact ? 'text-xs' : 'text-xs'}`}>
+          <div className="mt-2 space-y-1.5 text-xs">
             {message.citations.map((citation) => (
               <a
                 key={citation.articleId}
                 href={`/au/article/${citation.slug}`}
-                className="block border border-brand-gold/20 bg-white rounded-lg px-3 py-2 hover:border-brand-gold/40 hover:bg-base-200 transition-colors"
+                className="block border border-brand-gold/20 bg-white rounded-lg px-3 py-2.5 hover:border-brand-gold/40 hover:bg-base-200 transition-colors min-h-[44px] flex flex-col justify-center"
               >
-                <div className="font-medium text-gray-800 line-clamp-1">{citation.title}</div>
+                <div className="font-medium text-gray-800 line-clamp-2">{citation.title}</div>
                 <div className="text-gray-400 mt-0.5 flex items-center gap-1">
                   <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 12h6m-6 4h2" />
@@ -186,50 +185,50 @@ export default function HenryMessageBubble({ message, onRate, compact }: HenryMe
 
         {/* Calculator result */}
         {isAssistant && message.calculatorCall && (
-          <div className="mt-2 border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-xs">
+          <div className="mt-2 border border-gray-200 bg-gray-50 rounded-lg px-3 py-2.5 text-xs">
             <div className="font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5 text-brand-gold flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               {formatCalculatorType(message.calculatorCall.type)}
             </div>
             <dl className="space-y-1">
               {Object.entries(message.calculatorCall.outputs).map(([key, value]) => (
-                <div key={key} className="flex justify-between gap-4">
+                <div key={key} className="flex justify-between gap-2 flex-wrap">
                   <dt className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</dt>
-                  <dd className="font-medium text-gray-800 text-right">{formatOutputValue(value)}</dd>
+                  <dd className="font-medium text-gray-800">{formatOutputValue(value)}</dd>
                 </div>
               ))}
             </dl>
           </div>
         )}
 
-        {/* Thumbs up/down for non-streaming assistant messages */}
+        {/* Thumbs up/down — larger tap targets on mobile */}
         {isAssistant && !message.isStreaming && (
-          <div className="flex justify-end gap-1 mt-1.5">
+          <div className="flex justify-end gap-0.5 mt-1.5">
             <button
               onClick={() => handleRate(5)}
               title="Helpful"
-              className={`p-1 rounded transition-colors ${
+              className={`min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors ${
                 rating === 5
                   ? 'text-green-600 bg-green-50'
                   : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
               }`}
             >
-              <svg className="w-3.5 h-3.5" fill={rating === 5 ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill={rating === 5 ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
               </svg>
             </button>
             <button
               onClick={() => handleRate(1)}
               title="Not helpful"
-              className={`p-1 rounded transition-colors ${
+              className={`min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors ${
                 rating === 1
                   ? 'text-red-500 bg-red-50'
                   : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
               }`}
             >
-              <svg className="w-3.5 h-3.5" fill={rating === 1 ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill={rating === 1 ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
               </svg>
             </button>
