@@ -117,3 +117,4 @@ qa-*.png
 
 # Dolt database files (added by bd init)
 .dolt/
+.claude/worktrees/
