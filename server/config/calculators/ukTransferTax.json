@@ -1,0 +1,80 @@
+{
+  "england_and_northern_ireland": {
+    "jurisdiction": "UK_ENGLAND_NI",
+    "taxName": "Stamp Duty Land Tax",
+    "abbreviation": "SDLT",
+    "currency": "GBP",
+    "lastUpdated": "2025-04-01",
+    "source": "https://www.gov.uk/stamp-duty-land-tax/residential-property-rates",
+    "standardBands": [
+      { "from": 0, "to": 125000, "rate": 0.00 },
+      { "from": 125001, "to": 250000, "rate": 0.02 },
+      { "from": 250001, "to": 925000, "rate": 0.05 },
+      { "from": 925001, "to": 1500000, "rate": 0.10 },
+      { "from": 1500001, "to": null, "rate": 0.12 }
+    ],
+    "firstTimeBuyerBands": [
+      { "from": 0, "to": 300000, "rate": 0.00 },
+      { "from": 300001, "to": 500000, "rate": 0.05 }
+    ],
+    "firstTimeBuyerMaxPropertyPrice": 500000,
+    "firstTimeBuyerNote": "First-time buyer relief is lost entirely if the property price exceeds £500,000. Standard rates apply above this threshold.",
+    "additionalPropertySurcharge": 0.05,
+    "nonResidentSurcharge": 0.02,
+    "nonResidentSurchargeNote": "The 2% non-UK resident surcharge applies on top of all standard rates and any additional property surcharge."
+  },
+  "scotland": {
+    "jurisdiction": "UK_SCOTLAND",
+    "taxName": "Land and Buildings Transaction Tax",
+    "abbreviation": "LBTT",
+    "currency": "GBP",
+    "lastUpdated": "2025-04-01",
+    "source": "https://www.revenue.scot/land-buildings-transaction-tax/guidance/lbtt-legislation-guidance/residential-property/lbtt10030",
+    "standardBands": [
+      { "from": 0, "to": 145000, "rate": 0.00 },
+      { "from": 145001, "to": 250000, "rate": 0.02 },
+      { "from": 250001, "to": 325000, "rate": 0.05 },
+      { "from": 325001, "to": 750000, "rate": 0.10 },
+      { "from": 750001, "to": null, "rate": 0.12 }
+    ],
+    "firstTimeBuyerBands": [
+      { "from": 0, "to": 175000, "rate": 0.00 },
+      { "from": 175001, "to": 250000, "rate": 0.02 },
+      { "from": 250001, "to": 325000, "rate": 0.05 },
+      { "from": 325001, "to": 750000, "rate": 0.10 },
+      { "from": 750001, "to": null, "rate": 0.12 }
+    ],
+    "firstTimeBuyerNote": "First-time buyer relief raises the nil-rate threshold from £145,000 to £175,000. Standard rates apply above £175,000.",
+    "additionalDwellingSupplement": {
+      "rate": 0.08,
+      "appliesTo": "full_purchase_price",
+      "note": "The Additional Dwelling Supplement (ADS) is 8% of the entire purchase price, not marginal. It is charged on the full price when purchasing an additional residential property."
+    }
+  },
+  "wales": {
+    "jurisdiction": "UK_WALES",
+    "taxName": "Land Transaction Tax",
+    "abbreviation": "LTT",
+    "currency": "GBP",
+    "lastUpdated": "2025-04-01",
+    "source": "https://www.gov.wales/land-transaction-tax-rates-and-bands",
+    "standardBands": [
+      { "from": 0, "to": 225000, "rate": 0.00 },
+      { "from": 225001, "to": 400000, "rate": 0.06 },
+      { "from": 400001, "to": 750000, "rate": 0.075 },
+      { "from": 750001, "to": 1500000, "rate": 0.10 },
+      { "from": 1500001, "to": null, "rate": 0.12 }
+    ],
+    "firstTimeBuyerRelief": false,
+    "firstTimeBuyerNote": "Wales does not offer first-time buyer relief. The £225,000 nil-rate threshold applies to all buyers.",
+    "additionalPropertyBands": [
+      { "from": 0, "to": 180000, "rate": 0.05 },
+      { "from": 180001, "to": 250000, "rate": 0.085 },
+      { "from": 250001, "to": 400000, "rate": 0.10 },
+      { "from": 400001, "to": 750000, "rate": 0.125 },
+      { "from": 750001, "to": 1500000, "rate": 0.15 },
+      { "from": 1500001, "to": null, "rate": 0.17 }
+    ],
+    "additionalPropertyNote": "Higher rates for additional properties in Wales use a completely separate rate table applied to the full purchase price on a marginal basis. This is not a surcharge on top of standard rates."
+  }
+}
