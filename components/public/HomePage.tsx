@@ -7,6 +7,7 @@ import ArticleFeed from './ArticleFeed';
 import SeoHead, { SITE_URL } from '../shared/SeoHead';
 import type { Filters } from './FilterBar';
 import { useLocationDetection } from '../../hooks/useLocationDetection';
+import { useCountry } from '../../contexts/CountryContext';
 
 interface UserPreferences {
   defaultLocation?: string;
@@ -35,6 +36,7 @@ const DEFAULT_FILTERS: Filters = {
 const HomePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
+  const { country } = useCountry();
 
   const prefs = getStoredPreferences();
   const prefLocation = prefs?.defaultLocation ?? '';
@@ -112,7 +114,7 @@ const HomePage: React.FC = () => {
       />
       <main className="flex-1">
         <h1 className="sr-only">Australian Property News & Market Updates</h1>
-        <ArticleFeed filters={filters} />
+        <ArticleFeed filters={filters} country={country} />
       </main>
       <Footer />
     </div>
