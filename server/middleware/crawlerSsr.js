@@ -205,6 +205,108 @@ async function getMetaForUrl(url, prisma) {
     });
   }
 
+  // Tools index and calculator pages
+  const CALCULATOR_META = {
+    '/tools': {
+      title: 'Property Calculators Australia',
+      description: 'Free property calculators — mortgage repayments, stamp duty, rental yield, borrowing power, rent vs buy.',
+      appName: 'Property Calculators Australia',
+      breadcrumb: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
+      ],
+    },
+    '/tools/mortgage-calculator': {
+      title: 'Mortgage Calculator',
+      description: 'Calculate your mortgage repayments across different loan terms, interest rates, and payment frequencies.',
+      appName: 'Mortgage Calculator',
+      breadcrumb: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
+        { '@type': 'ListItem', position: 3, name: 'Mortgage Calculator', item: `${SITE_URL}/tools/mortgage-calculator` },
+      ],
+    },
+    '/tools/stamp-duty-calculator': {
+      title: 'Stamp Duty Calculator',
+      description: 'Estimate stamp duty costs for every Australian state and territory, including first home buyer concessions.',
+      appName: 'Stamp Duty Calculator',
+      breadcrumb: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
+        { '@type': 'ListItem', position: 3, name: 'Stamp Duty Calculator', item: `${SITE_URL}/tools/stamp-duty-calculator` },
+      ],
+    },
+    '/tools/rental-yield-calculator': {
+      title: 'Rental Yield Calculator',
+      description: 'Analyse your investment property\'s gross and net rental yield with detailed expense tracking.',
+      appName: 'Rental Yield Calculator',
+      breadcrumb: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
+        { '@type': 'ListItem', position: 3, name: 'Rental Yield Calculator', item: `${SITE_URL}/tools/rental-yield-calculator` },
+      ],
+    },
+    '/tools/borrowing-power-calculator': {
+      title: 'Borrowing Power Calculator',
+      description: 'Find out how much you could borrow based on your income, expenses, and existing debts.',
+      appName: 'Borrowing Power Calculator',
+      breadcrumb: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
+        { '@type': 'ListItem', position: 3, name: 'Borrowing Power Calculator', item: `${SITE_URL}/tools/borrowing-power-calculator` },
+      ],
+    },
+    '/tools/rent-vs-buy-calculator': {
+      title: 'Rent vs Buy Calculator',
+      description: 'Compare the long-term financial outcome of renting and investing versus buying a home.',
+      appName: 'Rent vs Buy Calculator',
+      breadcrumb: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Tools', item: `${SITE_URL}/tools` },
+        { '@type': 'ListItem', position: 3, name: 'Rent vs Buy Calculator', item: `${SITE_URL}/tools/rent-vs-buy-calculator` },
+      ],
+    },
+  };
+
+  if (url === '/tools' || url.startsWith('/tools/')) {
+    const meta = CALCULATOR_META[url];
+    if (meta) {
+      const webAppJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: meta.appName,
+        url: `${SITE_URL}${url}`,
+        description: meta.description,
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'All',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'AUD' },
+      };
+      const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: meta.breadcrumb,
+      };
+      const tags = [];
+      const fullTitle = `${meta.title} | ${SITE_NAME}`;
+      tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
+      tags.push(`<meta name="description" content="${escapeHtml(meta.description)}" />`);
+      tags.push(`<link rel="canonical" href="${SITE_URL}${url}" />`);
+      tags.push(`<meta property="og:title" content="${escapeHtml(fullTitle)}" />`);
+      tags.push(`<meta property="og:description" content="${escapeHtml(meta.description)}" />`);
+      tags.push(`<meta property="og:type" content="website" />`);
+      tags.push(`<meta property="og:url" content="${SITE_URL}${url}" />`);
+      tags.push(`<meta property="og:site_name" content="${SITE_NAME}" />`);
+      tags.push(`<meta property="og:image" content="${DEFAULT_IMAGE}" />`);
+      tags.push(`<meta name="twitter:card" content="summary_large_image" />`);
+      tags.push(`<meta name="twitter:title" content="${escapeHtml(fullTitle)}" />`);
+      tags.push(`<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`);
+      tags.push(`<meta name="twitter:image" content="${DEFAULT_IMAGE}" />`);
+      tags.push(`<script type="application/ld+json">${JSON.stringify(webAppJsonLd)}</script>`);
+      tags.push(`<script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd)}</script>`);
+      return tags.join('\n    ');
+    }
+  }
+
   // About page
   if (url === '/about') {
     return buildMetaTags({
