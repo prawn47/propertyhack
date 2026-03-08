@@ -7,18 +7,14 @@ import SeoHead, { SITE_URL } from '../shared/SeoHead';
 import Breadcrumbs from '../shared/Breadcrumbs';
 import type { Filters } from './FilterBar';
 import { getApiUrl } from '../../services/apiConfig';
+import { getCitiesForCountry } from '../../utils/locationMapper';
 
-const LOCATIONS = [
-  { slug: 'sydney', name: 'Sydney' },
-  { slug: 'melbourne', name: 'Melbourne' },
-  { slug: 'brisbane', name: 'Brisbane' },
-  { slug: 'perth', name: 'Perth' },
-  { slug: 'adelaide', name: 'Adelaide' },
-  { slug: 'canberra', name: 'Canberra' },
-  { slug: 'hobart', name: 'Hobart' },
-  { slug: 'darwin', name: 'Darwin' },
-  { slug: 'gold-coast', name: 'Gold Coast' },
-];
+const COUNTRY_NAMES: Record<string, string> = {
+  AU: 'Australia',
+  US: 'United States',
+  UK: 'United Kingdom',
+  CA: 'Canada',
+};
 
 interface LocationSeoData {
   metaTitle: string;
@@ -29,12 +25,15 @@ interface LocationSeoData {
 }
 
 const LocationPage: React.FC = () => {
-  const { location } = useParams<{ location: string }>();
+  const { location, country: countryParam } = useParams<{ location: string; country: string }>();
+  const country = (countryParam || 'au').toUpperCase();
   const [seoData, setSeoData] = useState<LocationSeoData | null>(null);
 
   const displayName = location
     ? location.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
     : '';
+
+  const countryName = COUNTRY_NAMES[country] || country;
 
   useEffect(() => {
     if (!location) return;
@@ -54,23 +53,25 @@ const LocationPage: React.FC = () => {
   const title = seoData?.metaTitle || `${displayName} Property News & Market Updates`;
   const description =
     seoData?.metaDescription ||
-    `Latest property news, market updates, house prices and real estate analysis for ${displayName}, Australia.`;
+    `Latest property news, market updates, house prices and real estate analysis for ${displayName}, ${countryName}.`;
   const h1 = seoData?.h1Title || `${displayName} Property News & Market Updates`;
 
-  const otherLocations = LOCATIONS.filter((l) => l.slug !== location);
+  const countryLower = country.toLowerCase();
+  const allCities = getCitiesForCountry(country);
+  const otherLocations = allCities.filter((c) => c.slug !== location);
 
   return (
     <div className="min-h-screen bg-base-200 flex flex-col">
       <SeoHead
         title={title}
         description={description}
-        canonicalUrl={`/property-news/${location}`}
+        canonicalUrl={`/${countryLower}/property-news/${location}`}
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           name: h1,
           description,
-          url: `${SITE_URL}/property-news/${location}`,
+          url: `${SITE_URL}/${countryLower}/property-news/${location}`,
         }}
       />
       <Header />
@@ -78,7 +79,7 @@ const LocationPage: React.FC = () => {
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <Breadcrumbs
           items={[
-            { label: 'Home', href: '/' },
+            { label: 'Home', href: `/${countryLower}` },
             { label: displayName },
           ]}
         />
@@ -98,16 +99,16 @@ const LocationPage: React.FC = () => {
         {/* Cross-links to other locations */}
         <section className="mt-12 pt-8 border-t border-base-300">
           <h2 className="text-lg font-semibold text-brand-primary mb-4">
-            Property News by Location
+            Property News by Location in {countryName}
           </h2>
           <div className="flex flex-wrap gap-2">
             {otherLocations.map((loc) => (
               <Link
                 key={loc.slug}
-                to={`/property-news/${loc.slug}`}
+                to={`/${countryLower}/property-news/${loc.slug}`}
                 className="px-3 py-1.5 rounded-lg text-sm font-medium bg-base-100 text-content-secondary border border-base-300 hover:border-brand-gold hover:text-brand-gold transition-colors"
               >
-                {loc.name}
+                {loc.display}
               </Link>
             ))}
           </div>
