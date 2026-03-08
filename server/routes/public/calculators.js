@@ -75,14 +75,22 @@ router.post(
   '/rental-yield/calculate',
   [
     body('purchasePrice').isInt({ min: 0 }).withMessage('purchasePrice must be a non-negative integer (cents)'),
-    body('weeklyRent').isInt({ min: 0 }).withMessage('weeklyRent must be a non-negative integer (cents)'),
+    body('rentFrequency').optional().isIn(['weekly', 'monthly']).withMessage('rentFrequency must be weekly or monthly'),
+    body('weeklyRent').optional().isInt({ min: 0 }).withMessage('weeklyRent must be a non-negative integer (cents)'),
+    body('monthlyRent').optional().isInt({ min: 0 }).withMessage('monthlyRent must be a non-negative integer (cents)'),
     body('managementFeeRate').optional().isFloat({ min: 0, max: 100 }).withMessage('managementFeeRate must be between 0 and 100'),
     body('councilRates').optional().isInt({ min: 0 }).withMessage('councilRates must be a non-negative integer (cents)'),
     body('strataFees').optional().isInt({ min: 0 }).withMessage('strataFees must be a non-negative integer (cents)'),
     body('insurance').optional().isInt({ min: 0 }).withMessage('insurance must be a non-negative integer (cents)'),
     body('maintenance').optional().isInt({ min: 0 }).withMessage('maintenance must be a non-negative integer (cents)'),
     body('landTax').optional().isInt({ min: 0 }).withMessage('landTax must be a non-negative integer (cents)'),
+    body('groundRent').optional().isInt({ min: 0 }).withMessage('groundRent must be a non-negative integer (cents)'),
+    body('propertyTax').optional().isInt({ min: 0 }).withMessage('propertyTax must be a non-negative integer (cents)'),
     body('otherExpenses').optional().isInt({ min: 0 }).withMessage('otherExpenses must be a non-negative integer (cents)'),
+    body('interestDeductibilityEnabled').optional().isBoolean().withMessage('interestDeductibilityEnabled must be a boolean'),
+    body('marginalTaxRate').optional().isFloat({ min: 0, max: 100 }).withMessage('marginalTaxRate must be between 0 and 100'),
+    body('mortgageBalance').optional().isInt({ min: 0 }).withMessage('mortgageBalance must be a non-negative integer (cents)'),
+    body('mortgageInterestRate').optional().isFloat({ min: 0, max: 100 }).withMessage('mortgageInterestRate must be between 0 and 100'),
   ],
   (req, res) => {
     const validationError = handleValidation(req, res);
@@ -101,6 +109,7 @@ router.post(
 router.post(
   '/borrowing-power/calculate',
   [
+    body('market').optional().isIn(['AU', 'US', 'UK', 'CA', 'NZ']).withMessage('market must be AU, US, UK, CA, or NZ'),
     body('applicants').optional().isInt({ min: 1, max: 2 }).withMessage('applicants must be 1 or 2'),
     body('grossIncome1').isInt({ min: 0 }).withMessage('grossIncome1 must be a non-negative integer (cents)'),
     body('grossIncome2').optional().isInt({ min: 0 }).withMessage('grossIncome2 must be a non-negative integer (cents)'),
@@ -108,7 +117,9 @@ router.post(
     body('monthlyLivingExpenses').optional().isInt({ min: 0 }).withMessage('monthlyLivingExpenses must be a non-negative integer (cents)'),
     body('creditCardLimits').optional().isInt({ min: 0 }).withMessage('creditCardLimits must be a non-negative integer (cents)'),
     body('existingLoanRepayments').optional().isInt({ min: 0 }).withMessage('existingLoanRepayments must be a non-negative integer (cents)'),
+    // hecsDebt retained for backward compat; studentDebt is the multi-market field
     body('hecsDebt').optional().isInt({ min: 0 }).withMessage('hecsDebt must be a non-negative integer (cents)'),
+    body('studentDebt').optional(),
     body('dependants').optional().isInt({ min: 0, max: 10 }).withMessage('dependants must be between 0 and 10'),
     body('assessmentRate').optional().isFloat({ min: 0, max: 100 }).withMessage('assessmentRate must be between 0 and 100'),
   ],
@@ -117,7 +128,12 @@ router.post(
     if (validationError) return;
 
     try {
-      const result = borrowingPowerCalculator.calculate(req.body);
+      const inputs = { ...req.body };
+      // backward compat: hecsDebt maps to studentDebt for AU
+      if (inputs.hecsDebt !== undefined && inputs.studentDebt === undefined) {
+        inputs.studentDebt = inputs.hecsDebt;
+      }
+      const result = borrowingPowerCalculator.calculate(inputs);
       return res.json(result);
     } catch (err) {
       return res.status(500).json({ error: 'Calculation failed', message: err.message });
