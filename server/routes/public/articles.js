@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { generateEmbedding } = require('../../services/embeddingService');
 
-const VALID_COUNTRIES = ['AU', 'US', 'UK', 'CA', 'GLOBAL'];
+const VALID_COUNTRIES = ['AU', 'US', 'UK', 'CA', 'NZ', 'GLOBAL'];
 
 const ARTICLE_SELECT = {
   id: true,

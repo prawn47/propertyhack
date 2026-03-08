@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const SITE_URL = 'https://propertyhack.com';
-const SUPPORTED_COUNTRIES = ['au', 'us', 'uk', 'ca'];
+const SUPPORTED_COUNTRIES = ['au', 'us', 'uk', 'ca', 'nz'];
 
 let cache = {};
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes

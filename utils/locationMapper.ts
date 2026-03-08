@@ -66,6 +66,18 @@ const CA_PROVINCE_MAP: Record<string, string> = {
   'manitoba': 'MB',
 };
 
+const NZ_REGION_MAP: Record<string, string> = {
+  'auckland': 'Auckland',
+  'wellington': 'Wellington',
+  'canterbury': 'Canterbury',
+  'waikato': 'Waikato',
+  'bay of plenty': 'Bay of Plenty',
+  'otago': 'Otago',
+  "hawke's bay": "Hawke's Bay",
+  'tasman': 'Tasman',
+  'taranaki': 'Taranaki',
+};
+
 export const STATE_MAP = AU_STATE_MAP;
 
 const AU_CITIES: CityMap = {
@@ -140,11 +152,25 @@ const CA_CITIES: CityMap = {
   'victoria': { display: 'Victoria', region: 'BC', slug: 'victoria' },
 };
 
+const NZ_CITIES: CityMap = {
+  'auckland': { display: 'Auckland', region: 'Auckland', slug: 'auckland' },
+  'wellington': { display: 'Wellington', region: 'Wellington', slug: 'wellington' },
+  'christchurch': { display: 'Christchurch', region: 'Canterbury', slug: 'christchurch' },
+  'hamilton': { display: 'Hamilton', region: 'Waikato', slug: 'hamilton' },
+  'tauranga': { display: 'Tauranga', region: 'Bay of Plenty', slug: 'tauranga' },
+  'dunedin': { display: 'Dunedin', region: 'Otago', slug: 'dunedin' },
+  'queenstown': { display: 'Queenstown', region: 'Otago', slug: 'queenstown' },
+  'napier': { display: 'Napier', region: "Hawke's Bay", slug: 'napier' },
+  'nelson': { display: 'Nelson', region: 'Tasman', slug: 'nelson' },
+  'new plymouth': { display: 'New Plymouth', region: 'Taranaki', slug: 'new-plymouth' },
+};
+
 export const ALL_CITIES: Record<string, CityMap> = {
   AU: AU_CITIES,
   US: US_CITIES,
   UK: UK_CITIES,
   CA: CA_CITIES,
+  NZ: NZ_CITIES,
 };
 
 const COUNTRY_CODE_MAP: Record<string, string> = {
@@ -153,6 +179,7 @@ const COUNTRY_CODE_MAP: Record<string, string> = {
   GB: 'UK',
   UK: 'UK',
   CA: 'CA',
+  NZ: 'NZ',
 };
 
 export function getCitiesForCountry(country: string): CityMap {
@@ -224,6 +251,18 @@ export function mapToKnownLocation(raw: RawLocation): MappedLocation | null {
     for (const entry of Object.values(CA_CITIES)) {
       if (entry.region === provinceAbbrev) {
         return { city: entry.display, region: entry.region, country: countryKey, slug: entry.slug };
+      }
+    }
+  }
+
+  if (raw.regionName && countryKey === 'NZ') {
+    const regionLower = raw.regionName.toLowerCase();
+    const regionName = NZ_REGION_MAP[regionLower];
+    if (regionName) {
+      for (const entry of Object.values(NZ_CITIES)) {
+        if (entry.region === regionName) {
+          return { city: entry.display, region: entry.region, country: countryKey, slug: entry.slug };
+        }
       }
     }
   }
