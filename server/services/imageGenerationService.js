@@ -107,6 +107,18 @@ function generateSlug(title) {
     .substring(0, 80);
 }
 
+const FALLBACK_QUOTES = [
+  '/images/fallbacks/quote-1.svg',
+  '/images/fallbacks/quote-2.svg',
+  '/images/fallbacks/quote-3.svg',
+  '/images/fallbacks/quote-4.svg',
+];
+
+function getRandomFallbackImage() {
+  const publicPath = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)];
+  return { imageData: null, mimeType: 'image/svg+xml', filename: null, publicPath };
+}
+
 // Model fallback chain for image generation
 const IMAGE_MODELS = [
   'gemini-2.0-flash-exp-image-generation',
@@ -155,7 +167,8 @@ async function generateArticleImage(title, shortBlurb, category, slug) {
   }
 
   if (!imageData) {
-    throw new Error('All image models failed — will retry');
+    console.warn('[imageGen] All AI models failed — using fallback quote image');
+    return getRandomFallbackImage();
   }
 
   const fileSlug = slug || generateSlug(title);
