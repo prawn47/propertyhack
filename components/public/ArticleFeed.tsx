@@ -158,15 +158,14 @@ const ArticleFeed: React.FC<ArticleFeedProps> = ({ filters, country }) => {
           </div>
         ))}
 
-        {/* Regular articles in grid with subscribe CTA */}
+        {/* Regular articles in grid with subscribe CTA cards */}
         {regular.map((article, index) => (
           <React.Fragment key={article.id}>
-            <ArticleCard article={article} />
-            {index === 4 && (
-              <div className="col-span-full">
-                <SubscribeForm variant="inline" />
-              </div>
+            {/* Subscribe card at position 6 (index 5), then every 9 after (14, 23, 32...) */}
+            {(index === 5 || (index > 5 && (index - 5) % 9 === 0)) && (
+              <SubscribeForm variant="card" />
             )}
+            <ArticleCard article={article} />
           </React.Fragment>
         ))}
       </div>

@@ -64,7 +64,7 @@ const COUNTRY_OPTIONS = [
 ];
 
 interface Props {
-  variant?: 'inline' | 'footer';
+  variant?: 'inline' | 'footer' | 'card';
 }
 
 const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
@@ -125,6 +125,18 @@ const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
         <p className="text-sm text-brand-gold font-medium">
           You're subscribed! We'll send property news for {successRegion}.
         </p>
+      );
+    }
+    if (variant === 'card') {
+      return (
+        <div className="bg-base-100 rounded-xl shadow-soft overflow-hidden flex flex-col items-center justify-center h-full p-6">
+          <svg className="w-10 h-10 text-brand-gold mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <p className="text-sm font-medium text-content text-center">
+            You're subscribed! We'll send property news for {successRegion}.
+          </p>
+        </div>
       );
     }
     return (
@@ -193,6 +205,71 @@ const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
           {loading ? 'Subscribing...' : 'Subscribe'}
         </button>
       </form>
+    );
+  }
+
+  if (variant === 'card') {
+    return (
+      <div className="bg-base-100 rounded-xl shadow-soft overflow-hidden flex flex-col">
+        <div className="h-48 bg-gradient-to-br from-brand-gold/20 to-brand-gold/5 flex flex-col items-center justify-center px-4">
+          <svg className="w-10 h-10 text-brand-gold mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <h3 className="text-sm font-semibold text-brand-primary text-center">
+            Get property news for your area
+          </h3>
+          <p className="text-xs text-content-secondary text-center mt-1">
+            Weekly updates delivered to your inbox.
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-2 flex-1 flex flex-col">
+          <input
+            type="text"
+            value={firstName}
+            onChange={e => setFirstName(e.target.value)}
+            placeholder="First name"
+            className={inputClass}
+          />
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            placeholder="Email address"
+            className={inputClass}
+          />
+          <select
+            value={country}
+            onChange={e => handleCountryChange(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">Country</option>
+            {COUNTRY_OPTIONS.map(c => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
+          {regions.length > 0 && (
+            <select
+              value={region}
+              onChange={e => setRegion(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">State / Region</option>
+              {regions.map(r => (
+                <option key={r.code} value={r.code}>{r.label}</option>
+              ))}
+            </select>
+          )}
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-brand-gold text-brand-primary hover:bg-brand-gold/90 transition-colors disabled:opacity-50 mt-auto"
+          >
+            {loading ? 'Subscribing...' : 'Subscribe'}
+          </button>
+        </form>
+      </div>
     );
   }
 
