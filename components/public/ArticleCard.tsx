@@ -27,7 +27,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, featured }) => {
 
   return (
     <CountryLink
-      to={`/articles/${article.slug}`}
+      to={`/article/${article.slug}`}
       className={`group block bg-base-100 rounded-xl shadow-soft hover:shadow-medium transition-shadow duration-200 overflow-hidden${isFeatured ? ' border-l-4 border-brand-gold' : ''}`}
     >
       {/* Image */}
