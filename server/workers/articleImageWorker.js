@@ -39,7 +39,7 @@ const articleImageWorker = new Worker('article-image', async (job) => {
       category: true,
       slug: true,
       imageUrl: true,
-      extractedLocation: true,
+      location: true,
     },
   });
 
@@ -66,7 +66,7 @@ const articleImageWorker = new Worker('article-image', async (job) => {
   const hasImage = !!(imageResult || article.imageUrl);
   if (hasImage) {
     try {
-      const focusKeywords = await getSeoKeywords(article.category, article.extractedLocation);
+      const focusKeywords = await getSeoKeywords(article.category, article.location);
       const altText = await generateImageAltText(article.title, article.shortBlurb || '', focusKeywords);
       updateData.imageAltText = altText;
       console.log(`[article-image] Alt text generated for article ${articleId}`);
