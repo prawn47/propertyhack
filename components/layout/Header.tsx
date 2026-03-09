@@ -133,14 +133,6 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
             )}
           </div>
 
-          {/* Henry link */}
-          <CountryLink
-            to="/henry"
-            className="text-sm font-semibold bg-brand-gold text-brand-primary px-3 py-1 rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Ask Henry
-          </CountryLink>
-
           {/* User menu */}
           {!auth || !auth.isAuthenticated ? (
             <CountryLink to="/login" className="text-sm text-white/70 hover:text-brand-gold transition-colors">
@@ -240,14 +232,6 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       {/* Mobile menu */}
       {mobileToolsOpen && (
         <div className="sm:hidden px-4 pb-4 border-t border-white/10 pt-3 space-y-1">
-          <CountryLink
-            to="/henry"
-            onClick={() => setMobileToolsOpen(false)}
-            className="block py-1.5 text-sm font-semibold text-brand-gold hover:opacity-90 transition-opacity"
-          >
-            Ask Henry
-          </CountryLink>
-          <div className="border-t border-white/10 my-2" />
           <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2">Tools</p>
           {CALCULATORS.map((calc) => (
             <CountryLink
