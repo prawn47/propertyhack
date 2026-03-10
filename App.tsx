@@ -37,6 +37,8 @@ import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
 import SubscriberList from './components/admin/SubscriberList';
+import NewsletterList from './components/admin/NewsletterList';
+import NewsletterEditor from './components/admin/NewsletterEditor';
 import RegisterPage from './components/auth/RegisterPage';
 import VerifyEmailPage from './components/auth/VerifyEmailPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
@@ -357,6 +359,22 @@ function AppInner() {
         element={
           <RequireAdmin>
             <AdminPage onLogout={handleLogout}><SubscriberList /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/newsletters"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><NewsletterList /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/newsletters/:id/edit"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><NewsletterEditor /></AdminPage>
           </RequireAdmin>
         }
       />
