@@ -54,6 +54,7 @@ import CaTransferTaxCalculator from './components/calculators/CaTransferTaxCalcu
 import NzBuyingCostsCalculator from './components/calculators/NzBuyingCostsCalculator';
 import UsTransferTaxCalculator from './components/calculators/UsTransferTaxCalculator';
 import HenryPage from './components/henry/HenryPage';
+import AdminFloatingButton from './components/shared/AdminFloatingButton';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -159,6 +160,7 @@ function AppInner() {
 
   return (
     <>
+    <AdminFloatingButton />
     <Routes>
       {/* Root — detect country and redirect */}
       <Route path="/" element={<CountryRedirect />} />
