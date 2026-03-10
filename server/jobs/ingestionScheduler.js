@@ -4,10 +4,24 @@ const { sourceFetchQueue } = require('../queues/sourceFetchQueue');
 
 const prisma = new PrismaClient();
 
+const DEFAULT_SCHEDULES = {
+  RSS:         '*/30 * * * *',  // 30 min
+  NEWSAPI_ORG: '0 */3 * * *',   // 3 hours
+  NEWSAPI_AI:  '0 */4 * * *',   // 4 hours
+  SCRAPER:     '0 */5 * * *',   // 5 hours
+  PERPLEXITY:  '0 */8 * * *',   // 8 hours
+  NEWSLETTER:  null,             // on-demand only
+  SOCIAL:      null,             // on-demand only
+  MANUAL:      null,             // on-demand only
+};
+
 function isSourceDue(source) {
+  const defaultSchedule = DEFAULT_SCHEDULES[source.type];
+  if (defaultSchedule === null) return false;
+
   if (!source.lastFetchAt) return true;
 
-  const schedule = source.schedule || '*/30 * * * *';
+  const schedule = source.schedule || defaultSchedule || '*/30 * * * *';
   const intervalMs = parseCronIntervalMs(schedule);
   const elapsed = Date.now() - new Date(source.lastFetchAt).getTime();
   return elapsed >= intervalMs;
@@ -61,7 +75,7 @@ async function checkAndEnqueueSources() {
 
 function startScheduler() {
   console.log('[ingestion-scheduler] Starting — runs every 5 minutes');
-  cron.schedule('*/5 * * * *', checkAndEnqueueSources);
+  cron.schedule('*/5 * * * *', checkAndEnqueueSources, { timezone: 'Australia/Sydney' });
 }
 
 module.exports = { startScheduler };

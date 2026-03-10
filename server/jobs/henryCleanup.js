@@ -23,7 +23,7 @@ async function cleanupOldConversations() {
 
 function startHenryCleanup() {
   // Run daily at 3am
-  cron.schedule('0 3 * * *', cleanupOldConversations);
+  cron.schedule('0 3 * * *', cleanupOldConversations, { timezone: 'Australia/Sydney' });
   console.log('[henry-cleanup] Scheduled daily cleanup at 3am');
 }
 

@@ -27,7 +27,7 @@ function startSocialHealthCheck() {
     }
 
     console.log('[social-health] Health check complete');
-  });
+  }, { timezone: 'Australia/Sydney' });
 
   console.log('[social-health] Scheduled health check (every 6 hours)');
 }

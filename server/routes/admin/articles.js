@@ -298,6 +298,59 @@ router.delete(
   }
 );
 
+// POST /maintenance/regenerate-images — Re-queue articles with fallback SVGs or missing images
+router.post('/maintenance/regenerate-images', async (req, res) => {
+  try {
+    const { articleImageQueue } = require('../../queues/articleImageQueue');
+
+    const articles = await req.prisma.article.findMany({
+      where: {
+        status: 'PUBLISHED',
+        OR: [
+          { imageUrl: null },
+          { imageUrl: { startsWith: '/images/fallbacks/' } },
+        ],
+      },
+      select: { id: true },
+    });
+
+    for (const article of articles) {
+      await articleImageQueue.add('image-article', { articleId: article.id });
+    }
+
+    res.json({ queued: articles.length });
+  } catch (error) {
+    console.error('Regenerate images error:', error);
+    res.status(500).json({ error: 'Failed to queue image regeneration' });
+  }
+});
+
+// POST /maintenance/backfill-alt-text — Queue articles with images but no alt text
+router.post('/maintenance/backfill-alt-text', async (req, res) => {
+  try {
+    const { articleImageQueue } = require('../../queues/articleImageQueue');
+
+    const articles = await req.prisma.article.findMany({
+      where: {
+        status: 'PUBLISHED',
+        imageUrl: { not: null },
+        NOT: { imageUrl: { startsWith: '/images/fallbacks/' } },
+        imageAltText: null,
+      },
+      select: { id: true },
+    });
+
+    for (const article of articles) {
+      await articleImageQueue.add('image-article', { articleId: article.id });
+    }
+
+    res.json({ queued: articles.length });
+  } catch (error) {
+    console.error('Backfill alt text error:', error);
+    res.status(500).json({ error: 'Failed to queue alt text backfill' });
+  }
+});
+
 const VALID_PLATFORMS = ['twitter', 'facebook', 'linkedin', 'instagram'];
 
 // POST /:id/generate-social-posts — AI-generate social posts for an article

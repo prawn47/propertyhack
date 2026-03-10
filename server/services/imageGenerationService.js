@@ -174,9 +174,10 @@ async function generateArticleImage(title, shortBlurb, category, slug, attemptsM
     return getRandomFallbackImage();
   }
 
-  const fileSlug = slug || generateSlug(title);
+  const rawSlug = slug || generateSlug(title);
+  const fileSlug = rawSlug.replace(/-[a-z0-9]{5}$/, '');
   const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
-  const filename = `${fileSlug}-${Date.now()}.${ext}`;
+  const filename = `${fileSlug}.${ext}`;
   const filePath = path.join(IMAGES_DIR, filename);
 
   try {
