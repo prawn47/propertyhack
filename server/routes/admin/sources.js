@@ -41,6 +41,32 @@ function validateConfigForType(type, config) {
   return null;
 }
 
+function normaliseUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  return url.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '').trim();
+}
+
+function extractCanonicalKey(type, config) {
+  switch (type) {
+    case 'RSS':
+      return config.feedUrl ? { field: 'feedUrl', value: normaliseUrl(config.feedUrl) } : null;
+    case 'SCRAPER':
+      return config.targetUrl ? { field: 'targetUrl', value: normaliseUrl(config.targetUrl) } : null;
+    case 'NEWSLETTER':
+      return config.inboundEmail ? { field: 'inboundEmail', value: config.inboundEmail.toLowerCase().trim() } : null;
+    case 'NEWSAPI_ORG':
+    case 'NEWSAPI_AI':
+    case 'PERPLEXITY':
+      // No single unique URL — skip duplicate check
+      return null;
+    case 'MANUAL':
+    case 'SOCIAL':
+      return null;
+    default:
+      return null;
+  }
+}
+
 function handleValidationErrors(req, res) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -110,6 +136,28 @@ router.post('/', [
   }
 
   try {
+    const canonical = extractCanonicalKey(type, config);
+    if (canonical) {
+      const existingSources = await req.prisma.ingestionSource.findMany({
+        where: { type },
+        select: { id: true, name: true, type: true, config: true },
+      });
+      const duplicate = existingSources.find((s) => {
+        const val = s.config && s.config[canonical.field];
+        if (!val) return false;
+        const normVal = canonical.field === 'inboundEmail'
+          ? val.toLowerCase().trim()
+          : normaliseUrl(val);
+        return normVal === canonical.value;
+      });
+      if (duplicate) {
+        return res.status(409).json({
+          duplicate: true,
+          existingSource: { id: duplicate.id, name: duplicate.name, type: duplicate.type },
+        });
+      }
+    }
+
     const source = await req.prisma.ingestionSource.create({
       data: {
         name,
