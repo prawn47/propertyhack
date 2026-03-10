@@ -159,6 +159,7 @@ const SourceEditor: React.FC = () => {
   const isNew = !id || id === 'new';
 
   const [loading, setLoading] = useState(!isNew);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [source, setSource] = useState<IngestionSource | null>(null);
@@ -195,7 +196,10 @@ const SourceEditor: React.FC = () => {
         setSchedule(s.schedule || '');
         setConfig((s.config as Record<string, unknown>) || {});
       })
-      .catch(() => showToast('Failed to load source', 'error'))
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'Failed to load source';
+        setLoadError(message);
+      })
       .finally(() => setLoading(false));
   }, [id, isNew]);
 
@@ -537,6 +541,28 @@ const SourceEditor: React.FC = () => {
   };
 
   if (loading) return <LoadingSpinner />;
+
+  if (loadError) {
+    return (
+      <div className="max-w-2xl">
+        <div className="bg-white rounded-lg shadow-soft p-8 text-center space-y-4">
+          <p className="text-content font-medium">Source not found</p>
+          <p className="text-sm text-content-secondary">
+            {loadError.includes('404') || loadError.includes('not found')
+              ? 'This source may have been deleted.'
+              : loadError}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/sources')}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-base-300 rounded text-content hover:bg-base-200 transition-colors"
+          >
+            ← Back to Sources
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
