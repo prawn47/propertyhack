@@ -3,6 +3,7 @@ const { body, query, param, validationResult } = require('express-validator');
 const { generateSlug } = require('../../utils/slug');
 const { generateSocialPosts } = require('../../services/socialPostGenerationService');
 const { socialGenerateQueue } = require('../../queues/socialGenerateQueue');
+const { articleAuditQueue } = require('../../queues/articleAuditQueue');
 
 const router = express.Router();
 
@@ -28,6 +29,8 @@ router.get(
     query('search').optional().isString(),
     query('sortBy').optional().isString(),
     query('sortOrder').optional().isIn(['asc', 'desc']),
+    query('minRelevance').optional().isInt({ min: 1, max: 10 }).toInt(),
+    query('maxRelevance').optional().isInt({ min: 1, max: 10 }).toInt(),
   ],
   handleValidationErrors,
   async (req, res) => {
@@ -44,6 +47,11 @@ router.get(
       if (req.query.sourceId) where.sourceId = req.query.sourceId;
       if (req.query.search) {
         where.title = { contains: req.query.search, mode: 'insensitive' };
+      }
+      if (req.query.minRelevance !== undefined || req.query.maxRelevance !== undefined) {
+        where.relevanceScore = {};
+        if (req.query.minRelevance !== undefined) where.relevanceScore.gte = req.query.minRelevance;
+        if (req.query.maxRelevance !== undefined) where.relevanceScore.lte = req.query.maxRelevance;
       }
 
       const [articles, total] = await Promise.all([
@@ -209,31 +217,118 @@ router.post('/maintenance/regenerate-images', async (req, res) => {
   }
 });
 
-// POST /maintenance/backfill-alt-text — Queue articles with images but no alt text
+// POST /maintenance/backfill-alt-text — Enqueue a single backfill job and return its ID
 router.post('/maintenance/backfill-alt-text', async (req, res) => {
   try {
-    const { articleImageQueue } = require('../../queues/articleImageQueue');
-
-    const articles = await req.prisma.article.findMany({
-      where: {
-        status: 'PUBLISHED',
-        imageUrl: { not: null },
-        NOT: { imageUrl: { startsWith: '/images/fallbacks/' } },
-        imageAltText: null,
-      },
-      select: { id: true },
-    });
-
-    for (const article of articles) {
-      await articleImageQueue.add('image-article', { articleId: article.id });
-    }
-
-    res.json({ queued: articles.length });
+    const { altTextBackfillQueue } = require('../../queues/altTextBackfillQueue');
+    const job = await altTextBackfillQueue.add('backfill-alt-text', {});
+    res.json({ jobId: job.id });
   } catch (error) {
     console.error('Backfill alt text error:', error);
-    res.status(500).json({ error: 'Failed to queue alt text backfill' });
+    res.status(500).json({ error: 'Failed to start alt text backfill' });
   }
 });
+
+// GET /maintenance/backfill-alt-text/:jobId — Poll status of a backfill job
+router.get('/maintenance/backfill-alt-text/:jobId', async (req, res) => {
+  try {
+    const { altTextBackfillQueue } = require('../../queues/altTextBackfillQueue');
+    const job = await altTextBackfillQueue.getJob(req.params.jobId);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    const state = await job.getState();
+    const progress = job.progress || { total: 0, processed: 0, failures: 0 };
+    res.json({ jobId: job.id, state, ...progress });
+  } catch (error) {
+    console.error('Backfill alt text status error:', error);
+    res.status(500).json({ error: 'Failed to get job status' });
+  }
+});
+
+// POST /maintenance/detect-duplicate-images — Find articles sharing the same imageUrl
+router.post('/maintenance/detect-duplicate-images', async (req, res) => {
+  try {
+    const articles = await req.prisma.article.findMany({
+      where: { imageUrl: { not: null } },
+      select: { id: true, title: true, imageUrl: true, status: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const byImageUrl = {};
+    for (const article of articles) {
+      const url = article.imageUrl;
+      if (!byImageUrl[url]) byImageUrl[url] = [];
+      byImageUrl[url].push(article);
+    }
+
+    const duplicates = Object.entries(byImageUrl)
+      .filter(([, group]) => group.length >= 2)
+      .map(([imageUrl, group]) => ({ imageUrl, articles: group }));
+
+    const totalAffected = duplicates.reduce((sum, d) => sum + d.articles.length, 0);
+
+    res.json({
+      duplicateImageUrls: duplicates.length,
+      totalAffectedArticles: totalAffected,
+      duplicates,
+    });
+  } catch (error) {
+    console.error('Detect duplicate images error:', error);
+    res.status(500).json({ error: 'Failed to detect duplicate images' });
+  }
+});
+
+// POST /maintenance/audit-relevance — Enqueue BullMQ job to score DRAFT articles without relevanceScore
+router.post(
+  '/maintenance/audit-relevance',
+  [
+    body('limit').optional().isInt({ min: 1, max: 10000 }).toInt(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const existing = await articleAuditQueue.getJobs(['active', 'waiting', 'delayed']);
+      if (existing.length > 0) {
+        return res.status(409).json({ error: 'An audit job is already running or queued', jobId: existing[0].id });
+      }
+
+      const job = await articleAuditQueue.add('audit-relevance', {
+        limit: req.body.limit || 0,
+      });
+
+      res.json({ jobId: job.id });
+    } catch (error) {
+      console.error('Audit relevance enqueue error:', error);
+      res.status(500).json({ error: 'Failed to enqueue audit job' });
+    }
+  }
+);
+
+// GET /maintenance/audit-relevance/:jobId — Poll progress of an audit job
+router.get(
+  '/maintenance/audit-relevance/:jobId',
+  [param('jobId').isString().notEmpty()],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const job = await articleAuditQueue.getJob(req.params.jobId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      const state = await job.getState();
+      const progress = job.progress || {};
+      const result = state === 'completed' ? job.returnvalue : null;
+      const failedReason = state === 'failed' ? job.failedReason : null;
+
+      res.json({ jobId: job.id, state, progress, result, failedReason });
+    } catch (error) {
+      console.error('Audit relevance status error:', error);
+      res.status(500).json({ error: 'Failed to get job status' });
+    }
+  }
+);
 
 // POST /maintenance/cleanup-drafts — Delete DRAFT articles with no title and no summary
 router.post('/maintenance/cleanup-drafts', async (req, res) => {

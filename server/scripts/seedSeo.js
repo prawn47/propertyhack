@@ -226,6 +226,91 @@ const NZ_EXTRA_KEYWORDS = [
   { keyword: 'do up property nz', market: 'NZ', priority: 1, category: 'types' },
 ];
 
+const UK_KEYWORDS = [
+  // Market terms
+  { keyword: 'uk property news', category: 'market', priority: 2 },
+  { keyword: 'uk housing market', category: 'market', priority: 2 },
+  { keyword: 'uk house prices', category: 'market', priority: 2 },
+  { keyword: 'uk property market 2026', category: 'market', priority: 2 },
+  { keyword: 'chain-free property', category: 'market', priority: 1 },
+  { keyword: 'chain free house purchase', category: 'market', priority: 1 },
+  { keyword: 'gazumping uk', category: 'market', priority: 1 },
+  { keyword: 'SSTC meaning', category: 'market', priority: 1 },
+  { keyword: 'sold subject to contract', category: 'market', priority: 1 },
+  { keyword: 'guide price property uk', category: 'market', priority: 1 },
+  { keyword: 'exchange of contracts uk', category: 'market', priority: 1 },
+  { keyword: 'completion date uk property', category: 'market', priority: 1 },
+  { keyword: 'uk property auction', category: 'market', priority: 1 },
+  { keyword: 'rightmove house prices', category: 'market', priority: 1 },
+  { keyword: 'zoopla property uk', category: 'market', priority: 1 },
+  { keyword: 'uk rental market', category: 'market', priority: 1 },
+  { keyword: 'uk housing shortage', category: 'market', priority: 1 },
+  { keyword: 'uk property prices forecast', category: 'market', priority: 1 },
+  { keyword: 'asking price vs sold price uk', category: 'market', priority: 1 },
+
+  // Investment terms
+  { keyword: 'buy-to-let uk', category: 'investment', priority: 2 },
+  { keyword: 'buy to let mortgage uk', category: 'investment', priority: 2 },
+  { keyword: 'buy to let investment uk', category: 'investment', priority: 1 },
+  { keyword: 'Section 24 landlord tax', category: 'investment', priority: 1 },
+  { keyword: 'section 24 buy to let', category: 'investment', priority: 1 },
+  { keyword: 'EPC rating property', category: 'investment', priority: 1 },
+  { keyword: 'EPC C requirement landlords', category: 'investment', priority: 1 },
+  { keyword: 'yield compression uk property', category: 'investment', priority: 1 },
+  { keyword: 'HMO property investment', category: 'investment', priority: 1 },
+  { keyword: 'house in multiple occupation', category: 'investment', priority: 1 },
+  { keyword: 'HMO licence uk', category: 'investment', priority: 1 },
+  { keyword: 'uk rental yield', category: 'investment', priority: 1 },
+  { keyword: 'property portfolio uk', category: 'investment', priority: 1 },
+  { keyword: 'uk landlord news', category: 'investment', priority: 1 },
+  { keyword: 'limited company buy to let', category: 'investment', priority: 1 },
+  { keyword: 'uk property investment strategy', category: 'investment', priority: 1 },
+
+  // Regulatory terms
+  { keyword: 'stamp duty land tax', category: 'regulatory', priority: 2 },
+  { keyword: 'SDLT rates uk', category: 'regulatory', priority: 1 },
+  { keyword: 'stamp duty first time buyer uk', category: 'regulatory', priority: 1 },
+  { keyword: 'leasehold reform uk', category: 'regulatory', priority: 1 },
+  { keyword: 'leasehold vs freehold uk', category: 'regulatory', priority: 1 },
+  { keyword: 'building safety act uk', category: 'regulatory', priority: 1 },
+  { keyword: 'cladding remediation uk', category: 'regulatory', priority: 1 },
+  { keyword: 'permitted development rights uk', category: 'regulatory', priority: 1 },
+  { keyword: 'planning permission uk', category: 'regulatory', priority: 1 },
+  { keyword: 'renters reform bill uk', category: 'regulatory', priority: 1 },
+  { keyword: 'section 21 abolition', category: 'regulatory', priority: 1 },
+  { keyword: 'uk mortgage rates', category: 'regulatory', priority: 2 },
+  { keyword: 'bank of england base rate property', category: 'regulatory', priority: 1 },
+  { keyword: 'help to buy uk', category: 'regulatory', priority: 1 },
+  { keyword: 'shared ownership scheme uk', category: 'regulatory', priority: 1 },
+
+  // Location terms
+  { keyword: 'london property market', category: 'location', priority: 2 },
+  { keyword: 'london house prices', category: 'location', priority: 2 },
+  { keyword: 'london zone 1 property', category: 'location', priority: 1 },
+  { keyword: 'london zone 2 property', category: 'location', priority: 1 },
+  { keyword: 'london zone 3 4 5 6 property', category: 'location', priority: 1 },
+  { keyword: 'home counties property market', category: 'location', priority: 1 },
+  { keyword: 'commuter belt property', category: 'location', priority: 1 },
+  { keyword: 'commuter towns london', category: 'location', priority: 1 },
+  { keyword: 'northern powerhouse property', category: 'location', priority: 1 },
+  { keyword: 'manchester property market', category: 'location', priority: 1 },
+  { keyword: 'birmingham property market', category: 'location', priority: 1 },
+  { keyword: 'Crossrail property effect', category: 'location', priority: 1 },
+  { keyword: 'Elizabeth line house prices', category: 'location', priority: 1 },
+  { keyword: 'HS2 property impact', category: 'location', priority: 1 },
+  { keyword: 'edinburgh property market', category: 'location', priority: 1 },
+
+  // Property types
+  { keyword: 'terraced house uk', category: 'property-type', priority: 1 },
+  { keyword: 'semi-detached house uk', category: 'property-type', priority: 1 },
+  { keyword: 'detached house uk', category: 'property-type', priority: 1 },
+  { keyword: 'maisonette property uk', category: 'property-type', priority: 1 },
+  { keyword: 'converted flat uk', category: 'property-type', priority: 1 },
+  { keyword: 'new build uk', category: 'property-type', priority: 1 },
+  { keyword: 'period property uk', category: 'property-type', priority: 1 },
+  { keyword: 'purpose built flat uk', category: 'property-type', priority: 1 },
+];
+
 // AU keyword additions — fills gaps in investment, regulatory, location, and property type terms
 const AU_EXTRA_KEYWORDS = [
   // Investment language
@@ -336,6 +421,24 @@ async function main() {
       await prisma.seoKeyword.create({ data: { keyword, location: config.location, priority: 1 } });
       console.log(`  Created NZ keyword: ${keyword} (${config.location})`);
     }
+  }
+
+  // Seed UK national keywords
+  for (const entry of UK_KEYWORDS) {
+    const existing = await prisma.seoKeyword.findFirst({
+      where: { keyword: entry.keyword, market: 'UK', location: null },
+    });
+    if (existing) continue;
+    await prisma.seoKeyword.create({
+      data: {
+        keyword: entry.keyword,
+        market: 'UK',
+        location: null,
+        category: entry.category || null,
+        priority: entry.priority || 1,
+      },
+    });
+    console.log(`  Created UK keyword: ${entry.keyword}`);
   }
 
   console.log('SEO seed complete!');

@@ -43,6 +43,9 @@ const { articleImageWorker } = require('./workers/articleImageWorker');
 const { articleEmbedWorker } = require('./workers/articleEmbedWorker');
 const { socialPublishWorker } = require('./workers/socialPublishWorker');
 const { socialGenerateWorker } = require('./workers/socialGenerateWorker');
+const { newsletterGenerateWorker } = require('./workers/newsletterGenerateWorker');
+const { articleAuditWorker } = require('./workers/articleAuditWorker');
+const { altTextBackfillWorker } = require('./workers/altTextBackfillWorker');
 
 const { sourceFetchQueue } = require('./queues/sourceFetchQueue');
 const { articleProcessQueue } = require('./queues/articleProcessQueue');
@@ -51,10 +54,12 @@ const { articleImageQueue } = require('./queues/articleImageQueue');
 const { articleEmbedQueue } = require('./queues/articleEmbedQueue');
 const { socialPublishQueue } = require('./queues/socialPublishQueue');
 const { socialGenerateQueue } = require('./queues/socialGenerateQueue');
+const { newsletterGenerateQueue } = require('./queues/newsletterGenerateQueue');
 
 const { startScheduler } = require('./jobs/ingestionScheduler');
 const { startSocialHealthCheck } = require('./jobs/socialHealthCheck');
 const { startHenryCleanup } = require('./jobs/henryCleanup');
+const { startNewsletterScheduler } = require('./jobs/newsletterScheduler');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -255,6 +260,7 @@ app.use((req, res) => {
 startScheduler();
 startSocialHealthCheck();
 startHenryCleanup();
+startNewsletterScheduler();
 
 const allWorkers = [
   sourceFetchWorker,
@@ -264,6 +270,9 @@ const allWorkers = [
   articleEmbedWorker,
   socialPublishWorker,
   socialGenerateWorker,
+  newsletterGenerateWorker,
+  articleAuditWorker,
+  altTextBackfillWorker,
 ];
 
 async function shutdown(signal) {

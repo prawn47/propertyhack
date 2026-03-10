@@ -54,6 +54,10 @@ import CaTransferTaxCalculator from './components/calculators/CaTransferTaxCalcu
 import NzBuyingCostsCalculator from './components/calculators/NzBuyingCostsCalculator';
 import UsTransferTaxCalculator from './components/calculators/UsTransferTaxCalculator';
 import HenryPage from './components/henry/HenryPage';
+import NewsletterList from './components/admin/NewsletterList';
+import NewsletterEditor from './components/admin/NewsletterEditor';
+import AiModelConfig from './components/admin/AiModelConfig';
+import AdminFloatingButton from './components/shared/AdminFloatingButton';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -159,6 +163,7 @@ function AppInner() {
 
   return (
     <>
+    <AdminFloatingButton />
     <Routes>
       {/* Root — detect country and redirect */}
       <Route path="/" element={<CountryRedirect />} />
@@ -357,6 +362,30 @@ function AppInner() {
         element={
           <RequireAdmin>
             <AdminPage onLogout={handleLogout}><SubscriberList /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/newsletters"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><NewsletterList /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/newsletters/:id/edit"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><NewsletterEditor /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/ai-models"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><AiModelConfig /></AdminPage>
           </RequireAdmin>
         }
       />

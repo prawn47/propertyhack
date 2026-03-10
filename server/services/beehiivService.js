@@ -104,4 +104,71 @@ async function unsubscribe(email) {
   }
 }
 
-module.exports = { subscribe, unsubscribe };
+async function createPost(subject, htmlContent, options = {}) {
+  const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+  const apiKey = process.env.BEEHIIV_API_KEY;
+
+  if (!apiKey || !publicationId) {
+    throw new Error('BEEHIIV_API_KEY or BEEHIIV_PUBLICATION_ID not configured');
+  }
+
+  const body = {
+    subject,
+    content: {
+      free: { web: htmlContent, email: htmlContent },
+    },
+    status: 'draft',
+    ...options,
+  };
+
+  const res = await fetch(
+    `${BEEHIIV_BASE_URL}/publications/${publicationId}/posts`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`[beehiiv] createPost failed (${res.status}): ${errBody}`);
+  }
+
+  const data = await res.json();
+  return data.data;
+}
+
+async function sendPost(postId, segmentOptions = {}) {
+  const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+  const apiKey = process.env.BEEHIIV_API_KEY;
+
+  if (!apiKey || !publicationId) {
+    throw new Error('BEEHIIV_API_KEY or BEEHIIV_PUBLICATION_ID not configured');
+  }
+
+  const res = await fetch(
+    `${BEEHIIV_BASE_URL}/publications/${publicationId}/posts/${postId}/send`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(segmentOptions),
+    }
+  );
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`[beehiiv] sendPost failed (${res.status}): ${errBody}`);
+  }
+
+  const data = await res.json();
+  return data.data;
+}
+
+module.exports = { subscribe, unsubscribe, createPost, sendPost };

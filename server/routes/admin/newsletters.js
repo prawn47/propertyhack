@@ -1,5 +1,6 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
+const beehiivService = require('../../services/beehiivService');
 
 const router = express.Router();
 
@@ -25,6 +26,81 @@ router.post(
   handleValidationErrors,
   async (req, res) => {
     res.status(501).json({ error: 'Newsletter generation not yet implemented' });
+  }
+);
+
+// GET /history — List SENT drafts with Beehiiv stats (MUST be before /:id)
+router.get(
+  '/history',
+  [
+    query('jurisdiction').optional().isIn(VALID_JURISDICTIONS),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const where = { status: 'SENT' };
+      if (req.query.jurisdiction) where.jurisdiction = req.query.jurisdiction;
+
+      const drafts = await req.prisma.newsletterDraft.findMany({
+        where,
+        orderBy: { sentAt: 'desc' },
+        select: {
+          id: true,
+          jurisdiction: true,
+          subject: true,
+          status: true,
+          beehiivPostId: true,
+          generatedAt: true,
+          approvedAt: true,
+          sentAt: true,
+        },
+      });
+
+      const draftsWithStats = await Promise.all(
+        drafts.map(async (draft) => {
+          let stats = null;
+          if (draft.beehiivPostId) {
+            stats = await beehiivService.getPostStats(draft.beehiivPostId);
+          }
+          return { ...draft, stats };
+        })
+      );
+
+      const totalSent = draftsWithStats.length;
+      const draftsWithOpenRate = draftsWithStats.filter(
+        (d) => d.stats && d.stats.subscribers_sent_to > 0
+      );
+      const avgOpenRate =
+        draftsWithOpenRate.length > 0
+          ? draftsWithOpenRate.reduce((sum, d) => {
+              const rate = d.stats.opens / d.stats.subscribers_sent_to;
+              return sum + rate;
+            }, 0) / draftsWithOpenRate.length
+          : null;
+
+      const draftsWithClickRate = draftsWithStats.filter(
+        (d) => d.stats && d.stats.subscribers_sent_to > 0
+      );
+      const avgClickRate =
+        draftsWithClickRate.length > 0
+          ? draftsWithClickRate.reduce((sum, d) => {
+              const rate = d.stats.clicks / d.stats.subscribers_sent_to;
+              return sum + rate;
+            }, 0) / draftsWithClickRate.length
+          : null;
+
+      res.json({
+        drafts: draftsWithStats,
+        aggregate: {
+          totalSent,
+          avgOpenRate,
+          avgClickRate,
+        },
+      });
+    } catch (error) {
+      console.error('Newsletter history error:', error);
+      res.status(500).json({ error: 'Failed to load newsletter history' });
+    }
   }
 );
 
@@ -180,6 +256,40 @@ router.post(
     } catch (error) {
       console.error('Approve newsletter draft error:', error);
       res.status(500).json({ error: 'Failed to approve newsletter draft' });
+    }
+  }
+);
+
+// POST /:id/send — Publish to Beehiiv and mark as SENT
+router.post(
+  '/:id/send',
+  [param('id').isUUID()],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const existing = await req.prisma.newsletterDraft.findUnique({
+        where: { id: req.params.id },
+      });
+      if (!existing) return res.status(404).json({ error: 'Newsletter draft not found' });
+
+      if (existing.status !== 'APPROVED') {
+        return res.status(400).json({ error: 'Only APPROVED newsletters can be sent' });
+      }
+
+      const post = await beehiivService.createPost(existing.subject, existing.htmlContent);
+      await beehiivService.sendPost(post.id, {
+        custom_fields: [{ name: 'country', value: existing.jurisdiction }],
+      });
+
+      const draft = await req.prisma.newsletterDraft.update({
+        where: { id: req.params.id },
+        data: { status: 'SENT', beehiivPostId: post.id, sentAt: new Date() },
+      });
+
+      res.json(draft);
+    } catch (error) {
+      console.error('Send newsletter error:', error.message);
+      res.status(500).json({ error: error.message });
     }
   }
 );

@@ -59,6 +59,7 @@ const articleImageWorker = new Worker('article-image', async (job) => {
       article.category,
       article.slug,
       job.attemptsMade,
+      article.id,
     );
   } else {
     console.log(`[article-image] Article ${articleId} already has image — skipping generation`);

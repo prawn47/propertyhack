@@ -6,6 +6,31 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+let cachedThresholds = null;
+let thresholdsCacheTimestamp = 0;
+const THRESHOLDS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getRelevanceThresholds() {
+  const now = Date.now();
+  if (cachedThresholds && (now - thresholdsCacheTimestamp) < THRESHOLDS_CACHE_TTL) {
+    return cachedThresholds;
+  }
+  try {
+    const record = await prisma.systemPrompt.findUnique({ where: { name: 'relevance-thresholds' } });
+    if (record && record.isActive) {
+      const parsed = JSON.parse(record.content);
+      if (typeof parsed.rejectBelow === 'number' && typeof parsed.reviewBelow === 'number') {
+        cachedThresholds = parsed;
+        thresholdsCacheTimestamp = now;
+        return cachedThresholds;
+      }
+    }
+  } catch (err) {
+    console.warn('[article-summarise] Could not load thresholds from DB:', err.message);
+  }
+  return { rejectBelow: 4, reviewBelow: 7 };
+}
+
 const articleSummariseWorker = new Worker('article-summarise', async (job) => {
   const { articleId } = job.data;
   console.log(`[article-summarise] Processing article: ${articleId}`);
@@ -36,10 +61,13 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
     sourceMarket: article.source?.market,
   });
 
-  if (!summary.isPropertyRelated) {
-    console.log(`[article-summarise] Rejecting non-property article: ${articleId} "${article.title}"`);
+  const thresholds = await getRelevanceThresholds();
+  const score = summary.relevanceScore ?? 5;
+
+  if (score < thresholds.rejectBelow) {
+    console.log(`[article-summarise] Deleting low-relevance article (score ${score}): ${articleId} "${article.title}"`);
     await prisma.article.delete({ where: { id: articleId } });
-    return { articleId, rejected: true };
+    return { articleId, rejected: true, relevanceScore: score };
   }
 
   // Match suggestedCategory slug to ArticleCategory table
@@ -57,6 +85,8 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
   // Primary market = first in list (or first non-ALL)
   const primaryMarket = summary.markets.find(m => m !== 'ALL') || summary.markets[0] || 'AU';
 
+  const isDraft = score < thresholds.reviewBelow;
+
   await prisma.article.update({
     where: { id: articleId },
     data: {
@@ -68,16 +98,19 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
       markets: summary.markets,
       isEvergreen: summary.isEvergreen,
       isGlobal: summary.isGlobal,
-      status: 'PUBLISHED',
-      publishedAt: new Date(),
+      relevanceScore: score,
+      status: isDraft ? 'DRAFT' : 'PUBLISHED',
+      publishedAt: isDraft ? undefined : new Date(),
     },
   });
 
-  await articleImageQueue.add('image-article', { articleId });
+  if (!isDraft) {
+    await articleImageQueue.add('image-article', { articleId });
+  }
 
-  const flags = [categorySlug, ...summary.markets, summary.isEvergreen ? 'evergreen' : 'news', summary.isGlobal ? 'global' : ''].filter(Boolean).join(', ');
+  const flags = [categorySlug, ...summary.markets, summary.isEvergreen ? 'evergreen' : 'news', summary.isGlobal ? 'global' : '', isDraft ? `draft(score:${score})` : `published(score:${score})`].filter(Boolean).join(', ');
   console.log(`[article-summarise] Completed: ${articleId} → ${flags}`);
-  return { articleId, category: categorySlug, markets: summary.markets, isEvergreen: summary.isEvergreen, isGlobal: summary.isGlobal };
+  return { articleId, category: categorySlug, markets: summary.markets, isEvergreen: summary.isEvergreen, isGlobal: summary.isGlobal, relevanceScore: score, isDraft };
 }, {
   connection,
   concurrency: 1,
