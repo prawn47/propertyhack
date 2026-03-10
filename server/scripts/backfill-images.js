@@ -10,9 +10,15 @@ async function main() {
 
   try {
     const forceAll = process.argv.includes('--all');
-    const where = forceAll
-      ? { status: 'PUBLISHED' }
-      : { status: 'PUBLISHED', imageUrl: null };
+    const fallbacksOnly = process.argv.includes('--fallbacks');
+    let where;
+    if (forceAll) {
+      where = { status: 'PUBLISHED' };
+    } else if (fallbacksOnly) {
+      where = { status: 'PUBLISHED', imageUrl: { contains: '/images/fallbacks/' } };
+    } else {
+      where = { status: 'PUBLISHED', imageUrl: null };
+    }
     const articles = await prisma.article.findMany({
       where,
       select: { id: true },

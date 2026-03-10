@@ -54,6 +54,7 @@ const articleImageWorker = new Worker('article-image', async (job) => {
     article.shortBlurb,
     article.category,
     article.slug,
+    job.attemptsMade,
   );
 
   if (imageResult) {

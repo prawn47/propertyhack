@@ -125,7 +125,7 @@ const IMAGE_MODELS = [
   'gemini-2.5-flash-image',
 ];
 
-async function generateArticleImage(title, shortBlurb, category, slug) {
+async function generateArticleImage(title, shortBlurb, category, slug, attemptsMade = 0) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn('[imageGen] GEMINI_API_KEY not set — skipping image generation');
@@ -167,7 +167,10 @@ async function generateArticleImage(title, shortBlurb, category, slug) {
   }
 
   if (!imageData) {
-    console.warn('[imageGen] All AI models failed — using fallback quote image');
+    if (attemptsMade < 2) {
+      throw new Error('All image models failed — will retry');
+    }
+    console.warn('[imageGen] All AI models failed after retries — using fallback quote image');
     return getRandomFallbackImage();
   }
 
