@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('path').join(__dirname, '../..', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 const { PrismaClient } = require('@prisma/client');
 const { generateImageAltText } = require('../services/articleSummaryService');
@@ -31,15 +31,17 @@ async function main() {
   try {
     const articles = await prisma.article.findMany({
       where: {
+        status: 'PUBLISHED',
         imageAltText: null,
         imageUrl: { not: null },
+        NOT: { imageUrl: { startsWith: '/images/fallbacks/' } },
       },
       select: {
         id: true,
         title: true,
         shortBlurb: true,
         category: true,
-        extractedLocation: true,
+        location: true,
       },
     });
 
@@ -53,7 +55,7 @@ async function main() {
 
       for (const article of batch) {
         try {
-          const focusKeywords = await getSeoKeywords(prisma, article.category, article.extractedLocation);
+          const focusKeywords = await getSeoKeywords(prisma, article.category, article.location);
           const altText = await generateImageAltText(article.title, article.shortBlurb || '', focusKeywords);
 
           await prisma.article.update({
