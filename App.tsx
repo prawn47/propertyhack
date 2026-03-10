@@ -54,6 +54,7 @@ import CaTransferTaxCalculator from './components/calculators/CaTransferTaxCalcu
 import NzBuyingCostsCalculator from './components/calculators/NzBuyingCostsCalculator';
 import UsTransferTaxCalculator from './components/calculators/UsTransferTaxCalculator';
 import HenryPage from './components/henry/HenryPage';
+import AiModelConfig from './components/admin/AiModelConfig';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -357,6 +358,14 @@ function AppInner() {
         element={
           <RequireAdmin>
             <AdminPage onLogout={handleLogout}><SubscriberList /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/ai-models"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><AiModelConfig /></AdminPage>
           </RequireAdmin>
         }
       />
