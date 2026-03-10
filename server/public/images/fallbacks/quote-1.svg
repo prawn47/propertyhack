@@ -1,0 +1,29 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#2B2B2B"/>
+  <rect x="0" y="0" width="1200" height="4" fill="#d4b038"/>
+  <rect x="0" y="626" width="1200" height="4" fill="#d4b038"/>
+
+  <!-- Logo -->
+  <g transform="translate(536, 80) scale(0.12)">
+    <path d="M280 230 L372 230 L520 280 L668 230 L760 230 L760 842 L280 842 Z M370 330 L370 742 L434 742 L434 586 L606 586 L606 742 L670 742 L670 330 L606 380 L606 506 L434 506 L434 380 Z" fill="#d4b038"/>
+  </g>
+
+  <!-- Quote mark -->
+  <text x="600" y="260" text-anchor="middle" fill="#d4b038" font-family="Georgia, 'Times New Roman', serif" font-size="80" opacity="0.3">"</text>
+
+  <!-- Quote text -->
+  <text x="600" y="320" text-anchor="middle" fill="#F0F0F0" font-family="Georgia, 'Times New Roman', serif" font-size="32" font-style="italic">
+    <tspan x="600" dy="0">Buy land, they're not</tspan>
+    <tspan x="600" dy="44">making it anymore.</tspan>
+  </text>
+
+  <!-- Attribution -->
+  <text x="600" y="430" text-anchor="middle" fill="#d4b038" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" letter-spacing="1">
+    — Mark Twain
+  </text>
+
+  <!-- Brand -->
+  <text x="600" y="560" text-anchor="middle" fill="#F0F0F0" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="3" opacity="0.5">
+    PROPERTYHACK
+  </text>
+</svg>

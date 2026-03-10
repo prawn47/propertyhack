@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCountryPath, CountryLink } from '../../hooks/useCountryPath';
 
@@ -133,19 +133,11 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
             )}
           </div>
 
-          {/* Henry link */}
-          <CountryLink
-            to="/henry"
-            className="text-sm font-semibold bg-brand-gold text-brand-primary px-3 py-1 rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Ask Henry
-          </CountryLink>
-
           {/* User menu */}
           {!auth || !auth.isAuthenticated ? (
-            <CountryLink to="/login" className="text-sm text-white/70 hover:text-brand-gold transition-colors">
+            <Link to="/login" className="text-sm text-white/70 hover:text-brand-gold transition-colors">
               Sign In
-            </CountryLink>
+            </Link>
           ) : (
             <div ref={userMenuRef} className="relative">
               <button
@@ -157,28 +149,28 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
               {userMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-44 bg-brand-primary border border-white/20 rounded-lg shadow-lg z-50 py-1">
                   {auth.isAdmin && (
-                    <CountryLink
+                    <Link
                       to="/admin"
                       onClick={() => setUserMenuOpen(false)}
                       className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                     >
                       Admin Panel
-                    </CountryLink>
+                    </Link>
                   )}
-                  <CountryLink
+                  <Link
                     to="/profile"
                     onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     Profile
-                  </CountryLink>
-                  <CountryLink
+                  </Link>
+                  <Link
                     to="/profile/scenarios"
                     onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     Saved Scenarios
-                  </CountryLink>
+                  </Link>
                   <div className="border-t border-white/20 my-1" />
                   <button
                     onClick={() => { auth!.logout(); setUserMenuOpen(false); }}
@@ -240,14 +232,6 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       {/* Mobile menu */}
       {mobileToolsOpen && (
         <div className="sm:hidden px-4 pb-4 border-t border-white/10 pt-3 space-y-1">
-          <CountryLink
-            to="/henry"
-            onClick={() => setMobileToolsOpen(false)}
-            className="block py-1.5 text-sm font-semibold text-brand-gold hover:opacity-90 transition-opacity"
-          >
-            Ask Henry
-          </CountryLink>
-          <div className="border-t border-white/10 my-2" />
           <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2">Tools</p>
           {CALCULATORS.map((calc) => (
             <CountryLink
@@ -261,38 +245,38 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
           ))}
           <div className="border-t border-white/10 my-2 pt-2">
             {!auth || !auth.isAuthenticated ? (
-              <CountryLink
+              <Link
                 to="/login"
                 onClick={() => setMobileToolsOpen(false)}
                 className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
               >
                 Sign In
-              </CountryLink>
+              </Link>
             ) : (
               <>
                 {auth.isAdmin && (
-                  <CountryLink
+                  <Link
                     to="/admin"
                     onClick={() => setMobileToolsOpen(false)}
                     className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
                   >
                     Admin Panel
-                  </CountryLink>
+                  </Link>
                 )}
-                <CountryLink
+                <Link
                   to="/profile"
                   onClick={() => setMobileToolsOpen(false)}
                   className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
                 >
                   Profile
-                </CountryLink>
-                <CountryLink
+                </Link>
+                <Link
                   to="/profile/scenarios"
                   onClick={() => setMobileToolsOpen(false)}
                   className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"
                 >
                   Saved Scenarios
-                </CountryLink>
+                </Link>
                 <button
                   onClick={() => { auth!.logout(); setMobileToolsOpen(false); }}
                   className="block py-1.5 text-sm text-white/70 hover:text-brand-gold transition-colors"

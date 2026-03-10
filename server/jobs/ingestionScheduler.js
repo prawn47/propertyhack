@@ -4,11 +4,48 @@ const { sourceFetchQueue } = require('../queues/sourceFetchQueue');
 
 const prisma = new PrismaClient();
 
+const DEFAULT_SCHEDULES = {
+  RSS:         '*/30 * * * *',  // 30 min
+  NEWSAPI_ORG: '0 */3 * * *',   // 3 hours
+  NEWSAPI_AI:  '0 */4 * * *',   // 4 hours
+  SCRAPER:     '0 */5 * * *',   // 5 hours
+  PERPLEXITY:  '0 */8 * * *',   // 8 hours
+  NEWSLETTER:  null,             // on-demand only
+  SOCIAL:      null,             // on-demand only
+  MANUAL:      null,             // on-demand only
+};
+
+const MARKET_TIMEZONES = {
+  AU: 'Australia/Sydney',
+  US: 'America/New_York',
+  UK: 'Europe/London',
+  CA: 'America/Toronto',
+};
+
+function getLocalHour(market) {
+  const tz = MARKET_TIMEZONES[market] || MARKET_TIMEZONES.AU;
+  return new Date().toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hour12: false });
+}
+
+function isOffPeak(market) {
+  const hour = parseInt(getLocalHour(market), 10);
+  return hour >= 22 || hour < 5; // 10pm–5am local time
+}
+
 function isSourceDue(source) {
+  const defaultSchedule = DEFAULT_SCHEDULES[source.type];
+  if (defaultSchedule === null) return false;
+
   if (!source.lastFetchAt) return true;
 
-  const schedule = source.schedule || '*/30 * * * *';
-  const intervalMs = parseCronIntervalMs(schedule);
+  const schedule = source.schedule || defaultSchedule || '*/30 * * * *';
+  let intervalMs = parseCronIntervalMs(schedule);
+
+  // During off-peak hours in the source's market, fetch 3x less often
+  if (isOffPeak(source.market)) {
+    intervalMs *= 3;
+  }
+
   const elapsed = Date.now() - new Date(source.lastFetchAt).getTime();
   return elapsed >= intervalMs;
 }

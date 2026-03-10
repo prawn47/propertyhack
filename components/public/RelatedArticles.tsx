@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { getRelatedArticles } from '../../services/publicArticleService';
+import { CountryLink } from '../../hooks/useCountryPath';
 import type { PublicArticle } from '../../services/publicArticleService';
 
 function formatRelativeTime(dateStr: string | null): string {
@@ -70,9 +70,9 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({ slug }) => {
       <h2 className="text-xl font-bold text-brand-primary mb-6">Related Articles</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {articles.map((article) => (
-          <Link
+          <CountryLink
             key={article.id}
-            to={`/articles/${article.slug}`}
+            to={`/article/${article.slug}`}
             className="group bg-base-100 rounded-xl overflow-hidden shadow-soft hover:shadow-medium transition-shadow duration-200"
           >
             <div className="h-36 bg-gradient-to-br from-brand-secondary to-brand-primary overflow-hidden">
@@ -107,7 +107,7 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({ slug }) => {
                 {formatRelativeTime(article.publishedAt || article.createdAt)}
               </time>
             </div>
-          </Link>
+          </CountryLink>
         ))}
       </div>
     </section>

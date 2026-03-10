@@ -107,13 +107,25 @@ function generateSlug(title) {
     .substring(0, 80);
 }
 
+const FALLBACK_QUOTES = [
+  '/images/fallbacks/quote-1.svg',
+  '/images/fallbacks/quote-2.svg',
+  '/images/fallbacks/quote-3.svg',
+  '/images/fallbacks/quote-4.svg',
+];
+
+function getRandomFallbackImage() {
+  const publicPath = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)];
+  return { imageData: null, mimeType: 'image/svg+xml', filename: null, publicPath };
+}
+
 // Model fallback chain for image generation
 const IMAGE_MODELS = [
   'gemini-2.0-flash-exp-image-generation',
   'gemini-2.5-flash-image',
 ];
 
-async function generateArticleImage(title, shortBlurb, category, slug) {
+async function generateArticleImage(title, shortBlurb, category, slug, attemptsMade = 0) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn('[imageGen] GEMINI_API_KEY not set — skipping image generation');
@@ -155,12 +167,17 @@ async function generateArticleImage(title, shortBlurb, category, slug) {
   }
 
   if (!imageData) {
-    throw new Error('All image models failed — will retry');
+    if (attemptsMade < 2) {
+      throw new Error('All image models failed — will retry');
+    }
+    console.warn('[imageGen] All AI models failed after retries — using fallback quote image');
+    return getRandomFallbackImage();
   }
 
-  const fileSlug = slug || generateSlug(title);
+  const rawSlug = slug || generateSlug(title);
+  const fileSlug = rawSlug.replace(/-[a-z0-9]{5}$/, '');
   const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
-  const filename = `${fileSlug}-${Date.now()}.${ext}`;
+  const filename = `${fileSlug}.${ext}`;
   const filePath = path.join(IMAGES_DIR, filename);
 
   try {

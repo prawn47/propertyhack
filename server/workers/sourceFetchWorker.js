@@ -2,6 +2,9 @@ const { Worker } = require('bullmq');
 const { connection } = require('../queues/connection');
 const { articleProcessQueue } = require('../queues/articleProcessQueue');
 const { getFetcher } = require('../services/fetchers');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 
 const sourceFetchWorker = new Worker('source-fetch', async (job) => {
   const { sourceId, sourceType, config } = job.data;
@@ -17,6 +20,11 @@ const sourceFetchWorker = new Worker('source-fetch', async (job) => {
     console.error(`[source-fetch] Would fetch from ${sourceType} — not yet implemented:`, err.message);
     rawArticles = [];
   }
+
+  await prisma.ingestionSource.update({
+    where: { id: sourceId },
+    data: { lastFetchAt: new Date() },
+  });
 
   for (const article of rawArticles) {
     await articleProcessQueue.add('process-article', {

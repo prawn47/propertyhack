@@ -39,7 +39,7 @@ const articleImageWorker = new Worker('article-image', async (job) => {
       category: true,
       slug: true,
       imageUrl: true,
-      extractedLocation: true,
+      location: true,
     },
   });
 
@@ -49,12 +49,20 @@ const articleImageWorker = new Worker('article-image', async (job) => {
 
   const updateData = {};
 
-  const imageResult = await generateArticleImage(
-    article.title,
-    article.shortBlurb,
-    article.category,
-    article.slug,
-  );
+  const hasExistingRealImage = article.imageUrl && !article.imageUrl.startsWith('/images/fallbacks/');
+
+  let imageResult = null;
+  if (!hasExistingRealImage) {
+    imageResult = await generateArticleImage(
+      article.title,
+      article.shortBlurb,
+      article.category,
+      article.slug,
+      job.attemptsMade,
+    );
+  } else {
+    console.log(`[article-image] Article ${articleId} already has image — skipping generation`);
+  }
 
   if (imageResult) {
     updateData.imageUrl = imageResult.publicPath;
@@ -63,10 +71,10 @@ const articleImageWorker = new Worker('article-image', async (job) => {
     console.log(`[article-image] Image generation returned null for article ${articleId} — skipping`);
   }
 
-  const hasImage = !!(imageResult || article.imageUrl);
-  if (hasImage) {
+  const hasImage = !!(imageResult || hasExistingRealImage);
+  if (hasImage && !article.imageAltText) {
     try {
-      const focusKeywords = await getSeoKeywords(article.category, article.extractedLocation);
+      const focusKeywords = await getSeoKeywords(article.category, article.location);
       const altText = await generateImageAltText(article.title, article.shortBlurb || '', focusKeywords);
       updateData.imageAltText = altText;
       console.log(`[article-image] Alt text generated for article ${articleId}`);
