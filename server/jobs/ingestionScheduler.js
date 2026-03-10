@@ -15,6 +15,23 @@ const DEFAULT_SCHEDULES = {
   MANUAL:      null,             // on-demand only
 };
 
+const MARKET_TIMEZONES = {
+  AU: 'Australia/Sydney',
+  US: 'America/New_York',
+  UK: 'Europe/London',
+  CA: 'America/Toronto',
+};
+
+function getLocalHour(market) {
+  const tz = MARKET_TIMEZONES[market] || MARKET_TIMEZONES.AU;
+  return new Date().toLocaleString('en-US', { timeZone: tz, hour: 'numeric', hour12: false });
+}
+
+function isOffPeak(market) {
+  const hour = parseInt(getLocalHour(market), 10);
+  return hour >= 22 || hour < 5; // 10pm–5am local time
+}
+
 function isSourceDue(source) {
   const defaultSchedule = DEFAULT_SCHEDULES[source.type];
   if (defaultSchedule === null) return false;
@@ -22,7 +39,13 @@ function isSourceDue(source) {
   if (!source.lastFetchAt) return true;
 
   const schedule = source.schedule || defaultSchedule || '*/30 * * * *';
-  const intervalMs = parseCronIntervalMs(schedule);
+  let intervalMs = parseCronIntervalMs(schedule);
+
+  // During off-peak hours in the source's market, fetch 3x less often
+  if (isOffPeak(source.market)) {
+    intervalMs *= 3;
+  }
+
   const elapsed = Date.now() - new Date(source.lastFetchAt).getTime();
   return elapsed >= intervalMs;
 }
@@ -75,7 +98,7 @@ async function checkAndEnqueueSources() {
 
 function startScheduler() {
   console.log('[ingestion-scheduler] Starting — runs every 5 minutes');
-  cron.schedule('*/5 * * * *', checkAndEnqueueSources, { timezone: 'Australia/Sydney' });
+  cron.schedule('*/5 * * * *', checkAndEnqueueSources);
 }
 
 module.exports = { startScheduler };
