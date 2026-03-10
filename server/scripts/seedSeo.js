@@ -158,6 +158,24 @@ const NATIONAL_KEYWORDS = [
   'rental market australia', 'property market update', 'housing affordability australia',
 ];
 
+// AU keyword additions — fills gaps in investment, regulatory, location, and property type terms
+const AU_EXTRA_KEYWORDS = [
+  // Investment language
+  { keyword: 'negative gearing australia', market: 'AU', priority: 2, category: 'investment' },
+  { keyword: 'capital gains tax property australia', market: 'AU', priority: 2, category: 'investment' },
+  { keyword: 'rental yield australia', market: 'AU', priority: 2, category: 'investment' },
+  { keyword: 'depreciation schedule investment property', market: 'AU', priority: 1, category: 'investment' },
+  { keyword: 'smsf property investment', market: 'AU', priority: 2, category: 'investment' },
+  // Regulatory terms
+  { keyword: 'stamp duty australia', market: 'AU', priority: 2, category: 'regulatory' },
+  { keyword: 'land tax australia', market: 'AU', priority: 1, category: 'regulatory' },
+  { keyword: 'first home owner grant', market: 'AU', priority: 2, category: 'regulatory' },
+  { keyword: 'foreign investment review board property', market: 'AU', priority: 1, category: 'regulatory' },
+  // Location-specific terms
+  { keyword: 'off the plan apartment australia', market: 'AU', priority: 1, category: 'market' },
+  { keyword: 'auction clearance rate australia', market: 'AU', priority: 2, category: 'market' },
+];
+
 async function main() {
   console.log('Seeding SEO data...');
 
@@ -198,6 +216,18 @@ async function main() {
     if (existing) continue;
     await prisma.seoKeyword.create({ data: { keyword, priority: 1 } });
     console.log(`  Created national keyword: ${keyword}`);
+  }
+
+  // Seed AU extra keywords (investment, regulatory, location, market terms)
+  for (const entry of AU_EXTRA_KEYWORDS) {
+    const existing = await prisma.seoKeyword.findFirst({ where: { keyword: entry.keyword, market: entry.market ?? null, location: null } });
+    if (existing) {
+      await prisma.seoKeyword.update({ where: { id: existing.id }, data: { priority: entry.priority, category: entry.category ?? null, isActive: true } });
+      console.log(`  Updated AU keyword: ${entry.keyword}`);
+    } else {
+      await prisma.seoKeyword.create({ data: entry });
+      console.log(`  Created AU keyword: ${entry.keyword}`);
+    }
   }
 
   // Seed NZ national keywords
