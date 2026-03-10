@@ -28,6 +28,8 @@ router.get(
     query('search').optional().isString(),
     query('sortBy').optional().isString(),
     query('sortOrder').optional().isIn(['asc', 'desc']),
+    query('minRelevance').optional().isInt({ min: 1, max: 10 }).toInt(),
+    query('maxRelevance').optional().isInt({ min: 1, max: 10 }).toInt(),
   ],
   handleValidationErrors,
   async (req, res) => {
@@ -44,6 +46,11 @@ router.get(
       if (req.query.sourceId) where.sourceId = req.query.sourceId;
       if (req.query.search) {
         where.title = { contains: req.query.search, mode: 'insensitive' };
+      }
+      if (req.query.minRelevance !== undefined || req.query.maxRelevance !== undefined) {
+        where.relevanceScore = {};
+        if (req.query.minRelevance !== undefined) where.relevanceScore.gte = req.query.minRelevance;
+        if (req.query.maxRelevance !== undefined) where.relevanceScore.lte = req.query.maxRelevance;
       }
 
       const [articles, total] = await Promise.all([
