@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PublicArticle } from '../../services/publicArticleService';
 import { CountryLink } from '../../hooks/useCountryPath';
+import ArticleImagePlaceholder from '../shared/ArticleImagePlaceholder';
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Recently';
@@ -45,24 +46,22 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, featured }) => {
   const isFeatured = featured || article.isFeatured;
   const isMobile = useIsMobile();
   const [expanded, setExpanded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const cardClasses = `group block bg-base-100 rounded-xl shadow-soft hover:shadow-medium transition-shadow duration-200 overflow-hidden${isFeatured ? ' border-l-4 border-brand-gold' : ''}`;
 
   const imageBlock = (
     <div className={`w-full bg-gradient-to-br from-brand-secondary to-brand-primary overflow-hidden${isFeatured ? ' h-64 sm:h-80' : isMobile ? ' h-36' : ' h-48'}`}>
-      {article.imageUrl ? (
+      {article.imageUrl && !imgError ? (
         <img
           src={article.imageUrl}
           alt={article.imageAltText || article.title}
           className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
           loading="lazy"
+          onError={() => setImgError(true)}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <svg className="w-12 h-12 text-brand-gold/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-        </div>
+        <ArticleImagePlaceholder />
       )}
     </div>
   );

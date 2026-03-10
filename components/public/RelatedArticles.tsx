@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getRelatedArticles } from '../../services/publicArticleService';
 import { CountryLink } from '../../hooks/useCountryPath';
 import type { PublicArticle } from '../../services/publicArticleService';
+import ArticleImagePlaceholder from '../shared/ArticleImagePlaceholder';
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Recently';
@@ -17,6 +18,50 @@ function formatRelativeTime(dateStr: string | null): string {
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+interface RelatedArticleCardProps {
+  article: PublicArticle;
+}
+
+const RelatedArticleCard: React.FC<RelatedArticleCardProps> = ({ article }) => {
+  const [imgError, setImgError] = useState(false);
+  return (
+    <CountryLink
+      to={`/article/${article.slug}`}
+      className="group bg-base-100 rounded-xl overflow-hidden shadow-soft hover:shadow-medium transition-shadow duration-200"
+    >
+      <div className="h-36 bg-gradient-to-br from-brand-secondary to-brand-primary overflow-hidden">
+        {article.imageUrl && !imgError ? (
+          <img
+            src={article.imageUrl}
+            alt={article.imageAltText || article.title}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <ArticleImagePlaceholder className="w-8 h-8 text-brand-gold/40" />
+        )}
+      </div>
+      <div className="p-4">
+        {article.category && (
+          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-brand-gold/10 text-brand-primary border border-brand-gold/20 mb-2">
+            {article.category}
+          </span>
+        )}
+        <h3 className="font-semibold text-brand-primary text-sm leading-snug mb-2 line-clamp-2 group-hover:text-brand-gold transition-colors">
+          {article.title}
+        </h3>
+        {article.shortBlurb && (
+          <p className="text-xs text-content-secondary line-clamp-2 mb-3">{article.shortBlurb}</p>
+        )}
+        <time className="text-xs text-content-secondary">
+          {formatRelativeTime(article.publishedAt || article.createdAt)}
+        </time>
+      </div>
+    </CountryLink>
+  );
+};
 
 interface RelatedArticlesProps {
   slug: string;
@@ -70,44 +115,7 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({ slug }) => {
       <h2 className="text-xl font-bold text-brand-primary mb-6">Related Articles</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {articles.map((article) => (
-          <CountryLink
-            key={article.id}
-            to={`/article/${article.slug}`}
-            className="group bg-base-100 rounded-xl overflow-hidden shadow-soft hover:shadow-medium transition-shadow duration-200"
-          >
-            <div className="h-36 bg-gradient-to-br from-brand-secondary to-brand-primary overflow-hidden">
-              {article.imageUrl ? (
-                <img
-                  src={article.imageUrl}
-                  alt={article.imageAltText || article.title}
-                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand-gold/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              {article.category && (
-                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-brand-gold/10 text-brand-primary border border-brand-gold/20 mb-2">
-                  {article.category}
-                </span>
-              )}
-              <h3 className="font-semibold text-brand-primary text-sm leading-snug mb-2 line-clamp-2 group-hover:text-brand-gold transition-colors">
-                {article.title}
-              </h3>
-              {article.shortBlurb && (
-                <p className="text-xs text-content-secondary line-clamp-2 mb-3">{article.shortBlurb}</p>
-              )}
-              <time className="text-xs text-content-secondary">
-                {formatRelativeTime(article.publishedAt || article.createdAt)}
-              </time>
-            </div>
-          </CountryLink>
+          <RelatedArticleCard key={article.id} article={article} />
         ))}
       </div>
     </section>
