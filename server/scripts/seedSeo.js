@@ -80,66 +80,66 @@ const LOCATION_CONFIGS = [
 const NZ_LOCATION_CONFIGS = [
   {
     location: 'Auckland', slug: 'auckland',
-    metaTitle: 'Auckland Property News & Market Updates 2026',
-    metaDescription: 'Latest Auckland property news, house prices and real estate market analysis. Stay informed with agenda-free coverage from PropertyHack.',
-    h1Title: 'Auckland Property News & Market Updates',
-    introContent: 'Auckland is New Zealand\'s largest property market. Stay up to date with the latest news on house prices, development, and market trends across the Auckland region.',
+    metaTitle: 'Property News Auckland | PropertyHack',
+    metaDescription: 'Stay ahead of Auckland\'s property market with the latest news on house prices, auction results, new developments, and suburb trends. Agenda-free coverage from PropertyHack.',
+    h1Title: 'Property News in Auckland',
+    introContent: 'Auckland is New Zealand\'s largest and most dynamic property market. From the North Shore to Manukau, PropertyHack tracks house prices, development activity, and market trends across the entire Auckland region.',
     focusKeywords: ['auckland property market', 'auckland house prices', 'auckland real estate news', 'auckland property forecast'],
   },
   {
     location: 'Wellington', slug: 'wellington',
-    metaTitle: 'Wellington Property News & Market Updates 2026',
-    metaDescription: 'Latest Wellington property news, house prices and real estate market analysis from PropertyHack.',
-    h1Title: 'Wellington Property News & Market Updates',
-    introContent: 'Wellington\'s property market is shaped by government employment and a vibrant culture scene. Follow the latest price movements and market analysis.',
+    metaTitle: 'Property News Wellington | PropertyHack',
+    metaDescription: 'Get the latest Wellington property news covering house prices, suburb trends, and real estate market analysis. Comprehensive coverage from PropertyHack.',
+    h1Title: 'Property News in Wellington',
+    introContent: 'Wellington\'s property market is shaped by government employment, a strong arts and culture scene, and a compact but vibrant city. PropertyHack covers the latest price movements, listings, and market analysis for the capital.',
     focusKeywords: ['wellington property market', 'wellington house prices', 'wellington real estate news'],
   },
   {
     location: 'Christchurch', slug: 'christchurch',
-    metaTitle: 'Christchurch Property News & Market Updates 2026',
-    metaDescription: 'Latest Christchurch property news, house prices and Canterbury real estate market analysis from PropertyHack.',
-    h1Title: 'Christchurch Property News & Market Updates',
-    introContent: 'Christchurch continues its post-earthquake rebuild transformation. Stay informed with the latest property market news and development updates.',
+    metaTitle: 'Property News Christchurch | PropertyHack',
+    metaDescription: 'Follow Christchurch property news with coverage of house prices, new builds, and Canterbury real estate market trends from PropertyHack.',
+    h1Title: 'Property News in Christchurch',
+    introContent: 'Christchurch continues its impressive post-earthquake transformation, with new developments and rising property values reshaping the city. PropertyHack covers the latest Canterbury property news, from inner-city apartments to suburban growth corridors.',
     focusKeywords: ['christchurch property market', 'christchurch house prices', 'christchurch real estate news'],
   },
   {
     location: 'Hamilton', slug: 'hamilton',
-    metaTitle: 'Hamilton Property News & Market Updates 2026',
-    metaDescription: 'Latest Hamilton property news, house prices and Waikato real estate market analysis from PropertyHack.',
-    h1Title: 'Hamilton Property News & Market Updates',
-    introContent: 'Hamilton and the wider Waikato region offer growing property opportunities. Track the latest market trends and price movements.',
+    metaTitle: 'Property News Hamilton | PropertyHack',
+    metaDescription: 'Keep up with Hamilton property news including house prices, new subdivisions, and Waikato real estate market updates from PropertyHack.',
+    h1Title: 'Property News in Hamilton',
+    introContent: 'Hamilton and the wider Waikato region are attracting strong buyer interest thanks to relative affordability and a growing local economy. PropertyHack tracks the latest market trends, price movements, and development news.',
     focusKeywords: ['hamilton property market', 'hamilton house prices', 'hamilton nz real estate'],
   },
   {
     location: 'Tauranga', slug: 'tauranga',
-    metaTitle: 'Tauranga Property News & Market Updates 2026',
-    metaDescription: 'Latest Tauranga property news, house prices and Bay of Plenty real estate market analysis from PropertyHack.',
-    h1Title: 'Tauranga Property News & Market Updates',
-    introContent: 'Tauranga and the Bay of Plenty are among New Zealand\'s fastest-growing regions. Stay informed with property news, prices, and lifestyle trends.',
+    metaTitle: 'Property News Tauranga | PropertyHack',
+    metaDescription: 'Tauranga property news covering house prices, coastal lifestyle property, and Bay of Plenty real estate market updates from PropertyHack.',
+    h1Title: 'Property News in Tauranga',
+    introContent: 'Tauranga and the Bay of Plenty are among New Zealand\'s fastest-growing and most sought-after regions. PropertyHack covers the latest property news, lifestyle trends, and price movements across the area.',
     focusKeywords: ['tauranga property market', 'tauranga house prices', 'bay of plenty real estate'],
   },
   {
     location: 'Dunedin', slug: 'dunedin',
-    metaTitle: 'Dunedin Property News & Market Updates 2026',
-    metaDescription: 'Latest Dunedin property news, house prices and Otago real estate market analysis from PropertyHack.',
-    h1Title: 'Dunedin Property News & Market Updates',
-    introContent: 'Dunedin offers some of New Zealand\'s most affordable property. Follow the latest market updates and investment opportunities in Otago.',
+    metaTitle: 'Property News Dunedin | PropertyHack',
+    metaDescription: 'Dunedin property news with coverage of house prices, student rental market trends, and Otago real estate updates from PropertyHack.',
+    h1Title: 'Property News in Dunedin',
+    introContent: 'Dunedin offers some of New Zealand\'s most affordable property, with a diverse market spanning student rentals near the university to lifestyle blocks in Otago. PropertyHack keeps you up to date with the latest market news and investment opportunities.',
     focusKeywords: ['dunedin property market', 'dunedin house prices', 'dunedin real estate'],
   },
   {
     location: 'Queenstown', slug: 'queenstown',
-    metaTitle: 'Queenstown Property News & Market Updates 2026',
-    metaDescription: 'Latest Queenstown property news, house prices and Central Otago real estate market analysis from PropertyHack.',
-    h1Title: 'Queenstown Property News & Market Updates',
-    introContent: 'Queenstown\'s premium property market is driven by tourism and lifestyle demand. Track luxury home prices, development news, and investment trends.',
+    metaTitle: 'Property News Queenstown | PropertyHack',
+    metaDescription: 'Queenstown property news covering luxury real estate, house prices, and Central Otago market trends. Premium coverage from PropertyHack.',
+    h1Title: 'Property News in Queenstown',
+    introContent: 'Queenstown\'s premium property market is driven by tourism, lifestyle demand, and strong international interest. PropertyHack tracks luxury home prices, development news, and investment trends in one of New Zealand\'s most desirable locations.',
     focusKeywords: ['queenstown property market', 'queenstown house prices', 'queenstown real estate'],
   },
   {
     location: 'Napier', slug: 'napier',
-    metaTitle: 'Napier Property News & Market Updates 2026',
+    metaTitle: 'Property News Napier | PropertyHack',
     metaDescription: 'Latest Napier property news, house prices and Hawke\'s Bay real estate market analysis from PropertyHack.',
-    h1Title: 'Napier Property News & Market Updates',
-    introContent: 'Napier and the wider Hawke\'s Bay region offer lifestyle property opportunities. Stay informed with the latest market news and price trends.',
+    h1Title: 'Property News in Napier',
+    introContent: 'Napier and the wider Hawke\'s Bay region offer attractive lifestyle property opportunities with a mix of coastal living and rural character. PropertyHack keeps you informed with the latest market news and price trends.',
     focusKeywords: ['napier property market', 'napier house prices', "hawke's bay real estate"],
   },
 ];
@@ -181,15 +181,15 @@ async function main() {
     console.log(`  Created location config: ${config.location}`);
   }
 
-  // Seed NZ location configs
+  // Seed NZ location configs (upsert for idempotency)
   for (const config of NZ_LOCATION_CONFIGS) {
-    const existing = await prisma.locationSeo.findUnique({ where: { slug: config.slug } });
-    if (existing) {
-      console.log(`  Location ${config.location} already exists, skipping`);
-      continue;
-    }
-    await prisma.locationSeo.create({ data: { ...config, country: 'NZ' } });
-    console.log(`  Created NZ location config: ${config.location}`);
+    const { focusKeywords, ...fields } = config;
+    await prisma.locationSeo.upsert({
+      where: { slug: config.slug },
+      create: { ...fields, country: 'NZ', focusKeywords },
+      update: { ...fields, country: 'NZ', focusKeywords },
+    });
+    console.log(`  Upserted NZ location config: ${config.location}`);
   }
 
   // Seed national keywords
