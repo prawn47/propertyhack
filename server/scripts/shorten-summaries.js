@@ -30,12 +30,12 @@ async function main() {
   console.log(`Shorten summaries — ${DRY_RUN ? 'DRY RUN' : 'LIVE'}${LIMIT ? `, limit: ${LIMIT}` : ''}\n`);
 
   const articles = await prisma.$queryRawUnsafe(
-    `SELECT id, title, "shortBlurb", "longSummary"
+    `SELECT id, title, short_blurb AS "shortBlurb", long_summary AS "longSummary"
      FROM articles
      WHERE status = 'PUBLISHED'
-       AND "longSummary" IS NOT NULL
-       AND array_length(string_to_array(trim("longSummary"), ' '), 1) > 100
-     ORDER BY "publishedAt" DESC
+       AND long_summary IS NOT NULL
+       AND array_length(string_to_array(trim(long_summary), ' '), 1) > 100
+     ORDER BY published_at DESC
      ${LIMIT ? `LIMIT ${LIMIT}` : ''}`
   );
 
