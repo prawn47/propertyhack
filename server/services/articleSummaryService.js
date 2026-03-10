@@ -114,6 +114,44 @@ async function generateArticleSummary(articleContent) {
     throw new Error(`Failed to parse Gemini response as JSON: ${error.message}. Raw: ${jsonText.substring(0, 200)}`);
   }
 
+  // Enforce word limits — resubmit to Gemini once if exceeded
+  const BLURB_MAX = 60;
+  const SUMMARY_MAX = 100;
+
+  const blurbWords = (parsed.shortBlurb || '').split(/\s+/).filter(Boolean).length;
+  const summaryWords = (parsed.longSummary || '').split(/\s+/).filter(Boolean).length;
+
+  if (blurbWords > BLURB_MAX || summaryWords > SUMMARY_MAX) {
+    console.log(`[summary] Word limit exceeded (blurb: ${blurbWords}/${BLURB_MAX}, summary: ${summaryWords}/${SUMMARY_MAX}) — requesting trim`);
+
+    const trimPrompt = `You returned summaries that are too long. Shorten them while keeping all key facts and the source attribution.
+
+Current shortBlurb (${blurbWords} words, max ${BLURB_MAX}):
+${parsed.shortBlurb}
+
+Current longSummary (${summaryWords} words, max ${SUMMARY_MAX}):
+${parsed.longSummary}
+
+Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No markdown fences.`;
+
+    try {
+      const trimModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const trimResult = await trimModel.generateContent(trimPrompt);
+      let trimText = trimResult.response.text().trim();
+      if (trimText.startsWith('```')) {
+        trimText = trimText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+      }
+      const trimmed = JSON.parse(trimText);
+      if (trimmed.shortBlurb) parsed.shortBlurb = trimmed.shortBlurb;
+      if (trimmed.longSummary) parsed.longSummary = trimmed.longSummary;
+      const newBlurb = (parsed.shortBlurb || '').split(/\s+/).filter(Boolean).length;
+      const newSummary = (parsed.longSummary || '').split(/\s+/).filter(Boolean).length;
+      console.log(`[summary] After trim: blurb ${newBlurb} words, summary ${newSummary} words`);
+    } catch (trimErr) {
+      console.warn(`[summary] Trim retry failed, using original: ${trimErr.message.substring(0, 80)}`);
+    }
+  }
+
   const validCategories = ['property-market', 'residential', 'commercial', 'investment', 'development', 'policy', 'finance', 'uncategorized'];
   const suggestedCategory = validCategories.includes(parsed.suggestedCategory)
     ? parsed.suggestedCategory
