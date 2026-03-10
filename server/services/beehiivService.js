@@ -104,4 +104,54 @@ async function unsubscribe(email) {
   }
 }
 
-module.exports = { subscribe, unsubscribe };
+async function getPostStats(postId) {
+  const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+  const apiKey = process.env.BEEHIIV_API_KEY;
+
+  if (!apiKey || !publicationId) return null;
+
+  try {
+    const res = await fetch(
+      `${BEEHIIV_BASE_URL}/publications/${publicationId}/posts/${postId}/stats`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.data || null;
+  } catch (err) {
+    console.error('[beehiiv] getPostStats error:', err.message);
+    return null;
+  }
+}
+
+async function listPosts(page = 1, limit = 20) {
+  const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+  const apiKey = process.env.BEEHIIV_API_KEY;
+
+  if (!apiKey || !publicationId) return [];
+
+  try {
+    const res = await fetch(
+      `${BEEHIIV_BASE_URL}/publications/${publicationId}/posts?page=${page}&limit=${limit}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.data || [];
+  } catch (err) {
+    console.error('[beehiiv] listPosts error:', err.message);
+    return [];
+  }
+}
+
+module.exports = { subscribe, unsubscribe, getPostStats, listPosts };
