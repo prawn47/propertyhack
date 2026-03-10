@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const DRY_RUN = process.argv.includes('--dry-run');
+<<<<<<< HEAD
 const SCORE_PASS = process.argv.includes('--score');
 
 const SCORE_SYSTEM_PROMPT = `You are a property news relevance scorer. Given an article title and optional content snippet, return a JSON object with a single field:
@@ -47,6 +48,13 @@ async function scoreArticle(ai, article) {
 async function runPass1() {
   console.log(`\nPass 1: Delete drafts with no title and no summary — ${DRY_RUN ? 'DRY RUN' : 'LIVE'}\n`);
 
+=======
+
+async function main() {
+  console.log(`Draft article cleanup — Pass 1 — ${DRY_RUN ? 'DRY RUN' : 'LIVE'}\n`);
+
+  // Count DRAFT articles with no title AND no summary (broken ingestion artifacts)
+>>>>>>> 28607da (feat: add draft article cleanup script)
   const targets = await prisma.$queryRaw`
     SELECT id FROM articles
     WHERE status = 'DRAFT'
@@ -58,6 +66,7 @@ async function runPass1() {
 
   if (targets.length === 0) {
     console.log('Nothing to delete.');
+<<<<<<< HEAD
     return 0;
   }
 
@@ -187,6 +196,23 @@ async function main() {
     console.log(`\nRemaining DRAFT articles: ${remainingDrafts}`);
     console.log('\nTip: Run with --score to also score remaining drafts for relevance');
   }
+=======
+  } else if (!DRY_RUN) {
+    const ids = targets.map(r => r.id);
+    const { count } = await prisma.article.deleteMany({
+      where: { id: { in: ids } },
+    });
+    console.log(`Deleted: ${count} articles`);
+  } else {
+    console.log(`Would delete: ${targets.length} articles (dry run)`);
+  }
+
+  // Report remaining drafts
+  const remainingDrafts = await prisma.article.count({
+    where: { status: 'DRAFT' },
+  });
+  console.log(`\nRemaining DRAFT articles: ${remainingDrafts}`);
+>>>>>>> 28607da (feat: add draft article cleanup script)
 }
 
 main()
