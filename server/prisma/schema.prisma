@@ -358,3 +358,29 @@ model LocationSeo {
   @@index([country])
   @@map("location_seo")
 }
+
+enum NewsletterStatus {
+  DRAFT
+  APPROVED
+  SENT
+}
+
+model NewsletterDraft {
+  id            String           @id @default(uuid())
+  jurisdiction  String
+  subject       String
+  htmlContent   String           @map("html_content")
+  textContent   String?          @map("text_content")
+  articleIds    String[]         @map("article_ids")
+  status        NewsletterStatus @default(DRAFT)
+  beehiivPostId String?          @map("beehiiv_post_id")
+  generatedAt   DateTime         @default(now()) @map("generated_at")
+  approvedAt    DateTime?        @map("approved_at")
+  sentAt        DateTime?        @map("sent_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  @@index([jurisdiction])
+  @@index([status])
+  @@map("newsletter_drafts")
+}
