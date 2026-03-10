@@ -168,6 +168,7 @@ model Article {
   publishedAt     DateTime?                    @map("published_at")
   metadata        Json?
   embedding       Unsupported("vector(1536)")?
+  relevanceScore  Int?                         @map("relevance_score")
   createdAt       DateTime                     @default(now()) @map("created_at")
   updatedAt       DateTime                     @updatedAt @map("updated_at")
 
@@ -296,6 +297,7 @@ model SystemPrompt {
 model SeoKeyword {
   id        String   @id @default(cuid())
   keyword   String
+  market    String?
   location  String?
   category  String?
   volume    String?
@@ -304,6 +306,7 @@ model SeoKeyword {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([market])
   @@index([location])
   @@index([category])
   @@map("seo_keywords")
@@ -324,33 +327,18 @@ model Subscriber {
   @@map("subscribers")
 }
 
-model Conversation {
-  id        String    @id @default(cuid())
-  userId    String
-  title     String    @db.VarChar(80)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages  Message[]
+model AiModelConfig {
+  id               String   @id @default(uuid())
+  task             String   @unique
+  provider         String
+  model            String
+  fallbackProvider String?  @map("fallback_provider")
+  fallbackModel    String?  @map("fallback_model")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  @@index([userId, updatedAt(sort: Desc)])
-  @@map("conversations")
-}
-
-model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  role           String       @db.VarChar(10)
-  content        String
-  citations      Json?
-  calculatorCall Json?
-  rating         Int?
-  tokenCount     Int?
-  createdAt      DateTime     @default(now())
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId, createdAt])
-  @@map("messages")
+  @@map("ai_model_configs")
 }
 
 model LocationSeo {
@@ -369,4 +357,30 @@ model LocationSeo {
 
   @@index([country])
   @@map("location_seo")
+}
+
+enum NewsletterStatus {
+  DRAFT
+  APPROVED
+  SENT
+}
+
+model NewsletterDraft {
+  id            String           @id @default(uuid())
+  jurisdiction  String
+  subject       String
+  htmlContent   String           @map("html_content")
+  textContent   String?          @map("text_content")
+  articleIds    String[]         @map("article_ids")
+  status        NewsletterStatus @default(DRAFT)
+  beehiivPostId String?          @map("beehiiv_post_id")
+  generatedAt   DateTime         @default(now()) @map("generated_at")
+  approvedAt    DateTime?        @map("approved_at")
+  sentAt        DateTime?        @map("sent_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  @@index([jurisdiction])
+  @@index([status])
+  @@map("newsletter_drafts")
 }
