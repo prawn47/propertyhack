@@ -3,17 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-const prompts = [
-  {
-    name: 'image-generation',
-    description: 'Prompt template for AI-generated article thumbnail images. Available variables: {category_elements}, {title}, {shortBlurb}, {camera}, {film}, {look}',
-    content: 'Photograph for a property news article. Subject: {category_elements}. Shot on {camera}. {film} film stock. {look}. Wide 16:9 landscape composition, off-centre subject, environmental context. No text, no numbers, no watermarks, no labels. No close-up faces. This should look like a real photograph from a 1990s property magazine, not computer-generated. Article context: {title}. {shortBlurb}',
-    isActive: true,
-  },
-  {
-    name: 'article-summarisation',
-    description: 'Prompt template for AI article summarisation. Available variables: {englishVariant}, {sourceName}, {content}',
-    content: `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is authoritative, factual, and data-driven.
+const UPDATED_CONTENT = `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is authoritative, factual, and data-driven.
 
 IMPORTANT: Write all summaries in {englishVariant}.
 
@@ -37,47 +27,29 @@ Analyse the following article and return a JSON object with these fields:
 Respond with valid JSON only. Do not wrap in markdown code fences.
 
 ARTICLE:
-{content}`,
-    isActive: true,
-  },
-  {
-    name: 'social-generation',
-    description: 'Prompt template for AI social media post generation. Available variables: {title}, {shortBlurb}, {longSummary}, {sourceUrl}, {category}, {platforms}',
-    content: `Generate social media posts for the following Australian property news article. Return a JSON object with keys for each requested platform.
-
-Article title: {title}
-Summary: {shortBlurb}
-Full context: {longSummary}
-Article URL: {sourceUrl}
-Category: {category}
-
-Generate posts for: {platforms}
-
-Platform requirements:
-- twitter: Max 280 characters total (including URL and hashtags). Punchy, newsworthy. 2-3 relevant property/real estate hashtags. Must include article URL.
-- facebook: 1-2 short paragraphs. Conversational, shareable tone. Question or hook to drive engagement. Article URL at end.
-- linkedin: Professional, industry-insight tone. 1-2 paragraphs targeting property professionals and investors. Article URL at end.
-- instagram: Engaging caption with relevant emojis. 5-8 property/real estate hashtags at end. Say "Link in bio" instead of including URL.
-
-Only generate posts for the platforms listed in {platforms}. Return ONLY valid JSON.`,
-    isActive: true,
-  },
-];
+{content}`;
 
 async function main() {
-  console.log('Seeding system prompts...');
+  const existing = await prisma.systemPrompt.findUnique({
+    where: { name: 'article-summarisation' },
+  });
 
-  for (const promptData of prompts) {
-    const existing = await prisma.systemPrompt.findUnique({
-      where: { name: promptData.name },
+  if (!existing) {
+    console.log('  [create] article-summarisation prompt not found — creating');
+    await prisma.systemPrompt.create({
+      data: {
+        name: 'article-summarisation',
+        description: 'Prompt template for AI article summarisation. Available variables: {englishVariant}, {sourceName}, {content}',
+        content: UPDATED_CONTENT,
+        isActive: true,
+      },
     });
-
-    if (existing) {
-      console.log(`  [skip] '${promptData.name}' already exists`);
-    } else {
-      await prisma.systemPrompt.create({ data: promptData });
-      console.log(`  [created] '${promptData.name}'`);
-    }
+  } else {
+    await prisma.systemPrompt.update({
+      where: { name: 'article-summarisation' },
+      data: { content: UPDATED_CONTENT },
+    });
+    console.log('  [updated] article-summarisation prompt with relevance scoring');
   }
 
   console.log('Done.');

@@ -48,6 +48,12 @@ IMPORTANT: Write all summaries in {englishVariant}.
 Analyse the following article and return a JSON object with these fields:
 
 - isPropertyRelated: boolean — true ONLY if the article is directly about property, real estate, housing, construction, mortgages, interest rates affecting housing, property investment, urban planning, property development, home buying/selling, rental markets, or housing policy. Return false for general news, sports, politics (unless directly about housing policy), entertainment, celebrities, etc.
+- relevanceScore: integer 1-10 — rate the relevance of this article to property and real estate:
+  - 9-10: Core property content (sales, auctions, listings, market reports, development)
+  - 7-8: Strongly related (housing policy, mortgage rates, construction, investment strategy)
+  - 5-6: Moderately related (macro economics affecting property, infrastructure, lifestyle/architecture)
+  - 3-4: Loosely related (general finance, broad economics, urban planning without property focus)
+  - 1-2: Not related (sports, entertainment, celebrity, unrelated politics)
 - shortBlurb: ~50 words, a concise hook suitable for a news card. Include a specific data point (percentage, dollar amount, or trend figure) if available in the source material. Do not exceed 60 words. Leave empty string if not property related.
 - longSummary: ~80 words, max 100 words. A concise summary with key facts, statistics, and figures from the article. Attribute the source ({sourceName}). Write in a definitive, expert tone. Leave empty string if not property related.
 - suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
@@ -163,8 +169,13 @@ Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No ma
     : ['AU'];
   if (markets.length === 0) markets.push('AU');
 
+  const relevanceScore = Number.isInteger(parsed.relevanceScore) && parsed.relevanceScore >= 1 && parsed.relevanceScore <= 10
+    ? parsed.relevanceScore
+    : 5;
+
   return {
     isPropertyRelated: parsed.isPropertyRelated !== false,
+    relevanceScore,
     shortBlurb: parsed.shortBlurb || '',
     longSummary: parsed.longSummary || '',
     suggestedCategory,
