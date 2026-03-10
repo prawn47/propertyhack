@@ -86,7 +86,7 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd, article, hreflang }) {
+function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd, article, hreflang, keywords }) {
   const tags = [];
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Agenda-free Property News`;
   const desc = description || DEFAULT_DESCRIPTION;
@@ -94,6 +94,9 @@ function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd,
 
   tags.push(`<title>${escapeHtml(fullTitle)}</title>`);
   tags.push(`<meta name="description" content="${escapeHtml(desc)}" />`);
+  if (keywords && keywords.length > 0) {
+    tags.push(`<meta name="keywords" content="${escapeHtml(keywords.join(', '))}" />`);
+  }
   tags.push(`<link rel="canonical" href="${SITE_URL}${url}" />`);
 
   if (hreflang) {
@@ -213,9 +216,43 @@ async function getMetaForUrl(url, prisma) {
         : article.imageUrl
           ? `${SITE_URL}${article.imageUrl}`
           : DEFAULT_IMAGE;
+
+      // Query matching SEO keywords for this article
+      let articleKeywords = [];
+      let articleDescription = article.shortBlurb || article.longSummary?.substring(0, 160);
+      try {
+        const matchedKeywords = await prisma.seoKeyword.findMany({
+          where: {
+            market: article.market,
+            AND: [
+              { OR: [{ location: article.location }, { location: null }] },
+              { OR: [{ category: article.category }, { category: null }] },
+            ],
+          },
+          orderBy: { priority: 'desc' },
+          take: 8,
+          select: { keyword: true, priority: true },
+        });
+        articleKeywords = matchedKeywords.map(k => k.keyword).slice(0, 8);
+
+        // Append 1-2 high-priority keywords to description if they naturally extend it
+        if (articleDescription && matchedKeywords.length > 0) {
+          const topKeywords = matchedKeywords.slice(0, 2).map(k => k.keyword);
+          const descLower = articleDescription.toLowerCase();
+          const newKeywords = topKeywords.filter(kw => !descLower.includes(kw.toLowerCase()));
+          if (newKeywords.length > 0 && !articleDescription.endsWith('.')) {
+            articleDescription = `${articleDescription}. ${newKeywords.join(', ')}.`;
+          } else if (newKeywords.length > 0) {
+            articleDescription = `${articleDescription} ${newKeywords.join(', ')}.`;
+          }
+        }
+      } catch (kwErr) {
+        console.warn('crawlerSsr: failed to load SeoKeywords for article', slug, kwErr.message);
+      }
+
       return buildMetaTags({
         title: article.title,
-        description: article.shortBlurb || article.longSummary?.substring(0, 160),
+        description: articleDescription,
         url: canonicalPath,
         image: imgUrl,
         imageAlt: article.imageAltText || article.title,
@@ -227,6 +264,7 @@ async function getMetaForUrl(url, prisma) {
         },
         jsonLd: buildArticleJsonLd(article),
         hreflang: buildHreflangTags(url, article),
+        keywords: articleKeywords,
       });
     }
     // Article not found — still inject hreflang with safe fallback (all 4 markets)
