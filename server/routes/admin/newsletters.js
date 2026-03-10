@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { createPost, sendPost } = require('../../services/beehiivService');
 
 // GET / — list newsletter drafts, filterable by jurisdiction and status
 router.get('/', async (req, res) => {
@@ -79,6 +80,34 @@ router.post('/:id/approve', async (req, res) => {
     res.json(draft);
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Not found' });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /:id/send — publish to Beehiiv and mark as SENT
+router.post('/:id/send', async (req, res) => {
+  try {
+    const draft = await req.prisma.newsletterDraft.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!draft) return res.status(404).json({ error: 'Not found' });
+    if (draft.status !== 'APPROVED') {
+      return res.status(400).json({ error: 'Only APPROVED newsletters can be sent' });
+    }
+
+    const post = await createPost(draft.subject, draft.htmlContent);
+    await sendPost(post.id, {
+      custom_fields: [{ name: 'country', value: draft.jurisdiction }],
+    });
+
+    const updated = await req.prisma.newsletterDraft.update({
+      where: { id: req.params.id },
+      data: { status: 'SENT', beehiivPostId: post.id, sentAt: new Date() },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error('Send newsletter error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

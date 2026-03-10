@@ -90,3 +90,9 @@ export async function generateNewsletter(jurisdiction: string): Promise<{ messag
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+
+export async function sendNewsletter(id: string): Promise<NewsletterDraft> {
+  const res = await authFetch(`${BASE}/${id}/send`, { method: 'POST' });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

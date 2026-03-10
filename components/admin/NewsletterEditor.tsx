@@ -7,6 +7,7 @@ import {
   getNewsletter,
   updateNewsletter,
   approveNewsletter,
+  sendNewsletter,
   NewsletterDraft,
 } from '../../services/adminNewsletterService';
 import LoadingSpinner from '../shared/LoadingSpinner';
@@ -103,6 +104,58 @@ function PreviewModal({ html, subject, onClose }: { html: string; subject: strin
   );
 }
 
+function SendConfirmDialog({
+  draft,
+  onConfirm,
+  onCancel,
+  sending,
+}: {
+  draft: NewsletterDraft;
+  onConfirm: () => void;
+  onCancel: () => void;
+  sending: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-base-100 rounded-lg shadow-xl w-full max-w-md mx-4 p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-content">Send Newsletter</h2>
+        <p className="text-sm text-content-secondary">
+          You are about to publish and send this newsletter to all <strong>{JURISDICTION_LABELS[draft.jurisdiction] || draft.jurisdiction}</strong> subscribers via Beehiiv. This cannot be undone.
+        </p>
+        <div className="bg-base-200 rounded p-3 space-y-1 text-sm">
+          <div className="flex gap-2">
+            <span className="text-content-secondary w-24 flex-shrink-0">Jurisdiction</span>
+            <span className="text-content font-medium">{JURISDICTION_LABELS[draft.jurisdiction] || draft.jurisdiction}</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-content-secondary w-24 flex-shrink-0">Subject</span>
+            <span className="text-content font-medium truncate">{draft.subject}</span>
+          </div>
+        </div>
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded px-3 py-2">
+          Warning: sending to Beehiiv will immediately deliver to all matching subscribers.
+        </div>
+        <div className="flex justify-end gap-3 pt-1">
+          <button
+            onClick={onCancel}
+            disabled={sending}
+            className="px-4 py-2 text-sm border border-base-300 rounded bg-base-100 hover:border-brand-gold disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={sending}
+            className="px-4 py-2 text-sm bg-brand-primary text-base-100 font-medium rounded hover:opacity-90 disabled:opacity-50"
+          >
+            {sending ? 'Sending…' : 'Confirm & Send'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const NewsletterEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -112,6 +165,8 @@ const NewsletterEditor: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
   const [showPreview, setShowPreview] = useState(false);
@@ -205,6 +260,20 @@ const NewsletterEditor: React.FC = () => {
     }
   };
 
+  const handleSend = async () => {
+    if (!id || !draft) return;
+    setSending(true);
+    setShowSendConfirm(false);
+    try {
+      const updated = await sendNewsletter(id);
+      setDraft(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Send failed');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleSetLink = () => {
     if (!editor) return;
     const prev = editor.getAttributes('link').href || '';
@@ -293,6 +362,18 @@ const NewsletterEditor: React.FC = () => {
               className="px-3 py-1.5 text-sm bg-brand-gold text-brand-primary font-medium rounded hover:opacity-90 disabled:opacity-50"
             >
               {approving ? 'Approving…' : 'Approve'}
+            </button>
+          )}
+          {draft.status === 'APPROVED' && (
+            <button
+              onClick={() => setShowSendConfirm(true)}
+              disabled={sending}
+              className="px-3 py-1.5 text-sm bg-brand-primary text-base-100 font-medium rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              {sending ? 'Sending…' : 'Send to Beehiiv'}
             </button>
           )}
         </div>
@@ -503,6 +584,16 @@ const NewsletterEditor: React.FC = () => {
           html={currentHtml}
           subject={subject}
           onClose={() => setShowPreview(false)}
+        />
+      )}
+
+      {/* Send confirmation dialog */}
+      {showSendConfirm && (
+        <SendConfirmDialog
+          draft={draft}
+          onConfirm={handleSend}
+          onCancel={() => setShowSendConfirm(false)}
+          sending={sending}
         />
       )}
     </div>
