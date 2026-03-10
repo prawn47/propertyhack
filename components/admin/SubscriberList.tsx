@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import authService from '../../services/authService';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import EmptyState from '../shared/EmptyState';
 
@@ -44,8 +43,12 @@ const SubscriberList: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await authService.makeAuthenticatedRequest(`/api/admin/subscribers?page=${page}&limit=50`);
-      if (!res.ok) throw new Error('Failed to load subscribers');
+      const res = await fetch(`/api/admin/subscribers?page=${page}&limit=50`, { credentials: 'include' });
+      if (!res.ok) {
+        let msg = `Failed to load subscribers (${res.status})`;
+        try { const body = await res.json(); if (body.error) msg = body.error; } catch {}
+        throw new Error(msg);
+      }
       const data: SubscriberListResponse = await res.json();
       setSubscribers(data.subscribers);
       setTotal(data.total);
@@ -64,7 +67,7 @@ const SubscriberList: React.FC = () => {
     if (!confirm(`Delete subscriber ${email}? This cannot be undone.`)) return;
     setDeletingId(id);
     try {
-      const res = await authService.makeAuthenticatedRequest(`/api/admin/subscribers/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/subscribers/${id}`, { method: 'DELETE', credentials: 'include' });
       if (!res.ok) throw new Error('Failed to delete subscriber');
       await load();
     } catch (e: unknown) {
@@ -97,7 +100,15 @@ const SubscriberList: React.FC = () => {
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">{error}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm flex items-start justify-between gap-4">
+        <span>{error}</span>
+        <button
+          onClick={load}
+          className="shrink-0 text-xs px-2 py-1 bg-red-100 border border-red-300 rounded hover:bg-red-200 font-medium"
+        >
+          Retry
+        </button>
+      </div>
       )}
 
       {loading ? (

@@ -44,6 +44,17 @@ const CATEGORIES = [
 
 const MARKETS = ['AU', 'US', 'UK', 'CA'];
 
+function RelevanceBadge({ score }: { score: number | null }) {
+  if (score === null || score === undefined) {
+    return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400">—</span>;
+  }
+  let cls = '';
+  if (score >= 7) cls = 'bg-green-100 text-green-700';
+  else if (score >= 4) cls = 'bg-yellow-100 text-yellow-700';
+  else cls = 'bg-red-100 text-red-700';
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{score}</span>;
+}
+
 const ArticleList: React.FC = () => {
   const navigate = useNavigate();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -57,6 +68,7 @@ const ArticleList: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSource, setFilterSource] = useState('');
+  const [filterRelevance, setFilterRelevance] = useState('');
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -80,6 +92,9 @@ const ArticleList: React.FC = () => {
       if (filterStatus) params.status = filterStatus;
       if (filterCategory) params.category = filterCategory;
       if (filterSource) params.sourceId = filterSource;
+      if (filterRelevance === 'high') { params.minRelevance = 7; params.maxRelevance = 10; }
+      else if (filterRelevance === 'medium') { params.minRelevance = 4; params.maxRelevance = 6; }
+      else if (filterRelevance === 'low') { params.minRelevance = 1; params.maxRelevance = 3; }
       const data = await getArticles(params);
       setArticles(data.articles);
       setTotal(data.total);
@@ -90,12 +105,12 @@ const ArticleList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, filterStatus, filterCategory, filterSource]);
+  }, [page, debouncedSearch, filterStatus, filterCategory, filterSource, filterRelevance]);
 
   useEffect(() => { load(); }, [load]);
 
   // Reset to page 1 on filter change
-  useEffect(() => { setPage(1); }, [debouncedSearch, filterStatus, filterCategory, filterSource]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, filterStatus, filterCategory, filterSource, filterRelevance]);
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -173,9 +188,19 @@ const ArticleList: React.FC = () => {
           <option value="">All Categories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        {filterStatus || filterCategory || filterSource || search ? (
+        <select
+          value={filterRelevance}
+          onChange={e => setFilterRelevance(e.target.value)}
+          className="border border-base-300 rounded px-3 py-1.5 text-sm bg-base-100 text-content focus:outline-none focus:border-brand-gold"
+        >
+          <option value="">All Relevance</option>
+          <option value="high">High (7+)</option>
+          <option value="medium">Medium (4-6)</option>
+          <option value="low">Low (1-3)</option>
+        </select>
+        {filterStatus || filterCategory || filterSource || filterRelevance || search ? (
           <button
-            onClick={() => { setSearch(''); setFilterStatus(''); setFilterCategory(''); setFilterSource(''); }}
+            onClick={() => { setSearch(''); setFilterStatus(''); setFilterCategory(''); setFilterSource(''); setFilterRelevance(''); }}
             className="text-sm text-content-secondary hover:text-content underline"
           >
             Clear filters
@@ -239,6 +264,7 @@ const ArticleList: React.FC = () => {
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Source</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Status</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Category</th>
+                  <th className="px-3 py-2 text-left font-medium text-content-secondary">Relevance</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Date</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Views</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Actions</th>
@@ -365,6 +391,9 @@ const ArticleRow: React.FC<ArticleRowProps> = ({ article, selected, onToggle, on
       <td className="px-3 py-2.5 text-content-secondary text-xs whitespace-nowrap">
         {article.category}
       </td>
+      <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+        <RelevanceBadge score={article.relevanceScore} />
+      </td>
       <td className="px-3 py-2.5 text-content-secondary text-xs whitespace-nowrap">
         {timeAgo(article.createdAt)}
       </td>
@@ -441,6 +470,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, selected, onToggle, 
           {article.status}
         </span>
         <span>{article.category}</span>
+        <RelevanceBadge score={article.relevanceScore} />
         <span>{article.source?.name || '—'}</span>
         <span>{timeAgo(article.createdAt)}</span>
         <span>{article.viewCount} views</span>

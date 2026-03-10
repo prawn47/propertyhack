@@ -5,10 +5,12 @@ import {
   createSource,
   updateSource,
   triggerFetch,
+  DuplicateSourceError,
   type IngestionSource,
   type IngestionLog,
   type SourceType,
   type CreateSourceData,
+  type DuplicateSourceInfo,
 } from '../../services/adminSourceService';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
@@ -165,6 +167,7 @@ const SourceEditor: React.FC = () => {
   const [logs, setLogs] = useState<IngestionLog[]>([]);
   const [logsOpen, setLogsOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [duplicateWarning, setDuplicateWarning] = useState<DuplicateSourceInfo | null>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -235,6 +238,7 @@ const SourceEditor: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    setDuplicateWarning(null);
     setSaving(true);
     try {
       const payload: CreateSourceData = {
@@ -260,8 +264,12 @@ const SourceEditor: React.FC = () => {
         showToast('Source saved', 'success');
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to save';
-      showToast(message, 'error');
+      if (err instanceof DuplicateSourceError) {
+        setDuplicateWarning(err.existingSource);
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to save';
+        showToast(message, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -582,6 +590,20 @@ const SourceEditor: React.FC = () => {
           </button>
         )}
       </div>
+
+      {duplicateWarning && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg px-4 py-3 text-sm text-yellow-800">
+          A source with this feed URL already exists:{' '}
+          <strong>{duplicateWarning.name}</strong> ({duplicateWarning.type}).{' '}
+          <a
+            href={`/admin/sources/${duplicateWarning.id}/edit`}
+            className="underline font-semibold text-yellow-900 hover:text-brand-primary"
+          >
+            Edit the existing source instead
+          </a>
+          .
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="bg-white rounded-lg shadow-soft p-6 space-y-5">
         {/* Source type — create only */}

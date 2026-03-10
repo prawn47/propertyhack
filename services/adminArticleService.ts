@@ -22,6 +22,7 @@ export interface Article {
   isEvergreen: boolean;
   isGlobal: boolean;
   viewCount: number;
+  relevanceScore: number | null;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +45,8 @@ export interface ArticleListParams {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  minRelevance?: number;
+  maxRelevance?: number;
 }
 
 export interface ArticleUpdateData {
@@ -97,6 +100,8 @@ export async function getArticles(params: ArticleListParams = {}): Promise<Artic
   if (params.search) qs.set('search', params.search);
   if (params.sortBy) qs.set('sortBy', params.sortBy);
   if (params.sortOrder) qs.set('sortOrder', params.sortOrder);
+  if (params.minRelevance !== undefined) qs.set('minRelevance', String(params.minRelevance));
+  if (params.maxRelevance !== undefined) qs.set('maxRelevance', String(params.maxRelevance));
   const url = qs.toString() ? `${BASE}?${qs}` : BASE;
   return request<ArticleListResponse>(url);
 }
