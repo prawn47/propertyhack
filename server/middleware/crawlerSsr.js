@@ -187,6 +187,21 @@ async function getMetaForUrl(url, prisma) {
     const countryCode = url.length === 3 ? url.slice(1).toUpperCase() : null;
     const countryName = countryCode ? COUNTRY_NAMES[countryCode] : null;
     const homeTitle = countryName ? `Property News ${countryName}` : null;
+    const homeMarket = countryCode || 'AU';
+
+    let homeKeywords = [];
+    try {
+      const matched = await prisma.seoKeyword.findMany({
+        where: { market: homeMarket, location: null },
+        orderBy: { priority: 'desc' },
+        take: 10,
+        select: { keyword: true },
+      });
+      homeKeywords = matched.map(k => k.keyword);
+    } catch (kwErr) {
+      console.warn('crawlerSsr: failed to load home page SeoKeywords', kwErr.message);
+    }
+
     return buildMetaTags({
       title: homeTitle,
       description: getMarketDescription(countryCode),
@@ -194,6 +209,7 @@ async function getMetaForUrl(url, prisma) {
       type: 'website',
       jsonLd: buildWebsiteJsonLd(),
       hreflang: buildHreflangTags(url),
+      keywords: homeKeywords,
     });
   }
 
@@ -329,12 +345,29 @@ async function getMetaForUrl(url, prisma) {
     const catCountryName = COUNTRY_NAMES[catCountryCode] || catCountryCode;
     const slug = categoryMatch[1];
     const displayName = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    // Convert slug to likely category value (e.g. "market-news" → "Market News")
+    const categoryValue = displayName;
+
+    let categoryKeywords = [];
+    try {
+      const matched = await prisma.seoKeyword.findMany({
+        where: { category: { equals: categoryValue, mode: 'insensitive' } },
+        orderBy: { priority: 'desc' },
+        take: 10,
+        select: { keyword: true },
+      });
+      categoryKeywords = matched.map(k => k.keyword);
+    } catch (kwErr) {
+      console.warn('crawlerSsr: failed to load category SeoKeywords for', slug, kwErr.message);
+    }
+
     return buildMetaTags({
       title: `${displayName} - ${catCountryName} Property News`,
       description: `Latest ${displayName.toLowerCase()} news and analysis from the ${catCountryName} property market.`,
       url: canonicalPath,
       type: 'website',
       hreflang: buildHreflangTags(url),
+      keywords: categoryKeywords,
     });
   }
 
