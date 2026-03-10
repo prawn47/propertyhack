@@ -235,6 +235,39 @@ router.post('/maintenance/backfill-alt-text', async (req, res) => {
   }
 });
 
+// POST /maintenance/detect-duplicate-images — Find articles sharing the same imageUrl
+router.post('/maintenance/detect-duplicate-images', async (req, res) => {
+  try {
+    const articles = await req.prisma.article.findMany({
+      where: { imageUrl: { not: null } },
+      select: { id: true, title: true, imageUrl: true, status: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const byImageUrl = {};
+    for (const article of articles) {
+      const url = article.imageUrl;
+      if (!byImageUrl[url]) byImageUrl[url] = [];
+      byImageUrl[url].push(article);
+    }
+
+    const duplicates = Object.entries(byImageUrl)
+      .filter(([, group]) => group.length >= 2)
+      .map(([imageUrl, group]) => ({ imageUrl, articles: group }));
+
+    const totalAffected = duplicates.reduce((sum, d) => sum + d.articles.length, 0);
+
+    res.json({
+      duplicateImageUrls: duplicates.length,
+      totalAffectedArticles: totalAffected,
+      duplicates,
+    });
+  } catch (error) {
+    console.error('Detect duplicate images error:', error);
+    res.status(500).json({ error: 'Failed to detect duplicate images' });
+  }
+});
+
 // GET /:id — Get single article
 router.get(
   '/:id',
