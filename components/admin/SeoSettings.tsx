@@ -1,10 +1,49 @@
 import React, { useEffect, useState } from 'react';
 import {
   getKeywords, createKeyword, updateKeyword, deleteKeyword,
+  bulkCreateKeywords, bulkDeleteKeywords,
   getLocationSeoList, updateLocationSeo,
   type SeoKeyword, type LocationSeo,
 } from '../../services/adminSeoService';
 import Loader from '../Loader';
+
+// ===== AreaDropdown =====
+
+type AreaFilter = '' | '__national__' | string;
+
+interface AreaDropdownProps {
+  market: string;
+  value: AreaFilter;
+  onChange: (value: AreaFilter) => void;
+}
+
+function AreaDropdown({ market, value, onChange }: AreaDropdownProps) {
+  const [areas, setAreas] = useState<LocationSeo[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    getLocationSeoList({ country: market })
+      .then((data) => setAreas(data.locations))
+      .catch((err) => console.error('Failed to load areas:', err))
+      .finally(() => setLoading(false));
+  }, [market]);
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as AreaFilter)}
+      className="text-sm border border-base-300 rounded-lg px-3 py-1.5 bg-white"
+      disabled={loading}
+    >
+      <option value="">All areas</option>
+      <option value="__national__">National (no area)</option>
+      {areas.map((a) => (
+        <option key={a.id} value={a.location}>{a.location}</option>
+      ))}
+    </select>
+  );
+}
 
 type Tab = 'keywords' | 'locations';
 
@@ -46,17 +85,23 @@ function KeywordsTab() {
   const [keywords, setKeywords] = useState<SeoKeyword[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
-  const [filterLocation, setFilterLocation] = useState('');
+  const [bulkText, setBulkText] = useState('');
+  const [bulkAdding, setBulkAdding] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [areaFilter, setAreaFilter] = useState<AreaFilter>('');
   const [jurisdiction, setJurisdiction] = useState<Jurisdiction>('AU');
 
   const loadKeywords = async () => {
     setLoading(true);
+    setSelected(new Set());
     try {
-      const params: { market?: string; location?: string } = { market: jurisdiction };
-      if (filterLocation) params.location = filterLocation;
+      const params: { market?: string; location?: string; national?: boolean } = { market: jurisdiction };
+      if (areaFilter === '__national__') params.national = true;
+      else if (areaFilter) params.location = areaFilter;
       const data = await getKeywords(params);
       setKeywords(data.keywords);
     } catch (err) {
@@ -66,11 +111,11 @@ function KeywordsTab() {
   };
 
   useEffect(() => {
-    setFilterLocation('');
+    setAreaFilter('');
     loadKeywords();
   }, [jurisdiction]);
 
-  useEffect(() => { loadKeywords(); }, [filterLocation]);
+  useEffect(() => { loadKeywords(); }, [areaFilter]);
 
   const handleAdd = async () => {
     if (!newKeyword.trim()) return;
@@ -109,7 +154,48 @@ function KeywordsTab() {
     }
   };
 
-  const locations = [...new Set(keywords.map(k => k.location).filter(Boolean))] as string[];
+  const handleBulkAdd = async () => {
+    const lines = bulkText.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+    setBulkAdding(true);
+    try {
+      const location = areaFilter === '__national__' ? null : (areaFilter || null);
+      await bulkCreateKeywords({ keywords: lines, market: jurisdiction, location });
+      setBulkText('');
+      setShowBulkAdd(false);
+      loadKeywords();
+    } catch (err) {
+      console.error('Failed to bulk add keywords:', err);
+    }
+    setBulkAdding(false);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} keyword(s)?`)) return;
+    try {
+      await bulkDeleteKeywords(Array.from(selected));
+      loadKeywords();
+    } catch (err) {
+      console.error('Failed to bulk delete keywords:', err);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === keywords.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(keywords.map((k) => k.id)));
+    }
+  };
 
   if (loading) return <div className="flex justify-center py-8"><Loader className="h-8 w-8 text-brand-primary" /></div>;
 
@@ -133,23 +219,63 @@ function KeywordsTab() {
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <select
-            value={filterLocation}
-            onChange={(e) => setFilterLocation(e.target.value)}
-            className="text-sm border border-base-300 rounded-lg px-3 py-1.5"
-          >
-            <option value="">All locations</option>
-            {locations.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
+          <AreaDropdown market={jurisdiction} value={areaFilter} onChange={setAreaFilter} />
           <span className="text-sm text-content-secondary">{keywords.length} keywords</span>
+          {selected.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg text-sm hover:bg-red-600"
+            >
+              Delete {selected.size} selected
+            </button>
+          )}
         </div>
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="px-4 py-2 bg-brand-gold text-brand-primary font-semibold rounded-lg text-sm hover:bg-brand-gold/90"
-        >
-          + Add Keyword
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setShowBulkAdd(!showBulkAdd); setShowAdd(false); }}
+            className="px-4 py-2 bg-base-200 text-brand-primary font-semibold rounded-lg text-sm hover:bg-base-300 border border-base-300"
+          >
+            Bulk Add
+          </button>
+          <button
+            onClick={() => { setShowAdd(!showAdd); setShowBulkAdd(false); }}
+            className="px-4 py-2 bg-brand-gold text-brand-primary font-semibold rounded-lg text-sm hover:bg-brand-gold/90"
+          >
+            + Add Keyword
+          </button>
+        </div>
       </div>
+
+      {showBulkAdd && (
+        <div className="bg-base-100 rounded-lg border border-base-300 p-4 mb-4">
+          <label className="text-xs font-medium text-content-secondary block mb-1">
+            Paste keywords — one per line. All will be assigned to <strong>{jurisdiction}</strong>
+            {areaFilter && areaFilter !== '__national__' ? ` / ${areaFilter}` : areaFilter === '__national__' ? ' (national)' : ''}.
+          </label>
+          <textarea
+            value={bulkText}
+            onChange={(e) => setBulkText(e.target.value)}
+            rows={8}
+            placeholder={"auction clearance rate\nmedian house price\nrental yield"}
+            className="w-full border border-base-300 rounded-lg px-3 py-2 text-sm font-mono mb-3"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleBulkAdd}
+              disabled={bulkAdding || !bulkText.trim()}
+              className="px-4 py-1.5 bg-brand-gold text-brand-primary font-semibold rounded-lg text-sm hover:bg-brand-gold/90 disabled:opacity-50"
+            >
+              {bulkAdding ? 'Adding...' : `Add ${bulkText.split('\n').filter((l) => l.trim()).length} keywords`}
+            </button>
+            <button
+              onClick={() => { setShowBulkAdd(false); setBulkText(''); }}
+              className="px-4 py-1.5 text-content-secondary border border-base-300 rounded-lg text-sm hover:bg-base-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {showAdd && (
         <div className="bg-base-100 rounded-lg border border-base-300 p-4 mb-4 flex flex-wrap gap-3 items-end">
@@ -193,6 +319,14 @@ function KeywordsTab() {
         <table className="w-full text-sm">
           <thead className="bg-base-200">
             <tr>
+              <th className="px-3 py-2 text-center">
+                <input
+                  type="checkbox"
+                  checked={keywords.length > 0 && selected.size === keywords.length}
+                  onChange={toggleSelectAll}
+                  className="cursor-pointer"
+                />
+              </th>
               <th className="px-4 py-2 text-left font-medium text-content-secondary">Keyword</th>
               <th className="px-4 py-2 text-left font-medium text-content-secondary">Location</th>
               <th className="px-4 py-2 text-left font-medium text-content-secondary">Category</th>
@@ -202,7 +336,15 @@ function KeywordsTab() {
           </thead>
           <tbody className="divide-y divide-base-300">
             {keywords.map((kw) => (
-              <tr key={kw.id} className={kw.isActive ? '' : 'opacity-50'}>
+              <tr key={kw.id} className={`${kw.isActive ? '' : 'opacity-50'} ${selected.has(kw.id) ? 'bg-brand-gold/5' : ''}`}>
+                <td className="px-3 py-2 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(kw.id)}
+                    onChange={() => toggleSelect(kw.id)}
+                    className="cursor-pointer"
+                  />
+                </td>
                 <td className="px-4 py-2 font-medium">{kw.keyword}</td>
                 <td className="px-4 py-2 text-content-secondary">{kw.location || '—'}</td>
                 <td className="px-4 py-2 text-content-secondary">{kw.category || '—'}</td>
@@ -225,7 +367,7 @@ function KeywordsTab() {
               </tr>
             ))}
             {keywords.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-content-secondary">No {jurisdiction} keywords yet</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-content-secondary">No {jurisdiction} keywords yet</td></tr>
             )}
           </tbody>
         </table>

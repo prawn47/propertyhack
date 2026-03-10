@@ -20,6 +20,7 @@ export interface LocationSeo {
   id: string;
   location: string;
   slug: string;
+  country: string;
   metaTitle: string;
   metaDescription: string;
   h1Title: string;
@@ -30,10 +31,11 @@ export interface LocationSeo {
   updatedAt: string;
 }
 
-export async function getKeywords(params?: { market?: string; location?: string; category?: string }): Promise<{ keywords: SeoKeyword[] }> {
+export async function getKeywords(params?: { market?: string; location?: string; category?: string; national?: boolean }): Promise<{ keywords: SeoKeyword[] }> {
   const query = new URLSearchParams();
   if (params?.market) query.set('market', params.market);
-  if (params?.location) query.set('location', params.location);
+  if (params?.national) query.set('national', 'true');
+  else if (params?.location) query.set('location', params.location);
   if (params?.category) query.set('category', params.category);
   const qs = query.toString();
   const res = await fetch(`${BASE}/keywords${qs ? `?${qs}` : ''}`, {
@@ -71,8 +73,31 @@ export async function deleteKeyword(id: string): Promise<void> {
   if (!res.ok) throw new Error(`Failed to delete keyword: ${res.status}`);
 }
 
-export async function getLocationSeoList(): Promise<{ locations: LocationSeo[] }> {
-  const res = await fetch(`${BASE}/locations`, {
+export async function bulkCreateKeywords(data: { keywords: string[]; market?: string | null; location?: string | null; category?: string | null }): Promise<{ created: number }> {
+  const res = await fetch(`${BASE}/keywords/bulk`, {
+    method: 'POST',
+    headers: { ...authService.getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to bulk create keywords: ${res.status}`);
+  return res.json();
+}
+
+export async function bulkDeleteKeywords(ids: string[]): Promise<{ deleted: number }> {
+  const res = await fetch(`${BASE}/keywords/bulk`, {
+    method: 'DELETE',
+    headers: { ...authService.getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error(`Failed to bulk delete keywords: ${res.status}`);
+  return res.json();
+}
+
+export async function getLocationSeoList(params?: { country?: string }): Promise<{ locations: LocationSeo[] }> {
+  const query = new URLSearchParams();
+  if (params?.country) query.set('country', params.country);
+  const qs = query.toString();
+  const res = await fetch(`${BASE}/locations${qs ? `?${qs}` : ''}`, {
     headers: authService.getAuthHeaders(),
   });
   if (!res.ok) throw new Error(`Failed to fetch locations: ${res.status}`);

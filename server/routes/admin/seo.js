@@ -6,10 +6,11 @@ const router = express.Router();
 // GET /api/admin/seo/keywords
 router.get('/keywords', async (req, res) => {
   try {
-    const { location, category, market } = req.query;
+    const { location, category, market, national } = req.query;
     const where = {};
     if (market) where.market = market;
-    if (location) where.location = location;
+    if (national === 'true') where.location = null;
+    else if (location) where.location = location;
     if (category) where.category = category;
 
     const keywords = await req.prisma.seoKeyword.findMany({
@@ -39,6 +40,45 @@ router.post('/keywords', async (req, res) => {
       },
     });
     res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/seo/keywords/bulk
+router.post('/keywords/bulk', async (req, res) => {
+  try {
+    const { keywords, market, location, category } = req.body;
+    if (!Array.isArray(keywords) || keywords.length === 0) {
+      return res.status(400).json({ error: 'keywords array is required' });
+    }
+    const data = keywords
+      .map((k) => (typeof k === 'string' ? k.trim() : ''))
+      .filter(Boolean)
+      .map((keyword) => ({
+        keyword,
+        market: market || null,
+        location: location || null,
+        category: category || null,
+        volume: null,
+        priority: 0,
+      }));
+    const result = await req.prisma.seoKeyword.createMany({ data, skipDuplicates: true });
+    res.status(201).json({ created: result.count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/seo/keywords/bulk
+router.delete('/keywords/bulk', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    const result = await req.prisma.seoKeyword.deleteMany({ where: { id: { in: ids } } });
+    res.json({ deleted: result.count });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -81,7 +121,10 @@ router.delete('/keywords/:id', async (req, res) => {
 // GET /api/admin/seo/locations
 router.get('/locations', async (req, res) => {
   try {
+    const { country } = req.query;
+    const where = country ? { country } : {};
     const locations = await req.prisma.locationSeo.findMany({
+      where,
       orderBy: { location: 'asc' },
     });
     res.json({ locations });
