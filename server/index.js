@@ -41,6 +41,7 @@ const { articleImageWorker } = require('./workers/articleImageWorker');
 const { articleEmbedWorker } = require('./workers/articleEmbedWorker');
 const { socialPublishWorker } = require('./workers/socialPublishWorker');
 const { socialGenerateWorker } = require('./workers/socialGenerateWorker');
+const { altTextBackfillWorker } = require('./workers/altTextBackfillWorker');
 
 const { sourceFetchQueue } = require('./queues/sourceFetchQueue');
 const { articleProcessQueue } = require('./queues/articleProcessQueue');

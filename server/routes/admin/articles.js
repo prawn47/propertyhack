@@ -209,29 +209,32 @@ router.post('/maintenance/regenerate-images', async (req, res) => {
   }
 });
 
-// POST /maintenance/backfill-alt-text — Queue articles with images but no alt text
+// POST /maintenance/backfill-alt-text — Enqueue a single backfill job and return its ID
 router.post('/maintenance/backfill-alt-text', async (req, res) => {
   try {
-    const { articleImageQueue } = require('../../queues/articleImageQueue');
-
-    const articles = await req.prisma.article.findMany({
-      where: {
-        status: 'PUBLISHED',
-        imageUrl: { not: null },
-        NOT: { imageUrl: { startsWith: '/images/fallbacks/' } },
-        imageAltText: null,
-      },
-      select: { id: true },
-    });
-
-    for (const article of articles) {
-      await articleImageQueue.add('image-article', { articleId: article.id });
-    }
-
-    res.json({ queued: articles.length });
+    const { altTextBackfillQueue } = require('../../queues/altTextBackfillQueue');
+    const job = await altTextBackfillQueue.add('backfill-alt-text', {});
+    res.json({ jobId: job.id });
   } catch (error) {
     console.error('Backfill alt text error:', error);
-    res.status(500).json({ error: 'Failed to queue alt text backfill' });
+    res.status(500).json({ error: 'Failed to start alt text backfill' });
+  }
+});
+
+// GET /maintenance/backfill-alt-text/:jobId — Poll status of a backfill job
+router.get('/maintenance/backfill-alt-text/:jobId', async (req, res) => {
+  try {
+    const { altTextBackfillQueue } = require('../../queues/altTextBackfillQueue');
+    const job = await altTextBackfillQueue.getJob(req.params.jobId);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    const state = await job.getState();
+    const progress = job.progress || { total: 0, processed: 0, failures: 0 };
+    res.json({ jobId: job.id, state, ...progress });
+  } catch (error) {
+    console.error('Backfill alt text status error:', error);
+    res.status(500).json({ error: 'Failed to get job status' });
   }
 });
 
