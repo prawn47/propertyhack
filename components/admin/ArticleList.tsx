@@ -44,6 +44,17 @@ const CATEGORIES = [
 
 const MARKETS = ['AU', 'US', 'UK', 'CA'];
 
+function RelevanceBadge({ score }: { score: number | null }) {
+  if (score === null || score === undefined) {
+    return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400">—</span>;
+  }
+  let cls = '';
+  if (score >= 7) cls = 'bg-green-100 text-green-700';
+  else if (score >= 4) cls = 'bg-yellow-100 text-yellow-700';
+  else cls = 'bg-red-100 text-red-700';
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{score}</span>;
+}
+
 const ArticleList: React.FC = () => {
   const navigate = useNavigate();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -239,6 +250,7 @@ const ArticleList: React.FC = () => {
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Source</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Status</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Category</th>
+                  <th className="px-3 py-2 text-left font-medium text-content-secondary">Relevance</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Date</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Views</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Actions</th>
@@ -365,6 +377,9 @@ const ArticleRow: React.FC<ArticleRowProps> = ({ article, selected, onToggle, on
       <td className="px-3 py-2.5 text-content-secondary text-xs whitespace-nowrap">
         {article.category}
       </td>
+      <td className="px-3 py-2.5 text-xs whitespace-nowrap">
+        <RelevanceBadge score={article.relevanceScore} />
+      </td>
       <td className="px-3 py-2.5 text-content-secondary text-xs whitespace-nowrap">
         {timeAgo(article.createdAt)}
       </td>
@@ -441,6 +456,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, selected, onToggle, 
           {article.status}
         </span>
         <span>{article.category}</span>
+        <RelevanceBadge score={article.relevanceScore} />
         <span>{article.source?.name || '—'}</span>
         <span>{timeAgo(article.createdAt)}</span>
         <span>{article.viewCount} views</span>
