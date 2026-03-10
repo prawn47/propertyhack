@@ -19,6 +19,7 @@ const adminSeoRoutes = require('./routes/admin/seo');
 const adminSocialConfigRoutes = require('./routes/admin/socialConfig');
 const adminSocialAccountsRoutes = require('./routes/admin/socialAccounts');
 const adminSubscribersRoutes = require('./routes/admin/subscribers');
+const adminAiModelsRoutes = require('./routes/admin/aiModels');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
@@ -182,6 +183,7 @@ app.use('/api/admin/seo', adminSeoRoutes);
 app.use('/api/admin/social-config', adminSocialConfigRoutes);
 app.use('/api/admin/social-accounts', adminSocialAccountsRoutes);
 app.use('/api/admin/subscribers', adminSubscribersRoutes);
+app.use('/api/admin/ai-models', adminAiModelsRoutes);
 app.use('/api/scenarios', authenticateToken, scenarioRoutes);
 app.use('/api/henry', henryRoutes);
 // Spec-required public API paths
