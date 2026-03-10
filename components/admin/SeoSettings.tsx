@@ -6,6 +6,44 @@ import {
 } from '../../services/adminSeoService';
 import Loader from '../Loader';
 
+// ===== AreaDropdown =====
+
+type AreaFilter = '' | '__national__' | string;
+
+interface AreaDropdownProps {
+  market: string;
+  value: AreaFilter;
+  onChange: (value: AreaFilter) => void;
+}
+
+function AreaDropdown({ market, value, onChange }: AreaDropdownProps) {
+  const [areas, setAreas] = useState<LocationSeo[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    getLocationSeoList({ country: market })
+      .then((data) => setAreas(data.locations))
+      .catch((err) => console.error('Failed to load areas:', err))
+      .finally(() => setLoading(false));
+  }, [market]);
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as AreaFilter)}
+      className="text-sm border border-base-300 rounded-lg px-3 py-1.5 bg-white"
+      disabled={loading}
+    >
+      <option value="">All areas</option>
+      <option value="__national__">National (no area)</option>
+      {areas.map((a) => (
+        <option key={a.id} value={a.location}>{a.location}</option>
+      ))}
+    </select>
+  );
+}
+
 type Tab = 'keywords' | 'locations';
 
 const SeoSettings: React.FC = () => {
@@ -39,6 +77,9 @@ const SeoSettings: React.FC = () => {
 
 // ===== Keywords Tab =====
 
+const JURISDICTIONS = ['AU', 'NZ', 'UK', 'US', 'CA'] as const;
+type Jurisdiction = typeof JURISDICTIONS[number];
+
 function KeywordsTab() {
   const [keywords, setKeywords] = useState<SeoKeyword[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,13 +87,15 @@ function KeywordsTab() {
   const [newKeyword, setNewKeyword] = useState('');
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
-  const [filterLocation, setFilterLocation] = useState('');
+  const [areaFilter, setAreaFilter] = useState<AreaFilter>('');
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>('AU');
 
   const loadKeywords = async () => {
     setLoading(true);
     try {
-      const params: { location?: string } = {};
-      if (filterLocation) params.location = filterLocation;
+      const params: { market?: string; location?: string; national?: boolean } = { market: jurisdiction };
+      if (areaFilter === '__national__') params.national = true;
+      else if (areaFilter) params.location = areaFilter;
       const data = await getKeywords(params);
       setKeywords(data.keywords);
     } catch (err) {
@@ -61,13 +104,19 @@ function KeywordsTab() {
     setLoading(false);
   };
 
-  useEffect(() => { loadKeywords(); }, [filterLocation]);
+  useEffect(() => {
+    setAreaFilter('');
+    loadKeywords();
+  }, [jurisdiction]);
+
+  useEffect(() => { loadKeywords(); }, [areaFilter]);
 
   const handleAdd = async () => {
     if (!newKeyword.trim()) return;
     try {
       await createKeyword({
         keyword: newKeyword.trim(),
+        market: jurisdiction,
         location: newLocation || null,
         category: newCategory || null,
       });
@@ -99,22 +148,29 @@ function KeywordsTab() {
     }
   };
 
-  const locations = [...new Set(keywords.map(k => k.location).filter(Boolean))] as string[];
-
   if (loading) return <div className="flex justify-center py-8"><Loader className="h-8 w-8 text-brand-primary" /></div>;
 
   return (
     <div>
+      <div className="flex gap-1 mb-4 border-b border-base-300">
+        {JURISDICTIONS.map((j) => (
+          <button
+            key={j}
+            onClick={() => setJurisdiction(j)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              jurisdiction === j
+                ? 'border-brand-gold text-brand-gold'
+                : 'border-transparent text-content-secondary hover:text-brand-primary'
+            }`}
+          >
+            {j}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <select
-            value={filterLocation}
-            onChange={(e) => setFilterLocation(e.target.value)}
-            className="text-sm border border-base-300 rounded-lg px-3 py-1.5"
-          >
-            <option value="">All locations</option>
-            {locations.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
+          <AreaDropdown market={jurisdiction} value={areaFilter} onChange={setAreaFilter} />
           <span className="text-sm text-content-secondary">{keywords.length} keywords</span>
         </div>
         <button
@@ -199,7 +255,7 @@ function KeywordsTab() {
               </tr>
             ))}
             {keywords.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-content-secondary">No keywords yet</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-content-secondary">No {jurisdiction} keywords yet</td></tr>
             )}
           </tbody>
         </table>
