@@ -1,7 +1,6 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { PrismaClient } = require('@prisma/client');
+const aiProviderService = require('./aiProviderService');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const prisma = new PrismaClient();
 
 let cachedSummaryPrompt = null;
@@ -48,6 +47,12 @@ IMPORTANT: Write all summaries in {englishVariant}.
 Analyse the following article and return a JSON object with these fields:
 
 - isPropertyRelated: boolean — true ONLY if the article is directly about property, real estate, housing, construction, mortgages, interest rates affecting housing, property investment, urban planning, property development, home buying/selling, rental markets, or housing policy. Return false for general news, sports, politics (unless directly about housing policy), entertainment, celebrities, etc.
+- relevanceScore: integer 1-10 — rate the relevance of this article to property and real estate:
+  - 9-10: Core property content (sales, auctions, listings, market reports, development)
+  - 7-8: Strongly related (housing policy, mortgage rates, construction, investment strategy)
+  - 5-6: Moderately related (macro economics affecting property, infrastructure, lifestyle/architecture)
+  - 3-4: Loosely related (general finance, broad economics, urban planning without property focus)
+  - 1-2: Not related (sports, entertainment, celebrity, unrelated politics)
 - shortBlurb: ~50 words, a concise hook suitable for a news card. Include a specific data point (percentage, dollar amount, or trend figure) if available in the source material. Do not exceed 60 words. Leave empty string if not property related.
 - longSummary: ~80 words, max 100 words. A concise summary with key facts, statistics, and figures from the article. Attribute the source ({sourceName}). Write in a definitive, expert tone. Leave empty string if not property related.
 - suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
@@ -74,32 +79,12 @@ async function generateArticleSummary(articleContent) {
   const dbTemplate = await getSummaryPromptTemplate();
   const template = dbTemplate || HARDCODED_FALLBACK;
 
-  const prompt = template
+  const userPrompt = template
     .replace('{englishVariant}', englishVariant)
     .replace('{sourceName}', sourceName || sourceUrl)
     .replace('{content}', inputText);
 
-  const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-  let text;
-  let lastError;
-
-  for (const modelName of modelNames) {
-    try {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      text = response.text();
-      break;
-    } catch (error) {
-      lastError = error;
-      console.log(`[summary] ${modelName} failed: ${error.message.substring(0, 80)}`);
-      continue;
-    }
-  }
-
-  if (!text) {
-    throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`);
-  }
+  const { text } = await aiProviderService.generateText('article-summarisation', userPrompt, { jsonMode: true });
 
   // Strip markdown fences if present
   let jsonText = text.trim();
@@ -111,10 +96,10 @@ async function generateArticleSummary(articleContent) {
   try {
     parsed = JSON.parse(jsonText);
   } catch (error) {
-    throw new Error(`Failed to parse Gemini response as JSON: ${error.message}. Raw: ${jsonText.substring(0, 200)}`);
+    throw new Error(`Failed to parse AI response as JSON: ${error.message}. Raw: ${jsonText.substring(0, 200)}`);
   }
 
-  // Enforce word limits — resubmit to Gemini once if exceeded
+  // Enforce word limits — resubmit once if exceeded
   const BLURB_MAX = 60;
   const SUMMARY_MAX = 100;
 
@@ -135,13 +120,12 @@ ${parsed.longSummary}
 Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No markdown fences.`;
 
     try {
-      const trimModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const trimResult = await trimModel.generateContent(trimPrompt);
-      let trimText = trimResult.response.text().trim();
-      if (trimText.startsWith('```')) {
-        trimText = trimText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+      const { text: trimText } = await aiProviderService.generateText('article-summarisation', trimPrompt, { jsonMode: true });
+      let trimJson = trimText.trim();
+      if (trimJson.startsWith('```')) {
+        trimJson = trimJson.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
       }
-      const trimmed = JSON.parse(trimText);
+      const trimmed = JSON.parse(trimJson);
       if (trimmed.shortBlurb) parsed.shortBlurb = trimmed.shortBlurb;
       if (trimmed.longSummary) parsed.longSummary = trimmed.longSummary;
       const newBlurb = (parsed.shortBlurb || '').split(/\s+/).filter(Boolean).length;
@@ -163,8 +147,13 @@ Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No ma
     : ['AU'];
   if (markets.length === 0) markets.push('AU');
 
+  const relevanceScore = Number.isInteger(parsed.relevanceScore) && parsed.relevanceScore >= 1 && parsed.relevanceScore <= 10
+    ? parsed.relevanceScore
+    : 5;
+
   return {
     isPropertyRelated: parsed.isPropertyRelated !== false,
+    relevanceScore,
     shortBlurb: parsed.shortBlurb || '',
     longSummary: parsed.longSummary || '',
     suggestedCategory,
@@ -178,7 +167,7 @@ Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No ma
 async function generateImageAltText(articleTitle, articleSummary, focusKeywords = []) {
   const keywordsStr = focusKeywords.join(', ');
 
-  const prompt = `Generate descriptive, SEO-friendly alt text for an article image.
+  const userPrompt = `Generate descriptive, SEO-friendly alt text for an article image.
 
 Article Title: ${articleTitle}
 Article Summary: ${articleSummary.substring(0, 200)}...
@@ -192,15 +181,8 @@ Create alt text that:
 
 Return ONLY the alt text, nothing else.`;
 
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    return text.trim().replace(/^"|"$/g, '');
-  } catch (error) {
-    throw new Error(`Alt text generation failed: ${error.message}`);
-  }
+  const { text } = await aiProviderService.generateText('image-alt-text', userPrompt);
+  return text.trim().replace(/^"|"$/g, '');
 }
 
 module.exports = {
