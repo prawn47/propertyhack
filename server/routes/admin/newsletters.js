@@ -116,8 +116,8 @@ router.get(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const page = req.query.page || 1;
-      const limit = req.query.limit || 20;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
       const skip = (page - 1) * limit;
 
       const where = {};
