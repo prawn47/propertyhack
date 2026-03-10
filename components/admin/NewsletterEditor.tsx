@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -56,6 +56,53 @@ function ToolbarButton({
   );
 }
 
+function extractArticleLinks(html: string): { slug: string; label: string }[] {
+  const seen = new Set<string>();
+  const results: { slug: string; label: string }[] = [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  doc.querySelectorAll('a[href]').forEach((el) => {
+    const href = el.getAttribute('href') || '';
+    const match = href.match(/^\/article\/([^/?#]+)/);
+    if (match && !seen.has(match[1])) {
+      seen.add(match[1]);
+      results.push({ slug: match[1], label: el.textContent?.trim() || match[1] });
+    }
+  });
+  return results;
+}
+
+function PreviewModal({ html, subject, onClose }: { html: string; subject: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-base-100 rounded-lg shadow-xl w-full max-w-2xl mx-4">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-base-300">
+          <div>
+            <p className="text-xs text-content-secondary uppercase tracking-wide font-medium">Preview</p>
+            <p className="text-sm font-semibold text-content mt-0.5 truncate max-w-md">{subject}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-content-secondary hover:text-content p-1"
+            title="Close preview"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div
+          className="prose prose-sm max-w-none p-6 text-content"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      </div>
+    </div>
+  );
+}
+
 const NewsletterEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -67,8 +114,11 @@ const NewsletterEditor: React.FC = () => {
   const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
+  const [showPreview, setShowPreview] = useState(false);
+  const [currentHtml, setCurrentHtml] = useState('');
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const articleLinks = useMemo(() => extractArticleLinks(currentHtml), [currentHtml]);
 
   const editor = useEditor({
     extensions: [
@@ -82,10 +132,12 @@ const NewsletterEditor: React.FC = () => {
     ],
     content: '',
     onUpdate: ({ editor: e }) => {
+      const html = e.getHTML();
+      setCurrentHtml(html);
       setSaveStatus('unsaved');
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        handleSave(undefined, e.getHTML());
+        handleSave(undefined, html);
       }, 1500);
     },
   });
@@ -98,6 +150,7 @@ const NewsletterEditor: React.FC = () => {
         setDraft(data);
         setSubject(data.subject);
         editor?.commands.setContent(data.htmlContent || '');
+        setCurrentHtml(data.htmlContent || '');
         setSaveStatus('saved');
       })
       .catch((e) => setError(e.message))
@@ -227,6 +280,12 @@ const NewsletterEditor: React.FC = () => {
           >
             Save
           </button>
+          <button
+            onClick={() => setShowPreview(true)}
+            className="px-3 py-1.5 text-sm border border-base-300 rounded bg-base-100 hover:border-brand-gold"
+          >
+            Preview
+          </button>
           {draft.status === 'DRAFT' && (
             <button
               onClick={handleApprove}
@@ -243,22 +302,56 @@ const NewsletterEditor: React.FC = () => {
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">{error}</div>
       )}
 
-      {/* Status bar */}
-      <div className="flex items-center gap-4 text-xs text-content-secondary bg-base-200 px-4 py-2 rounded">
-        <span>
-          Generated: {new Date(draft.generatedAt).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })}
-        </span>
-        {draft.approvedAt && (
-          <span>
-            Approved:{' '}
-            {new Date(draft.approvedAt).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })}
-          </span>
-        )}
-        {draft.sentAt && (
-          <span>
-            Sent: {new Date(draft.sentAt).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })}
-          </span>
-        )}
+      {/* Status pipeline bar */}
+      <div className="flex items-center gap-0 bg-base-200 rounded overflow-hidden text-xs">
+        {(['DRAFT', 'APPROVED', 'SENT'] as const).map((step, i) => {
+          const timestamps: Record<string, string | null> = {
+            DRAFT: draft.generatedAt,
+            APPROVED: draft.approvedAt,
+            SENT: draft.sentAt,
+          };
+          const stepOrder = { DRAFT: 0, APPROVED: 1, SENT: 2 };
+          const currentOrder = stepOrder[draft.status];
+          const thisOrder = stepOrder[step];
+          const isActive = draft.status === step;
+          const isDone = thisOrder < currentOrder;
+          const ts = timestamps[step];
+
+          return (
+            <React.Fragment key={step}>
+              {i > 0 && (
+                <svg className="w-3 h-6 text-base-300 flex-shrink-0" viewBox="0 0 12 24" fill="none">
+                  <path d="M0 0 L12 12 L0 24" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              )}
+              <div
+                className={[
+                  'flex flex-col px-4 py-2',
+                  isActive ? 'bg-brand-gold/10 text-brand-primary font-semibold' : '',
+                  isDone ? 'text-green-700' : '',
+                  !isActive && !isDone ? 'text-content-secondary' : '',
+                ].join(' ')}
+              >
+                <span className="flex items-center gap-1.5">
+                  {isDone && (
+                    <svg className="w-3 h-3 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-gold flex-shrink-0" />
+                  )}
+                  {step}
+                </span>
+                {ts && (
+                  <span className="text-content-secondary font-normal text-[10px] mt-0.5">
+                    {new Date(ts).toLocaleString('en-AU', { dateStyle: 'short', timeStyle: 'short' })}
+                  </span>
+                )}
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
 
       {/* Subject line */}
@@ -379,6 +472,39 @@ const NewsletterEditor: React.FC = () => {
           </p>
         )}
       </div>
+
+      {/* Article links panel */}
+      {articleLinks.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-content-secondary uppercase tracking-wide">
+            Referenced Articles ({articleLinks.length})
+          </label>
+          <div className="border border-base-300 rounded bg-base-100 divide-y divide-base-200">
+            {articleLinks.map(({ slug, label }) => (
+              <div key={slug} className="flex items-center justify-between gap-3 px-3 py-2">
+                <span className="text-sm text-content truncate flex-1">{label}</span>
+                <a
+                  href={`/article/${slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-brand-accent hover:underline flex-shrink-0"
+                >
+                  /article/{slug}
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Preview modal */}
+      {showPreview && (
+        <PreviewModal
+          html={currentHtml}
+          subject={subject}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 };
