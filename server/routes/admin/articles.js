@@ -235,6 +235,36 @@ router.post('/maintenance/backfill-alt-text', async (req, res) => {
   }
 });
 
+// POST /maintenance/cleanup-drafts — Delete DRAFT articles with no title and no summary
+router.post('/maintenance/cleanup-drafts', async (req, res) => {
+  try {
+    const targets = await req.prisma.$queryRaw`
+      SELECT id FROM articles
+      WHERE status = 'DRAFT'
+        AND (title IS NULL OR trim(title) = '')
+        AND (short_blurb IS NULL OR trim(short_blurb) = '')
+    `;
+
+    let deletedCount = 0;
+    if (targets.length > 0) {
+      const ids = targets.map(r => r.id);
+      const result = await req.prisma.article.deleteMany({
+        where: { id: { in: ids } },
+      });
+      deletedCount = result.count;
+    }
+
+    const remainingDrafts = await req.prisma.article.count({
+      where: { status: 'DRAFT' },
+    });
+
+    res.json({ deletedCount, remainingDrafts });
+  } catch (error) {
+    console.error('Cleanup drafts error:', error);
+    res.status(500).json({ error: 'Failed to clean up draft articles' });
+  }
+});
+
 // GET /:id — Get single article
 router.get(
   '/:id',
