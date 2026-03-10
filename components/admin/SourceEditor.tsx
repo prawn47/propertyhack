@@ -159,6 +159,7 @@ const SourceEditor: React.FC = () => {
   const isNew = !id || id === 'new';
 
   const [loading, setLoading] = useState(!isNew);
+  const [fetchError, setFetchError] = useState<'not_found' | 'error' | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [source, setSource] = useState<IngestionSource | null>(null);
@@ -195,7 +196,15 @@ const SourceEditor: React.FC = () => {
         setSchedule(s.schedule || '');
         setConfig((s.config as Record<string, unknown>) || {});
       })
-      .catch(() => showToast('Failed to load source', 'error'))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : '';
+        console.error('[SourceEditor] failed to load source:', err);
+        if (msg.includes('404')) {
+          setFetchError('not_found');
+        } else {
+          setFetchError('error');
+        }
+      })
       .finally(() => setLoading(false));
   }, [id, isNew]);
 
@@ -537,6 +546,42 @@ const SourceEditor: React.FC = () => {
   };
 
   if (loading) return <LoadingSpinner />;
+
+  if (fetchError === 'not_found') {
+    return (
+      <div className="max-w-2xl">
+        <div className="bg-white rounded-lg shadow-soft p-8 text-center space-y-3">
+          <p className="text-lg font-semibold text-content">Source not found</p>
+          <p className="text-sm text-content-secondary">This source may have been deleted.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/sources')}
+            className="inline-block mt-2 text-sm text-brand-gold hover:underline"
+          >
+            &larr; Back to sources
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError === 'error') {
+    return (
+      <div className="max-w-2xl">
+        <div className="bg-white rounded-lg shadow-soft p-8 text-center space-y-3">
+          <p className="text-lg font-semibold text-content">Failed to load source</p>
+          <p className="text-sm text-content-secondary">An unexpected error occurred. Check the console for details.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/sources')}
+            className="inline-block mt-2 text-sm text-brand-gold hover:underline"
+          >
+            &larr; Back to sources
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
