@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { PrismaClient } = require('@prisma/client');
+const aiProviderService = require('./aiProviderService');
 
 const prisma = new PrismaClient();
 const IMAGES_DIR = path.join(__dirname, '../public/images/articles');
@@ -119,51 +119,23 @@ function getRandomFallbackImage() {
   return { imageData: null, mimeType: 'image/svg+xml', filename: null, publicPath };
 }
 
-// Model fallback chain for image generation
-const IMAGE_MODELS = [
-  'gemini-2.0-flash-exp-image-generation',
-  'gemini-2.5-flash-image',
-];
-
 async function generateArticleImage(title, shortBlurb, category, slug, attemptsMade = 0) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!process.env.GEMINI_API_KEY) {
     console.warn('[imageGen] GEMINI_API_KEY not set — skipping image generation');
     return null;
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
   const prompt = await buildImagePrompt(title, shortBlurb, category);
   let imageData = null;
   let mimeType = 'image/png';
 
-  for (const modelName of IMAGE_MODELS) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
-      });
-
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const parts = response.candidates?.[0]?.content?.parts || [];
-
-      for (const part of parts) {
-        if (part.inlineData) {
-          imageData = Buffer.from(part.inlineData.data, 'base64');
-          mimeType = part.inlineData.mimeType || 'image/png';
-          break;
-        }
-      }
-
-      if (imageData) {
-        console.log(`[imageGen] Generated image using ${modelName}`);
-        break;
-      }
-    } catch (error) {
-      console.warn(`[imageGen] ${modelName} failed: ${error.message.substring(0, 100)}`);
-      continue;
-    }
+  try {
+    const result = await aiProviderService.generateImage('image-generation', prompt);
+    imageData = result.imageData;
+    mimeType = result.mimeType || 'image/png';
+    console.log('[imageGen] Generated image via AI provider abstraction');
+  } catch (error) {
+    console.warn(`[imageGen] AI provider failed: ${error.message.substring(0, 100)}`);
   }
 
   if (!imageData) {
