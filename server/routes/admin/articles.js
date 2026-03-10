@@ -3,6 +3,7 @@ const { body, query, param, validationResult } = require('express-validator');
 const { generateSlug } = require('../../utils/slug');
 const { generateSocialPosts } = require('../../services/socialPostGenerationService');
 const { socialGenerateQueue } = require('../../queues/socialGenerateQueue');
+const { articleAuditQueue } = require('../../queues/articleAuditQueue');
 
 const router = express.Router();
 
@@ -234,6 +235,57 @@ router.post('/maintenance/backfill-alt-text', async (req, res) => {
     res.status(500).json({ error: 'Failed to queue alt text backfill' });
   }
 });
+
+// POST /maintenance/audit-relevance — Enqueue BullMQ job to score DRAFT articles without relevanceScore
+router.post(
+  '/maintenance/audit-relevance',
+  [
+    body('limit').optional().isInt({ min: 1, max: 10000 }).toInt(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const existing = await articleAuditQueue.getJobs(['active', 'waiting', 'delayed']);
+      if (existing.length > 0) {
+        return res.status(409).json({ error: 'An audit job is already running or queued', jobId: existing[0].id });
+      }
+
+      const job = await articleAuditQueue.add('audit-relevance', {
+        limit: req.body.limit || 0,
+      });
+
+      res.json({ jobId: job.id });
+    } catch (error) {
+      console.error('Audit relevance enqueue error:', error);
+      res.status(500).json({ error: 'Failed to enqueue audit job' });
+    }
+  }
+);
+
+// GET /maintenance/audit-relevance/:jobId — Poll progress of an audit job
+router.get(
+  '/maintenance/audit-relevance/:jobId',
+  [param('jobId').isString().notEmpty()],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const job = await articleAuditQueue.getJob(req.params.jobId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      const state = await job.getState();
+      const progress = job.progress || {};
+      const result = state === 'completed' ? job.returnvalue : null;
+      const failedReason = state === 'failed' ? job.failedReason : null;
+
+      res.json({ jobId: job.id, state, progress, result, failedReason });
+    } catch (error) {
+      console.error('Audit relevance status error:', error);
+      res.status(500).json({ error: 'Failed to get job status' });
+    }
+  }
+);
 
 // GET /:id — Get single article
 router.get(
