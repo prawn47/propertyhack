@@ -1,6 +1,30 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { PrismaClient } = require('@prisma/client');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const prisma = new PrismaClient();
+
+let cachedSummaryPrompt = null;
+let summaryCacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getSummaryPromptTemplate() {
+  const now = Date.now();
+  if (cachedSummaryPrompt && (now - summaryCacheTimestamp) < CACHE_TTL) {
+    return cachedSummaryPrompt;
+  }
+  try {
+    const record = await prisma.systemPrompt.findUnique({ where: { name: 'article-summarisation' } });
+    if (record && record.isActive) {
+      cachedSummaryPrompt = record.content;
+      summaryCacheTimestamp = now;
+      return cachedSummaryPrompt;
+    }
+  } catch (err) {
+    console.warn('[summary] Could not load prompt from DB:', err.message);
+  }
+  return null;
+}
 
 function generateSlug(title) {
   return title
@@ -17,6 +41,26 @@ const ENGLISH_VARIANT = {
   CA: 'American English (US/Canadian spelling and phrasing, e.g. "organization", "center", "labor", "meters")',
 };
 
+const HARDCODED_FALLBACK = `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is authoritative, factual, and data-driven.
+
+IMPORTANT: Write all summaries in {englishVariant}.
+
+Analyse the following article and return a JSON object with these fields:
+
+- isPropertyRelated: boolean — true ONLY if the article is directly about property, real estate, housing, construction, mortgages, interest rates affecting housing, property investment, urban planning, property development, home buying/selling, rental markets, or housing policy. Return false for general news, sports, politics (unless directly about housing policy), entertainment, celebrities, etc.
+- shortBlurb: ~50 words, a concise hook suitable for a news card. Include a specific data point (percentage, dollar amount, or trend figure) if available in the source material. Do not exceed 60 words. Leave empty string if not property related.
+- longSummary: ~80 words, max 100 words. A concise summary with key facts, statistics, and figures from the article. Attribute the source ({sourceName}). Write in a definitive, expert tone. Leave empty string if not property related.
+- suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
+- extractedLocation: the primary city/state/region mentioned (e.g. "Sydney, NSW", "London", "New York", "Toronto"), or null if not identifiable
+- markets: an array of market codes this article is relevant to. Use ONLY these codes: "AU", "US", "UK", "CA", "ALL". Use "ALL" for content relevant globally (e.g. universal home-buying tips, decorating/landscaping advice, general investment strategy, global housing trends). An article can belong to multiple specific markets (e.g. ["AU", "UK"]) if it compares or discusses both. Most articles will have exactly one market code.
+- isEvergreen: boolean — true if the content is timeless advice, tips, guides, or educational content that remains useful regardless of when it was published (e.g. "10 tips to sell your home faster", "how to choose an investment property", "landscaping ideas to boost value"). false for time-sensitive news, market reports, auction results, policy announcements, or anything tied to a specific date/event.
+- isGlobal: boolean — true if the content discusses macro trends, cross-market analysis, global housing data, worldwide interest rate commentary, or comparative international property analysis that is relevant to readers in ALL markets (e.g. "global housing bubble fears grow", "how rising rates are cooling markets worldwide", "international property investment trends"). false for country-specific news or timeless tips (those are isEvergreen). An article can be both isGlobal and isEvergreen if it is both timeless AND globally relevant, but most articles will be one or neither.
+
+Respond with valid JSON only. Do not wrap in markdown code fences.
+
+ARTICLE:
+{content}`;
+
 async function generateArticleSummary(articleContent) {
   const { title, content, sourceUrl, sourceName, sourceMarket } = articleContent;
 
@@ -27,25 +71,13 @@ async function generateArticleSummary(articleContent) {
 
   const englishVariant = ENGLISH_VARIANT[sourceMarket] || ENGLISH_VARIANT.AU;
 
-  const prompt = `You are a property news editor for PropertyHack, a global property news platform covering Australia, US, UK, and Canada. Your tone is authoritative, factual, and data-driven.
+  const dbTemplate = await getSummaryPromptTemplate();
+  const template = dbTemplate || HARDCODED_FALLBACK;
 
-IMPORTANT: Write all summaries in ${englishVariant}.
-
-Analyse the following article and return a JSON object with these fields:
-
-- isPropertyRelated: boolean — true ONLY if the article is directly about property, real estate, housing, construction, mortgages, interest rates affecting housing, property investment, urban planning, property development, home buying/selling, rental markets, or housing policy. Return false for general news, sports, politics (unless directly about housing policy), entertainment, celebrities, etc.
-- shortBlurb: ~50 words, a concise hook suitable for a news card. Include a specific data point (percentage, dollar amount, or trend figure) if available in the source material. Do not exceed 60 words. Leave empty string if not property related.
-- longSummary: ~80 words, max 100 words. A concise summary with key facts, statistics, and figures from the article. Attribute the source (${sourceName || sourceUrl}). Write in a definitive, expert tone. Leave empty string if not property related.
-- suggestedCategory: one of exactly these slugs: property-market, residential, commercial, investment, development, policy, finance, uncategorized
-- extractedLocation: the primary city/state/region mentioned (e.g. "Sydney, NSW", "London", "New York", "Toronto"), or null if not identifiable
-- markets: an array of market codes this article is relevant to. Use ONLY these codes: "AU", "US", "UK", "CA", "ALL". Use "ALL" for content relevant globally (e.g. universal home-buying tips, decorating/landscaping advice, general investment strategy, global housing trends). An article can belong to multiple specific markets (e.g. ["AU", "UK"]) if it compares or discusses both. Most articles will have exactly one market code.
-- isEvergreen: boolean — true if the content is timeless advice, tips, guides, or educational content that remains useful regardless of when it was published (e.g. "10 tips to sell your home faster", "how to choose an investment property", "landscaping ideas to boost value"). false for time-sensitive news, market reports, auction results, policy announcements, or anything tied to a specific date/event.
-- isGlobal: boolean — true if the content discusses macro trends, cross-market analysis, global housing data, worldwide interest rate commentary, or comparative international property analysis that is relevant to readers in ALL markets (e.g. "global housing bubble fears grow", "how rising rates are cooling markets worldwide", "international property investment trends"). false for country-specific news or timeless tips (those are isEvergreen). An article can be both isGlobal and isEvergreen if it is both timeless AND globally relevant, but most articles will be one or neither.
-
-Respond with valid JSON only. Do not wrap in markdown code fences.
-
-ARTICLE:
-${inputText}`;
+  const prompt = template
+    .replace('{englishVariant}', englishVariant)
+    .replace('{sourceName}', sourceName || sourceUrl)
+    .replace('{content}', inputText);
 
   const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
   let text;
