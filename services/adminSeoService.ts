@@ -6,6 +6,7 @@ const BASE = getApiUrl('/api/admin/seo');
 export interface SeoKeyword {
   id: string;
   keyword: string;
+  market: string | null;
   location: string | null;
   category: string | null;
   volume: string | null;
@@ -29,8 +30,9 @@ export interface LocationSeo {
   updatedAt: string;
 }
 
-export async function getKeywords(params?: { location?: string; category?: string }): Promise<{ keywords: SeoKeyword[] }> {
+export async function getKeywords(params?: { market?: string; location?: string; category?: string }): Promise<{ keywords: SeoKeyword[] }> {
   const query = new URLSearchParams();
+  if (params?.market) query.set('market', params.market);
   if (params?.location) query.set('location', params.location);
   if (params?.category) query.set('category', params.category);
   const qs = query.toString();

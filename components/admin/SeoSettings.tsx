@@ -39,6 +39,9 @@ const SeoSettings: React.FC = () => {
 
 // ===== Keywords Tab =====
 
+const JURISDICTIONS = ['AU', 'NZ', 'UK', 'US', 'CA'] as const;
+type Jurisdiction = typeof JURISDICTIONS[number];
+
 function KeywordsTab() {
   const [keywords, setKeywords] = useState<SeoKeyword[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,11 +50,12 @@ function KeywordsTab() {
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>('AU');
 
   const loadKeywords = async () => {
     setLoading(true);
     try {
-      const params: { location?: string } = {};
+      const params: { market?: string; location?: string } = { market: jurisdiction };
       if (filterLocation) params.location = filterLocation;
       const data = await getKeywords(params);
       setKeywords(data.keywords);
@@ -61,6 +65,11 @@ function KeywordsTab() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    setFilterLocation('');
+    loadKeywords();
+  }, [jurisdiction]);
+
   useEffect(() => { loadKeywords(); }, [filterLocation]);
 
   const handleAdd = async () => {
@@ -68,6 +77,7 @@ function KeywordsTab() {
     try {
       await createKeyword({
         keyword: newKeyword.trim(),
+        market: jurisdiction,
         location: newLocation || null,
         category: newCategory || null,
       });
@@ -105,6 +115,22 @@ function KeywordsTab() {
 
   return (
     <div>
+      <div className="flex gap-1 mb-4 border-b border-base-300">
+        {JURISDICTIONS.map((j) => (
+          <button
+            key={j}
+            onClick={() => setJurisdiction(j)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              jurisdiction === j
+                ? 'border-brand-gold text-brand-gold'
+                : 'border-transparent text-content-secondary hover:text-brand-primary'
+            }`}
+          >
+            {j}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <select
@@ -199,7 +225,7 @@ function KeywordsTab() {
               </tr>
             ))}
             {keywords.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-content-secondary">No keywords yet</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-content-secondary">No {jurisdiction} keywords yet</td></tr>
             )}
           </tbody>
         </table>

@@ -6,8 +6,9 @@ const router = express.Router();
 // GET /api/admin/seo/keywords
 router.get('/keywords', async (req, res) => {
   try {
-    const { location, category } = req.query;
+    const { location, category, market } = req.query;
     const where = {};
+    if (market) where.market = market;
     if (location) where.location = location;
     if (category) where.category = category;
 
@@ -24,12 +25,13 @@ router.get('/keywords', async (req, res) => {
 // POST /api/admin/seo/keywords
 router.post('/keywords', async (req, res) => {
   try {
-    const { keyword, location, category, volume, priority } = req.body;
+    const { keyword, market, location, category, volume, priority } = req.body;
     if (!keyword) return res.status(400).json({ error: 'keyword is required' });
 
     const created = await req.prisma.seoKeyword.create({
       data: {
         keyword,
+        market: market || null,
         location: location || null,
         category: category || null,
         volume: volume || null,
@@ -45,11 +47,12 @@ router.post('/keywords', async (req, res) => {
 // PUT /api/admin/seo/keywords/:id
 router.put('/keywords/:id', async (req, res) => {
   try {
-    const { keyword, location, category, volume, priority, isActive } = req.body;
+    const { keyword, market, location, category, volume, priority, isActive } = req.body;
     const updated = await req.prisma.seoKeyword.update({
       where: { id: req.params.id },
       data: {
         ...(keyword !== undefined && { keyword }),
+        ...(market !== undefined && { market: market || null }),
         ...(location !== undefined && { location: location || null }),
         ...(category !== undefined && { category: category || null }),
         ...(volume !== undefined && { volume }),
