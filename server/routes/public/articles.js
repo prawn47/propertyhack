@@ -59,8 +59,7 @@ router.get('/', async (req, res) => {
     if (applyCountryFilter) {
       where.OR = [
         { market: countryUpper },
-        { isEvergreen: true },
-        { isGlobal: true },
+        { market: 'ALL' },
       ];
     }
 
@@ -92,7 +91,7 @@ router.get('/', async (req, res) => {
         let paramIdx = 2;
 
         if (applyCountryFilter) {
-          filterClauses.push(`(a.market = $${paramIdx} OR a.is_evergreen = true OR a.is_global = true)`);
+          filterClauses.push(`(a.market = $${paramIdx} OR a.market = 'ALL')`);
           filterValues.push(countryUpper);
           paramIdx++;
         }
@@ -124,7 +123,7 @@ router.get('/', async (req, res) => {
         const countValues = [];
         let countIdx = 1;
         if (applyCountryFilter) {
-          countClauses.push(`(a.market = $${countIdx} OR a.is_evergreen = true OR a.is_global = true)`);
+          countClauses.push(`(a.market = $${countIdx} OR a.market = 'ALL')`);
           countValues.push(countryUpper);
           countIdx++;
         }
@@ -267,8 +266,7 @@ router.get('/trending', async (req, res) => {
     if (applyCountryFilter) {
       where.OR = [
         { market: countryUpper },
-        { isEvergreen: true },
-        { isGlobal: true },
+        { market: 'ALL' },
       ];
     }
 
