@@ -1,6 +1,6 @@
-import { createHash } from 'crypto';
+const crypto = require('crypto');
 
-export function normaliseText(text) {
+function normaliseText(text) {
   if (!text) return '';
   return text
     .toLowerCase()
@@ -9,10 +9,12 @@ export function normaliseText(text) {
     .trim();
 }
 
-export function generateContentHash(title, content) {
+function generateContentHash(title, content) {
   const normalisedTitle = normaliseText(title);
   const normalisedContent = normaliseText((content || '').slice(0, 500));
-  return createHash('sha256')
+  return crypto.createHash('sha256')
     .update(normalisedTitle + '|' + normalisedContent)
     .digest('hex');
 }
+
+module.exports = { generateContentHash, normaliseText };
