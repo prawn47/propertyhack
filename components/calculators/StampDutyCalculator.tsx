@@ -270,9 +270,9 @@ const StampDutyCalculator: React.FC = () => {
 
       {/* Notes from calculator */}
       {outputs?.notes && outputs.notes.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="bg-amber-50 border border-brand-gold/30 rounded-xl p-4">
           {outputs.notes.map((note, i) => (
-            <p key={i} className="text-sm text-blue-700">{note}</p>
+            <p key={i} className="text-sm text-amber-800">{note}</p>
           ))}
         </div>
       )}
