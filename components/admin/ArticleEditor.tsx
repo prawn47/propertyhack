@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getArticle, updateArticle, Article, ArticleUpdateData } from '../../services/adminArticleService';
+import { getArticle, updateArticle, regenerateImage, Article, ArticleUpdateData } from '../../services/adminArticleService';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
 const CATEGORIES = [
@@ -41,6 +41,8 @@ const ArticleEditor: React.FC = () => {
   const [isGlobal, setIsGlobal] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageAltText, setImageAltText] = useState('');
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenerateMsg, setRegenerateMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -331,12 +333,95 @@ const ArticleEditor: React.FC = () => {
             />
           </div>
           {imageUrl && (
-            <img
-              src={imageUrl}
-              alt={imageAltText || 'preview'}
-              className="h-32 w-auto rounded border border-base-300 object-cover"
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+            <div className="flex items-start gap-3">
+              <img
+                src={imageUrl}
+                alt={imageAltText || 'preview'}
+                className="h-32 w-auto rounded border border-base-300 object-cover"
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <button
+                onClick={async () => {
+                  if (!id) return;
+                  setRegenerating(true);
+                  setRegenerateMsg(null);
+                  try {
+                    await regenerateImage(id);
+                    setRegenerateMsg({ type: 'success', text: 'Image regeneration queued' });
+                    setTimeout(() => setRegenerateMsg(null), 5000);
+                  } catch (e: unknown) {
+                    setRegenerateMsg({ type: 'error', text: e instanceof Error ? e.message : 'Failed to regenerate image' });
+                  } finally {
+                    setRegenerating(false);
+                  }
+                }}
+                disabled={regenerating}
+                className="border border-base-300 text-content-secondary hover:bg-base-200 px-3 py-1.5 rounded-lg text-sm disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+              >
+                {regenerating ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Regenerating…
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Regenerate Image
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+          {!imageUrl && (
+            <button
+              onClick={async () => {
+                if (!id) return;
+                setRegenerating(true);
+                setRegenerateMsg(null);
+                try {
+                  await regenerateImage(id);
+                  setRegenerateMsg({ type: 'success', text: 'Image regeneration queued' });
+                  setTimeout(() => setRegenerateMsg(null), 5000);
+                } catch (e: unknown) {
+                  setRegenerateMsg({ type: 'error', text: e instanceof Error ? e.message : 'Failed to regenerate image' });
+                } finally {
+                  setRegenerating(false);
+                }
+              }}
+              disabled={regenerating}
+              className="border border-base-300 text-content-secondary hover:bg-base-200 px-3 py-1.5 rounded-lg text-sm disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {regenerating ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Regenerating…
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Generate Image
+                </>
+              )}
+            </button>
+          )}
+          {regenerateMsg && (
+            <div className={`text-sm px-3 py-2 rounded ${
+              regenerateMsg.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
+              {regenerateMsg.text}
+            </div>
           )}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-content">Image Alt Text</label>
