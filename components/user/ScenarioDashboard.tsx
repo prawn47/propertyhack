@@ -333,6 +333,38 @@ const ScenarioDashboard: React.FC = () => {
           </p>
         </div>
 
+        {/* Explore Calculators CTA */}
+        <div className="mb-4">
+          <Link
+            to={`/${(
+              scenarios.length > 0
+                ? Object.entries(
+                    scenarios.reduce<Record<string, number>>((acc, s) => {
+                      const m = (s.market || 'AU').toLowerCase();
+                      acc[m] = (acc[m] || 0) + 1;
+                      return acc;
+                    }, {})
+                  ).sort((a, b) => b[1] - a[1])[0]?.[0] || 'au'
+                : 'au'
+            )}/tools`}
+            className="inline-flex items-center gap-2 bg-brand-gold text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-brand-gold/90 transition-colors shadow-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="4" y="2" width="16" height="20" rx="2" />
+              <line x1="8" y1="6" x2="16" y2="6" />
+              <line x1="8" y1="10" x2="10" y2="10" />
+              <line x1="12" y1="10" x2="14" y2="10" />
+              <line x1="16" y1="10" x2="16" y2="10" />
+              <line x1="8" y1="14" x2="10" y2="14" />
+              <line x1="12" y1="14" x2="14" y2="14" />
+              <line x1="16" y1="14" x2="16" y2="14" />
+              <line x1="8" y1="18" x2="10" y2="18" />
+              <line x1="12" y1="18" x2="16" y2="18" />
+            </svg>
+            Explore Calculators
+          </Link>
+        </div>
+
         {/* Filters + Search */}
         <div className="flex flex-col gap-3 mb-6">
           <div className="flex flex-col sm:flex-row gap-3">
