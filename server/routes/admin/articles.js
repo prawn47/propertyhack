@@ -360,6 +360,33 @@ router.post('/maintenance/cleanup-drafts', async (req, res) => {
   }
 });
 
+// POST /:id/regenerate-image — Re-queue a single article for image regeneration
+router.post(
+  '/:id/regenerate-image',
+  [param('id').isString().notEmpty()],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { articleImageQueue } = require('../../queues/articleImageQueue');
+
+      const article = await req.prisma.article.findUnique({ where: { id: req.params.id } });
+      if (!article) return res.status(404).json({ error: 'Article not found' });
+
+      await req.prisma.article.update({
+        where: { id: req.params.id },
+        data: { imageUrl: null, imageAltText: null, imageGenerationFailed: false },
+      });
+
+      await articleImageQueue.add('image-article', { articleId: req.params.id });
+
+      res.json({ success: true, message: 'Image regeneration queued' });
+    } catch (error) {
+      console.error('Regenerate image error:', error);
+      res.status(500).json({ error: 'Failed to queue image regeneration' });
+    }
+  }
+);
+
 // GET /:id — Get single article
 router.get(
   '/:id',
