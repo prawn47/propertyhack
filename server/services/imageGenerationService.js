@@ -183,7 +183,7 @@ async function generateArticleImage(title, shortBlurb, category, slug, attemptsM
       throw new Error('All image models failed — will retry');
     }
     console.warn('[imageGen] All AI models failed after retries — using fallback quote image');
-    return getRandomFallbackImage();
+    return { ...getRandomFallbackImage(), isFallback: true };
   }
 
   const rawSlug = slug || generateSlug(title);
