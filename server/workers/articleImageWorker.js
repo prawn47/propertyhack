@@ -56,7 +56,7 @@ const articleImageWorker = new Worker('article-image', async (job) => {
     imageResult = await generateArticleImage(
       article.title,
       article.shortBlurb,
-      article.category,
+      article.category || 'uncategorized',
       article.slug,
       job.attemptsMade,
       article.id,

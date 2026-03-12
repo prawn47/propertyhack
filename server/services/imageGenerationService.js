@@ -78,6 +78,11 @@ async function buildImagePrompt(title, shortBlurb, category) {
 
   const dbTemplate = await getPromptTemplate();
   if (dbTemplate) {
+    const requiredPlaceholders = ['{category_elements}', '{camera}', '{film}', '{look}'];
+    const missing = requiredPlaceholders.filter(p => !dbTemplate.includes(p));
+    if (missing.length > 0) {
+      console.log(`[image-gen] Warning: DB prompt template missing placeholder: ${missing.join(', ')}`);
+    }
     return dbTemplate
       .replace('{category_elements}', elements)
       .replace('{title}', title)
@@ -134,6 +139,7 @@ async function generateArticleImage(title, shortBlurb, category, slug, attemptsM
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const prompt = await buildImagePrompt(title, shortBlurb, category);
+  console.log('[image-gen] Prompt:', prompt.substring(0, 200) + '...');
   let imageData = null;
   let mimeType = 'image/png';
 
@@ -154,6 +160,12 @@ async function generateArticleImage(title, shortBlurb, category, slug, attemptsM
           mimeType = part.inlineData.mimeType || 'image/png';
           break;
         }
+      }
+
+      if (imageData && imageData.length <= 10240) {
+        console.log(`[image-gen] Warning: generated image under 10KB (${imageData.length} bytes), treating as failed`);
+        imageData = null;
+        continue;
       }
 
       if (imageData) {
