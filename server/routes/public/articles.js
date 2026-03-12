@@ -344,18 +344,19 @@ router.get('/search-overview', async (req, res) => {
 
       let result = await aiProviderService.generateText('article-summarisation', userPrompt, {
         systemPrompt,
-        maxTokens: 300,
+        maxTokens: 1024,
       });
 
       if (result.text && result.text.split(/\s+/).length > 150) {
         const retryPrompt = userPrompt + '\n\nIMPORTANT: Your previous response exceeded 150 words. Respond in under 150 words.';
         result = await aiProviderService.generateText('article-summarisation', retryPrompt, {
           systemPrompt,
-          maxTokens: 300,
+          maxTokens: 1024,
         });
       }
 
       overview = result.text;
+      console.log(`[SearchOverview] AI response: ${result.text?.length} chars, ${result.text?.split(/\s+/).length} words, provider: ${result.provider}/${result.model}`);
     } catch (err) {
       console.error('[SearchOverview] AI generation failed:', err.message);
     }
