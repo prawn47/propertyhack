@@ -168,9 +168,11 @@ model Article {
   publishedAt     DateTime?                    @map("published_at")
   metadata        Json?
   embedding       Unsupported("vector(1536)")?
-  relevanceScore  Int?                         @map("relevance_score")
-  createdAt       DateTime                     @default(now()) @map("created_at")
-  updatedAt       DateTime                     @updatedAt @map("updated_at")
+  relevanceScore          Int?                         @map("relevance_score")
+  contentHash             String?                      @map("content_hash")
+  imageGenerationFailed   Boolean                      @default(false) @map("image_generation_failed")
+  createdAt               DateTime                     @default(now()) @map("created_at")
+  updatedAt               DateTime                     @updatedAt @map("updated_at")
 
   source      IngestionSource @relation(fields: [sourceId], references: [id])
   socialPosts SocialPost[]
@@ -183,6 +185,7 @@ model Article {
   @@index([isGlobal])
   @@index([category])
   @@index([publishedAt])
+  @@index([contentHash])
   @@map("articles")
 }
 
