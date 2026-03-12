@@ -199,7 +199,7 @@ const ArticleDetail: React.FC = () => {
                     onError={() => setImgError(true)}
                   />
                 ) : (
-                  <ArticleImagePlaceholder className="w-16 h-16 text-brand-gold/30" />
+                  <ArticleImagePlaceholder category={article.category} />
                 )}
               </div>
 

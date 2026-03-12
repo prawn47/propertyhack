@@ -40,7 +40,7 @@ const RelatedArticleCard: React.FC<RelatedArticleCardProps> = ({ article }) => {
             onError={() => setImgError(true)}
           />
         ) : (
-          <ArticleImagePlaceholder className="w-8 h-8 text-brand-gold/40" />
+          <ArticleImagePlaceholder category={article.category} />
         )}
       </div>
       <div className="p-4">
