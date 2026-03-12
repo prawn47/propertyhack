@@ -4,6 +4,7 @@ import Header from '../layout/Header';
 import Footer from '../layout/Footer';
 import FilterBar from './FilterBar';
 import ArticleFeed from './ArticleFeed';
+import SearchResults from './SearchResults';
 import SeoHead, { SITE_URL } from '../shared/SeoHead';
 import type { Filters } from './FilterBar';
 import { useLocationDetection } from '../../hooks/useLocationDetection';
@@ -114,6 +115,7 @@ const HomePage: React.FC = () => {
       />
       <main className="flex-1">
         <h1 className="sr-only">Australian Property News & Market Updates</h1>
+        {filters.search && <SearchResults query={filters.search} country={country} />}
         <ArticleFeed filters={filters} country={country} />
       </main>
       <Footer />
