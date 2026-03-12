@@ -79,7 +79,16 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, featured }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          {article.location}
+          {(() => {
+            const loc = article.location;
+            const semiParts = loc.split(';').map((s: string) => s.trim());
+            if (semiParts.length > 1) return `${semiParts[0]} +${semiParts.length - 1} more`;
+            if (loc.length > 35) {
+              const m = loc.match(/^([^,]+,\s*[A-Z]{2,3})/);
+              return m ? `${m[1]} +more` : loc.slice(0, 32) + '…';
+            }
+            return loc;
+          })()}
         </span>
       )}
       {isFeatured && (
