@@ -516,25 +516,25 @@ const MortgageCalculator: React.FC = () => {
   const footerSection =
     !isCalculating && mortgageOutputs?.yearlyBreakdown?.length ? (
       <ExpandableSection title="Yearly Breakdown" defaultOpen={false}>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto px-4">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-content-secondary border-b border-base-300">
-                <th className="pb-2 pr-4 font-medium">Year</th>
+                <th className="pb-2 pr-4 pl-1 font-medium">Year</th>
                 <th className="pb-2 pr-4 font-medium text-right">Annual Payment</th>
                 <th className="pb-2 pr-4 font-medium text-right">Principal</th>
                 <th className="pb-2 pr-4 font-medium text-right">Interest</th>
-                <th className="pb-2 font-medium text-right">Balance</th>
+                <th className="pb-2 pr-1 font-medium text-right">Balance</th>
               </tr>
             </thead>
             <tbody>
               {mortgageOutputs.yearlyBreakdown.map((row) => (
                 <tr key={row.year} className="border-b border-base-200 last:border-0">
-                  <td className="py-2 pr-4 text-content">{row.year}</td>
+                  <td className="py-2 pr-4 pl-1 text-content">{row.year}</td>
                   <td className="py-2 pr-4 text-right text-content">{formatCents(row.payment)}</td>
                   <td className="py-2 pr-4 text-right text-content">{formatCents(row.principal)}</td>
                   <td className="py-2 pr-4 text-right text-brand-gold">{formatCents(row.interest)}</td>
-                  <td className="py-2 text-right font-medium text-content">{formatCents(row.balance)}</td>
+                  <td className="py-2 pr-1 text-right font-medium text-content">{formatCents(row.balance)}</td>
                 </tr>
               ))}
             </tbody>
