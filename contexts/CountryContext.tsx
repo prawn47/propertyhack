@@ -34,7 +34,10 @@ export function CountryProvider({ children }: { children: React.ReactNode }) {
 
   const [markets, setMarkets] = useState<Market[]>([]);
   const [marketsLoading, setMarketsLoading] = useState(true);
-  const [resolvedCountry, setResolvedCountry] = useState<string>('AU');
+  const urlCountryInit = params.country?.toUpperCase();
+  const [resolvedCountry, setResolvedCountry] = useState<string>(
+    urlCountryInit && SUPPORTED_MARKETS.includes(urlCountryInit) ? urlCountryInit : 'AU'
+  );
   const initialised = useRef(false);
 
   useEffect(() => {
