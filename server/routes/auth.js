@@ -389,4 +389,18 @@ router.get('/google/callback', (req, res, next) => {
   })(req, res, next);
 });
 
+// GET /google/status — public diagnostic endpoint
+router.get('/google/status', (req, res) => {
+  const clientIdSet = Boolean(process.env.GOOGLE_CLIENT_ID);
+  const clientSecretSet = Boolean(process.env.GOOGLE_CLIENT_SECRET);
+  const callbackUrl = process.env.GOOGLE_CALLBACK_URL || 'https://propertyhack.au/api/auth/google/callback';
+
+  res.json({
+    configured: clientIdSet && clientSecretSet,
+    clientIdSet,
+    clientSecretSet,
+    callbackUrl,
+  });
+});
+
 module.exports = router;
