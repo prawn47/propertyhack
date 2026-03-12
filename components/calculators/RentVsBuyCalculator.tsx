@@ -42,8 +42,8 @@ const MARKET_DEFAULTS: Record<string, {
     rentFrequency: 'weekly',
     defaultMortgageRate: 6.5,
     defaultLoanTermYears: 30,
-    defaultPropertyPrice: 80000000,  // $800,000
-    defaultDeposit: 16000000,        // $160,000
+    defaultPropertyPrice: 75000000,  // $750,000
+    defaultDeposit: 15000000,        // $150,000
     defaultRent: 60000,              // $600/week
   },
   NZ: {
@@ -53,9 +53,9 @@ const MARKET_DEFAULTS: Record<string, {
     rentFrequency: 'weekly',
     defaultMortgageRate: 6.5,
     defaultLoanTermYears: 30,
-    defaultPropertyPrice: 80000000,
-    defaultDeposit: 16000000,
-    defaultRent: 60000,              // $600/week
+    defaultPropertyPrice: 70000000,  // $700,000
+    defaultDeposit: 14000000,        // $140,000
+    defaultRent: 55000,              // $550/week
   },
   US: {
     propertyGrowthRate: 4,
@@ -64,9 +64,9 @@ const MARKET_DEFAULTS: Record<string, {
     rentFrequency: 'monthly',
     defaultMortgageRate: 7.0,
     defaultLoanTermYears: 30,
-    defaultPropertyPrice: 45000000,  // $450,000
-    defaultDeposit: 9000000,         // $90,000
-    defaultRent: 250000,             // $2,500/month
+    defaultPropertyPrice: 40000000,  // $400,000
+    defaultDeposit: 8000000,         // $80,000
+    defaultRent: 200000,             // $2,000/month
   },
   UK: {
     propertyGrowthRate: 4,
@@ -75,9 +75,9 @@ const MARKET_DEFAULTS: Record<string, {
     rentFrequency: 'monthly',
     defaultMortgageRate: 4.5,
     defaultLoanTermYears: 25,
-    defaultPropertyPrice: 35000000,  // £350,000
-    defaultDeposit: 7000000,         // £70,000
-    defaultRent: 175000,             // £1,750/month
+    defaultPropertyPrice: 30000000,  // £300,000
+    defaultDeposit: 6000000,         // £60,000
+    defaultRent: 150000,             // £1,500/month
   },
   CA: {
     propertyGrowthRate: 4,
@@ -86,9 +86,9 @@ const MARKET_DEFAULTS: Record<string, {
     rentFrequency: 'monthly',
     defaultMortgageRate: 5.5,
     defaultLoanTermYears: 25,
-    defaultPropertyPrice: 75000000,  // $750,000
-    defaultDeposit: 15000000,        // $150,000
-    defaultRent: 240000,             // $2,400/month
+    defaultPropertyPrice: 50000000,  // $500,000
+    defaultDeposit: 10000000,        // $100,000
+    defaultRent: 200000,             // $2,000/month
   },
 };
 
@@ -147,10 +147,16 @@ interface RentVsBuyOutputs {
 
 function getDefaultInputs(market: string): RentVsBuyInputs {
   const mkt = MARKET_DEFAULTS[market] || MARKET_DEFAULTS['AU'];
+  const weeklyRent = mkt.rentFrequency === 'weekly'
+    ? mkt.defaultRent
+    : Math.round(mkt.defaultRent * 12 / 52);
+  const monthlyRent = mkt.rentFrequency === 'monthly'
+    ? mkt.defaultRent
+    : Math.round(mkt.defaultRent * 52 / 12);
   return {
     purchasePrice: mkt.defaultPropertyPrice,
-    weeklyRent: mkt.rentFrequency === 'weekly' ? mkt.defaultRent : 0,
-    monthlyRent: mkt.rentFrequency === 'monthly' ? mkt.defaultRent : 0,
+    weeklyRent,
+    monthlyRent,
     availableDeposit: mkt.defaultDeposit,
     mortgageRate: mkt.defaultMortgageRate,
     loanTermYears: mkt.defaultLoanTermYears,
