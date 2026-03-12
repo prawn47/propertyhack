@@ -29,13 +29,23 @@ const MARKETS = [
   { value: 'NZ', label: '🇳🇿 NZ' },
 ];
 
-const CALCULATOR_ROUTES: Record<string, string> = {
-  MORTGAGE: 'mortgage-calculator',
-  STAMP_DUTY: 'stamp-duty-calculator',
-  RENTAL_YIELD: 'rental-yield-calculator',
-  BORROWING_POWER: 'borrowing-power-calculator',
-  RENT_VS_BUY: 'rent-vs-buy-calculator',
-  BUYING_COSTS: 'buying-costs-calculator',
+const MARKET_TO_COUNTRY: Record<string, string> = {
+  AU: 'au', NZ: 'nz', UK: 'uk', US: 'us', CA: 'ca',
+};
+
+const CALCULATOR_ROUTES: Record<string, Record<string, string>> = {
+  MORTGAGE: { default: 'mortgage-calculator' },
+  STAMP_DUTY: {
+    default: 'stamp-duty-calculator',
+    UK: 'sdlt-calculator',
+    CA: 'land-transfer-tax-calculator',
+    US: 'transfer-tax-calculator',
+    NZ: 'buying-costs-calculator',
+  },
+  RENTAL_YIELD: { default: 'rental-yield-calculator' },
+  BORROWING_POWER: { default: 'borrowing-power-calculator' },
+  RENT_VS_BUY: { default: 'rent-vs-buy-calculator' },
+  BUYING_COSTS: { default: 'buying-costs-calculator' },
 };
 
 const TYPE_BADGE_CLASSES: Record<string, string> = {
@@ -285,9 +295,11 @@ const ScenarioDashboard: React.FC = () => {
   };
 
   const handleOpen = (scenario: Scenario) => {
-    const route = CALCULATOR_ROUTES[scenario.calculatorType];
+    const routes = CALCULATOR_ROUTES[scenario.calculatorType];
+    const route = routes?.[scenario.market] || routes?.default;
+    const country = MARKET_TO_COUNTRY[scenario.market] || 'au';
     if (route) {
-      navigate(`/tools/${route}?scenario=${scenario.id}`);
+      navigate(`/${country}/tools/${route}?scenario=${scenario.id}`);
     }
   };
 
