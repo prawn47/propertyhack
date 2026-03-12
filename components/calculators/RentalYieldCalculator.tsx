@@ -205,7 +205,7 @@ const RentalYieldCalculator: React.FC = () => {
         />
       )}
 
-      <ExpandableSection title="Advanced — Expenses">
+      <ExpandableSection title="Advanced — Expenses" defaultOpen={true}>
         {/* Property tax / Council rates — required for US, optional elsewhere */}
         <CurrencyInput
           label={`${labels.propertyTax} (annual)${propertyTaxRequired ? '' : ' — optional'}`}
@@ -518,30 +518,6 @@ const RentalYieldCalculator: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-base-100 border border-base-300 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-brand-primary mb-4">Yield Comparison</h2>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={chartData} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} />
-                <YAxis
-                  tick={{ fontSize: 12, fill: '#6b7280' }}
-                  tickFormatter={(v) => `${v}%`}
-                  domain={[0, 'auto']}
-                />
-                <Tooltip formatter={(value: number) => [`${value}%`, 'Yield']} />
-                <Bar dataKey="yield" fill="#d4b038" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <p className="text-xs text-content-secondary bg-base-200 rounded-lg px-4 py-3">
-            <strong>Benchmark:</strong> Generally, a gross yield above 5% is considered strong for an investment property.
-            {isUS && ' US property taxes significantly affect net yield — ensure you enter your local rate (typically 0.5–2.5% of property value annually).'}
-            {isNZ && ' From April 2025, NZ investors can deduct 100% of mortgage interest — use the Interest Deductibility toggle above to see your after-tax return.'}
-            {isUK && ' Leasehold properties may have ongoing ground rent — include it in expenses for an accurate net yield.'}
-          </p>
-
           <SaveScenarioButton
             calculatorType="rental-yield"
             inputs={inputs as Record<string, unknown>}
@@ -554,6 +530,31 @@ const RentalYieldCalculator: React.FC = () => {
     </>
   );
 
+  const footerContent = out ? (
+    <div className="p-6 flex flex-col gap-4">
+      <h2 className="text-sm font-semibold text-brand-primary mb-2">Yield Comparison</h2>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={chartData} barCategoryGap="30%">
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} />
+          <YAxis
+            tick={{ fontSize: 12, fill: '#6b7280' }}
+            tickFormatter={(v) => `${v}%`}
+            domain={[0, 'auto']}
+          />
+          <Tooltip formatter={(value: number) => [`${value}%`, 'Yield']} />
+          <Bar dataKey="yield" fill="#d4b038" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+      <p className="text-xs text-content-secondary bg-base-200 rounded-lg px-4 py-3">
+        <strong>Benchmark:</strong> Generally, a gross yield above 5% is considered strong for an investment property.
+        {isUS && ' US property taxes significantly affect net yield — ensure you enter your local rate (typically 0.5–2.5% of property value annually).'}
+        {isNZ && ' From April 2025, NZ investors can deduct 100% of mortgage interest — use the Interest Deductibility toggle above to see your after-tax return.'}
+        {isUK && ' Leasehold properties may have ongoing ground rent — include it in expenses for an accurate net yield.'}
+      </p>
+    </div>
+  ) : null;
+
   return (
     <CalculatorLayout
       title="Rental Yield Calculator"
@@ -564,6 +565,7 @@ const RentalYieldCalculator: React.FC = () => {
       breadcrumbs={BREADCRUMBS}
       inputPanel={inputPanel}
       resultPanel={resultPanel}
+      footer={footerContent}
     />
   );
 };
