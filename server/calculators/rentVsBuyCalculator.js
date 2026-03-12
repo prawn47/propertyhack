@@ -28,11 +28,12 @@ function calculate(inputs) {
   } = inputs;
 
   const mkt = market.toUpperCase();
-  const defaults = marketDefaults.rentVsBuy[mkt] || marketDefaults.rentVsBuy['AU'];
+  const mktDefaults = marketDefaults[mkt] || marketDefaults['AU'];
+  const defaults = mktDefaults.rentVsBuy || {};
 
-  const growthRate = propertyGrowthRate !== undefined ? propertyGrowthRate : defaults.propertyGrowthRate;
-  const rentIncrease = rentIncreaseRate !== undefined ? rentIncreaseRate : defaults.rentIncreaseRate;
-  const investmentReturn = investmentReturnRate !== undefined ? investmentReturnRate : defaults.investmentReturnRate;
+  const growthRate = propertyGrowthRate !== undefined ? propertyGrowthRate : (defaults.defaultPropertyGrowthRate || 5);
+  const rentIncrease = rentIncreaseRate !== undefined ? rentIncreaseRate : (defaults.defaultRentIncreaseRate || 3);
+  const investmentReturn = investmentReturnRate !== undefined ? investmentReturnRate : (defaults.defaultInvestmentReturnRate || 7);
 
   // Normalise rent to monthly cents (front-end sends weekly for AU/NZ, monthly for US/UK/CA)
   let monthlyRentCents;
@@ -63,7 +64,7 @@ function calculate(inputs) {
   }
 
   // --- Buying costs per market ---
-  const buyingCostConfig = defaults.buyingCosts;
+  const buyingCostConfig = defaults.buyingCosts || { includeStampDuty: true, stampDutyState: 'NSW', legalFees: 200000, inspectionFees: 50000 };
   let stampDuty = 0;
 
   if (buyingCostConfig.includeStampDuty) {
