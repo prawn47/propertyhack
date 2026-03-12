@@ -56,7 +56,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ query, country }) => {
   if (!query) return null;
 
   return (
-    <div className="mb-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-2">
       <h2 className="text-xl font-bold text-content mb-4">
         Results for &lsquo;{query}&rsquo;
       </h2>
