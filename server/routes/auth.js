@@ -370,14 +370,23 @@ router.get(
   passport.authenticate('google', { scope: ['profile', 'email'], session: false })
 );
 
-router.get(
-  '/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3004'}/login?error=oauth_failed` }),
-  (req, res) => {
-    const { accessToken, refreshToken } = generateTokens(req.user.id);
+router.get('/google/callback', (req, res, next) => {
+  passport.authenticate('google', { session: false }, (err, user, info) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3004';
+
+    if (err) {
+      console.error('[Google OAuth] Callback error:', err);
+      return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+    }
+
+    if (!user) {
+      console.error('[Google OAuth] Authentication failed:', info?.message || 'Unknown reason');
+      return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user.id);
     res.redirect(`${frontendUrl}/auth/google/callback#access_token=${accessToken}&refresh_token=${refreshToken}`);
-  }
-);
+  })(req, res, next);
+});
 
 module.exports = router;

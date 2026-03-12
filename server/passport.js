@@ -4,6 +4,7 @@ const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const callbackURL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback';
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+console.log(`[Auth] Google OAuth configured — callback URL: ${callbackURL}`);
 passport.use(
   new GoogleStrategy(
     {
@@ -16,6 +17,12 @@ passport.use(
       try {
         const prisma = req.prisma;
         const email = profile.emails && profile.emails[0] && profile.emails[0].value;
+
+        if (!email) {
+          console.error('[Google OAuth] No email associated with Google account, profile id:', profile.id);
+          return done(null, false, { message: 'No email associated with Google account' });
+        }
+
         const avatarUrl = profile.photos && profile.photos[0] && profile.photos[0].value;
         const googleId = profile.id;
         const displayName = profile.displayName;
@@ -51,6 +58,7 @@ passport.use(
 
         return done(null, user);
       } catch (err) {
+        console.error('[Google OAuth] Verify callback error:', err);
         return done(err);
       }
     }
