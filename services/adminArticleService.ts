@@ -138,6 +138,12 @@ export async function bulkAction(ids: string[], action: 'publish' | 'archive' | 
   });
 }
 
+export async function regenerateImage(articleId: string): Promise<{ message: string }> {
+  return request(`${BASE}/${articleId}/regenerate-image`, {
+    method: 'POST',
+  });
+}
+
 export async function generateSocialPosts(articleId: string, platforms?: string[]): Promise<any> {
   const body: any = {};
   if (platforms) body.platforms = platforms;
