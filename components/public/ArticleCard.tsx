@@ -61,7 +61,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, featured }) => {
           onError={() => setImgError(true)}
         />
       ) : (
-        <ArticleImagePlaceholder />
+        <ArticleImagePlaceholder category={article.category} />
       )}
     </div>
   );
