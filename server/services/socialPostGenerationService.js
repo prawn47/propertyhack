@@ -61,7 +61,6 @@ async function buildPrompt(article, platforms) {
 const SOCIAL_MODELS = [
   'gemini-2.5-flash',
   'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
 ];
 
 async function generateSocialPosts(article, platforms) {

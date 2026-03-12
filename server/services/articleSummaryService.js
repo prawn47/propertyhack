@@ -85,7 +85,7 @@ async function generateArticleSummary(articleContent) {
     .replace('{sourceName}', sourceName || sourceUrl)
     .replace('{content}', inputText);
 
-  const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+  const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash'];
   let text;
   let lastError;
 
@@ -204,7 +204,7 @@ Create alt text that:
 Return ONLY the alt text, nothing else.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();

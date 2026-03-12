@@ -18,10 +18,10 @@ const OllamaProvider = require('./providers/ollamaProvider');
 // Default task configs — used when AiModelConfig DB record doesn't exist
 const DEFAULT_TASK_CONFIGS = {
   'article-summarisation': { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
-  'image-alt-text':        { provider: 'gemini', model: 'gemini-2.0-flash-exp', fallbackProvider: null, fallbackModel: null },
+  'image-alt-text':        { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
   'image-generation':      { provider: 'gemini', model: 'gemini-2.0-flash-exp-image-generation', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.5-flash-image' },
   'newsletter-generation': { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
-  'relevance-scoring':     { provider: 'gemini', model: 'gemini-2.0-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash-lite' },
+  'relevance-scoring':     { provider: 'gemini', model: 'gemini-2.0-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.5-flash' },
 };
 
 // Lazy-initialised provider instances (one per provider name)

@@ -14,8 +14,7 @@ class GeminiProvider {
     return [
       { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', capabilities: ['text'] },
       { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', capabilities: ['text'] },
-      { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', capabilities: ['text'] },
-      { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Exp', capabilities: ['text'] },
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', capabilities: ['text'] },
       { id: 'gemini-2.0-flash-exp-image-generation', name: 'Gemini 2.0 Flash Image Gen', capabilities: ['image'] },
       { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', capabilities: ['image'] },
     ];
