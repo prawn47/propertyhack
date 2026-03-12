@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Header from '../layout/Header';
-import Footer from '../layout/Footer';
 import {
   deleteScenario,
   duplicateScenario,
@@ -334,10 +332,8 @@ const ScenarioDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex flex-col">
-      <Header />
-
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-brand-primary">Saved Scenarios</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -443,9 +439,7 @@ const ScenarioDashboard: React.FC = () => {
             ))}
           </div>
         )}
-      </main>
-
-      <Footer />
+      </div>
 
       {deleteTarget && (
         <DeleteModal
@@ -454,7 +448,7 @@ const ScenarioDashboard: React.FC = () => {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
-    </div>
+    </>
   );
 };
 

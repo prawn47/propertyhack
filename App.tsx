@@ -58,6 +58,7 @@ import NewsletterList from './components/admin/NewsletterList';
 import NewsletterEditor from './components/admin/NewsletterEditor';
 import AiModelConfig from './components/admin/AiModelConfig';
 import AdminFloatingButton from './components/shared/AdminFloatingButton';
+import ProfileLayout from './components/layout/ProfileLayout';
 
 const SUPPORTED_MARKETS = ['au', 'us', 'uk', 'ca', 'nz'];
 const STORAGE_KEY = 'ph_country';
@@ -218,23 +219,11 @@ function AppInner() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
 
-      {/* User routes — require auth */}
-      <Route
-        path="/profile"
-        element={
-          <RequireAuth>
-            <ProfilePage />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/profile/scenarios"
-        element={
-          <RequireAuth>
-            <ScenarioDashboard />
-          </RequireAuth>
-        }
-      />
+      {/* User routes — require auth, wrapped in ProfileLayout (Header + Footer) */}
+      <Route path="/profile" element={<RequireAuth><ProfileLayout /></RequireAuth>}>
+        <Route index element={<ProfilePage />} />
+        <Route path="scenarios" element={<ScenarioDashboard />} />
+      </Route>
 
       {/* Admin routes — require admin role, no country prefix */}
       <Route
