@@ -67,7 +67,12 @@ const articleImageWorker = new Worker('article-image', async (job) => {
 
   if (imageResult) {
     updateData.imageUrl = imageResult.publicPath;
-    console.log(`[article-image] Image generated for article ${articleId}: ${imageResult.publicPath}`);
+    if (imageResult.isFallback) {
+      updateData.imageGenerationFailed = true;
+      console.log(`[article-image] Image generation failed for article ${articleId}, marked as failed`);
+    } else {
+      console.log(`[article-image] Image generated for article ${articleId}: ${imageResult.publicPath}`);
+    }
   } else {
     console.log(`[article-image] Image generation returned null for article ${articleId} — skipping`);
   }
