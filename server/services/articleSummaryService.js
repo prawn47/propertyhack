@@ -1,7 +1,6 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { PrismaClient } = require('@prisma/client');
+const aiProviderService = require('./aiProviderService');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const prisma = new PrismaClient();
 
 let cachedSummaryPrompt = null;
@@ -80,32 +79,12 @@ async function generateArticleSummary(articleContent) {
   const dbTemplate = await getSummaryPromptTemplate();
   const template = dbTemplate || HARDCODED_FALLBACK;
 
-  const prompt = template
+  const userPrompt = template
     .replace('{englishVariant}', englishVariant)
     .replace('{sourceName}', sourceName || sourceUrl)
     .replace('{content}', inputText);
 
-  const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-  let text;
-  let lastError;
-
-  for (const modelName of modelNames) {
-    try {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      text = response.text();
-      break;
-    } catch (error) {
-      lastError = error;
-      console.log(`[summary] ${modelName} failed: ${error.message.substring(0, 80)}`);
-      continue;
-    }
-  }
-
-  if (!text) {
-    throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`);
-  }
+  const { text } = await aiProviderService.generateText('article-summarisation', userPrompt, { jsonMode: true });
 
   // Strip markdown fences if present
   let jsonText = text.trim();
@@ -117,10 +96,10 @@ async function generateArticleSummary(articleContent) {
   try {
     parsed = JSON.parse(jsonText);
   } catch (error) {
-    throw new Error(`Failed to parse Gemini response as JSON: ${error.message}. Raw: ${jsonText.substring(0, 200)}`);
+    throw new Error(`Failed to parse AI response as JSON: ${error.message}. Raw: ${jsonText.substring(0, 200)}`);
   }
 
-  // Enforce word limits — resubmit to Gemini once if exceeded
+  // Enforce word limits — resubmit once if exceeded
   const BLURB_MAX = 60;
   const SUMMARY_MAX = 100;
 
@@ -141,13 +120,12 @@ ${parsed.longSummary}
 Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No markdown fences.`;
 
     try {
-      const trimModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const trimResult = await trimModel.generateContent(trimPrompt);
-      let trimText = trimResult.response.text().trim();
-      if (trimText.startsWith('```')) {
-        trimText = trimText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+      const { text: trimText } = await aiProviderService.generateText('article-summarisation', trimPrompt, { jsonMode: true });
+      let trimJson = trimText.trim();
+      if (trimJson.startsWith('```')) {
+        trimJson = trimJson.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
       }
-      const trimmed = JSON.parse(trimText);
+      const trimmed = JSON.parse(trimJson);
       if (trimmed.shortBlurb) parsed.shortBlurb = trimmed.shortBlurb;
       if (trimmed.longSummary) parsed.longSummary = trimmed.longSummary;
       const newBlurb = (parsed.shortBlurb || '').split(/\s+/).filter(Boolean).length;
@@ -189,7 +167,7 @@ Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No ma
 async function generateImageAltText(articleTitle, articleSummary, focusKeywords = []) {
   const keywordsStr = focusKeywords.join(', ');
 
-  const prompt = `Generate descriptive, SEO-friendly alt text for an article image.
+  const userPrompt = `Generate descriptive, SEO-friendly alt text for an article image.
 
 Article Title: ${articleTitle}
 Article Summary: ${articleSummary.substring(0, 200)}...
@@ -203,15 +181,8 @@ Create alt text that:
 
 Return ONLY the alt text, nothing else.`;
 
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    return text.trim().replace(/^"|"$/g, '');
-  } catch (error) {
-    throw new Error(`Alt text generation failed: ${error.message}`);
-  }
+  const { text } = await aiProviderService.generateText('image-alt-text', userPrompt);
+  return text.trim().replace(/^"|"$/g, '');
 }
 
 module.exports = {
