@@ -59,6 +59,7 @@ import HenryPage from './components/henry/HenryPage';
 import NewsletterList from './components/admin/NewsletterList';
 import NewsletterEditor from './components/admin/NewsletterEditor';
 import AiModelConfig from './components/admin/AiModelConfig';
+import AgentApiKeys from './components/admin/AgentApiKeys';
 import AgentAuditLog from './components/admin/AgentAuditLog';
 import AdminFloatingButton from './components/shared/AdminFloatingButton';
 import ProfileLayout from './components/layout/ProfileLayout';
@@ -390,6 +391,14 @@ function AppInner() {
         }
       />
 
+      <Route
+        path="/admin/agent-keys"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><AgentApiKeys /></AdminPage>
+          </RequireAdmin>
+        }
+      />
       <Route
         path="/admin/agent-audit"
         element={
