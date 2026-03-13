@@ -278,7 +278,6 @@ router.post('/maintenance/detect-duplicate-images', async (req, res) => {
     res.status(500).json({ error: 'Failed to detect duplicate images' });
   }
 });
-
 // POST /maintenance/audit-relevance — Enqueue BullMQ job to score DRAFT articles without relevanceScore
 router.post(
   '/maintenance/audit-relevance',
@@ -386,7 +385,6 @@ router.post(
     }
   }
 );
-
 // GET /:id — Get single article
 router.get(
   '/:id',
