@@ -3,15 +3,15 @@ const { connection } = require('../queues/connection');
 const { generateNewsletter } = require('../services/newsletterService');
 
 const newsletterGenerateWorker = new Worker('newsletter-generate', async (job) => {
-  const { jurisdiction } = job.data;
-  console.log(`[newsletter-generate] Job ${job.id} — jurisdiction: ${jurisdiction}`);
+  const { jurisdiction, cadence = 'DAILY' } = job.data;
+  console.log(`[newsletter-generate] Job ${job.id} — jurisdiction: ${jurisdiction}, cadence: ${cadence}`);
 
   try {
-    const draft = await generateNewsletter(jurisdiction);
-    console.log(`[newsletter-generate] Draft created for ${jurisdiction} — id: ${draft.id}`);
-    return { jurisdiction, draftId: draft.id };
+    const draft = await generateNewsletter(jurisdiction, cadence);
+    console.log(`[newsletter-generate] Draft created for ${jurisdiction} (${cadence}) — id: ${draft.id}`);
+    return { jurisdiction, cadence, draftId: draft.id };
   } catch (err) {
-    console.error(`[newsletter-generate] Failed for jurisdiction ${jurisdiction}:`, err.message);
+    console.error(`[newsletter-generate] Failed for ${jurisdiction} (${cadence}):`, err.message);
     throw err;
   }
 }, {
