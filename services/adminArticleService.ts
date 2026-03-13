@@ -26,6 +26,7 @@ export interface Article {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  relevanceScore: number | null;
   source: { id: string; name: string; type: string } | null;
 }
 
