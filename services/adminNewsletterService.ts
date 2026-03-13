@@ -58,6 +58,7 @@ export interface NewsletterListParams {
   limit?: number;
   jurisdiction?: string;
   status?: NewsletterStatus;
+  cadence?: NewsletterCadence;
 }
 
 async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
@@ -76,6 +77,7 @@ export async function getNewsletters(params: NewsletterListParams = {}): Promise
   if (params.limit) qs.set('limit', String(params.limit));
   if (params.jurisdiction) qs.set('jurisdiction', params.jurisdiction);
   if (params.status) qs.set('status', params.status);
+  if (params.cadence) qs.set('cadence', params.cadence);
   const res = await authFetch(`${BASE}?${qs}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -115,10 +117,12 @@ export async function approveNewsletter(id: string): Promise<NewsletterDraft> {
   return res.json();
 }
 
-export async function generateNewsletter(jurisdiction: string): Promise<{ message: string; draft: NewsletterDraft }> {
+export async function generateNewsletter(jurisdiction: string, cadence?: NewsletterCadence): Promise<{ message: string; draft: NewsletterDraft }> {
+  const body: Record<string, string> = { jurisdiction };
+  if (cadence) body.cadence = cadence;
   const res = await authFetch(`${BASE}/generate`, {
     method: 'POST',
-    body: JSON.stringify({ jurisdiction }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
