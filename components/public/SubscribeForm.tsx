@@ -198,6 +198,9 @@ const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
           )}
         </div>
         {error && <p className="text-xs text-red-400">{error}</p>}
+        <p className="text-xs text-white/50 text-center">
+          Daily Mon–Fri · Deep-dive Saturday · Weekly roundup Sunday
+        </p>
         <button
           type="submit"
           disabled={loading}
@@ -218,7 +221,7 @@ const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
             Get property news for your area
           </h3>
           <p className="text-xs text-content-secondary text-center mt-1">
-            Weekly updates delivered to your inbox.
+            Daily briefings Mon–Fri, deep-dive Saturday, weekly roundup Sunday.
           </p>
         </div>
         <form onSubmit={handleSubmit} className="px-4 pb-4 pt-3 space-y-2 flex-1 flex flex-col">
@@ -278,7 +281,7 @@ const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
         Get property news for your area
       </h3>
       <p className="text-sm text-content-secondary mb-4">
-        Weekly updates delivered to your inbox.
+        Daily briefings Mon–Fri, a deep-dive editorial on Saturday, and a weekly roundup on Sunday.
       </p>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="flex gap-3">
