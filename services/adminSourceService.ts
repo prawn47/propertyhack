@@ -89,6 +89,16 @@ export class DuplicateSourceError extends Error {
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const response = await authService.makeAuthenticatedRequest(url, options);
   if (!response.ok) {
+    if (response.status === 409) {
+      try {
+        const body = await response.json();
+        if (body.duplicate && body.existingSource) {
+          throw new DuplicateSourceError(body.existingSource);
+        }
+      } catch (e) {
+        if (e instanceof DuplicateSourceError) throw e;
+      }
+    }
     let message = `Request failed: ${response.status}`;
     try {
       const err = await response.json();
