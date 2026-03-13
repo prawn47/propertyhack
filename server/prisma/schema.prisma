@@ -368,22 +368,81 @@ enum NewsletterStatus {
   SENT
 }
 
+enum NewsletterCadence {
+  DAILY
+  EDITORIAL
+  WEEKLY_ROUNDUP
+}
+
 model NewsletterDraft {
-  id            String           @id @default(uuid())
+  id            String              @id @default(uuid())
   jurisdiction  String
   subject       String
-  htmlContent   String           @map("html_content")
-  textContent   String?          @map("text_content")
-  articleIds    String[]         @map("article_ids")
-  status        NewsletterStatus @default(DRAFT)
-  beehiivPostId String?          @map("beehiiv_post_id")
-  generatedAt   DateTime         @default(now()) @map("generated_at")
-  approvedAt    DateTime?        @map("approved_at")
-  sentAt        DateTime?        @map("sent_at")
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @updatedAt @map("updated_at")
+  htmlContent   String              @map("html_content")
+  textContent   String?             @map("text_content")
+  articleIds    String[]            @map("article_ids")
+  status        NewsletterStatus    @default(DRAFT)
+  cadence       NewsletterCadence   @default(DAILY)
+  globalSummary String?             @map("global_summary")
+  heroImageUrl  String?             @map("hero_image_url")
+  topic         String?
+  beehiivPostId String?             @map("beehiiv_post_id")
+  generatedAt   DateTime            @default(now()) @map("generated_at")
+  approvedAt    DateTime?           @map("approved_at")
+  sentAt        DateTime?           @map("sent_at")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
 
   @@index([jurisdiction])
   @@index([status])
+  @@index([cadence])
   @@map("newsletter_drafts")
+}
+
+model AgentApiKey {
+  id         String    @id @default(uuid())
+  name       String
+  keyHash    String    @map("key_hash")
+  keyPrefix  String    @map("key_prefix")
+  scopes     String[]
+  isActive   Boolean   @default(true) @map("is_active")
+  expiresAt  DateTime? @map("expires_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([keyPrefix])
+  @@index([isActive])
+  @@map("agent_api_keys")
+}
+
+model AgentAuditLog {
+  id             String   @id @default(uuid())
+  agentKeyName   String   @map("agent_key_name")
+  method         String
+  path           String
+  requestSummary Json?    @map("request_summary")
+  responseStatus Int      @map("response_status")
+  durationMs     Int      @map("duration_ms")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([agentKeyName])
+  @@index([createdAt])
+  @@map("agent_audit_logs")
+}
+
+model NewsletterGenerationConfig {
+  id                      String   @id @default(uuid())
+  dailyArticleLimit       Int      @default(20) @map("daily_article_limit")
+  editorialArticleLimit   Int      @default(50) @map("editorial_article_limit")
+  roundupArticleLimit     Int      @default(30) @map("roundup_article_limit")
+  globalArticleLimit      Int      @default(3) @map("global_article_limit")
+  historicalLookbackDays  Int      @default(90) @map("historical_lookback_days")
+  similarityThreshold     Float    @default(0.4) @map("similarity_threshold")
+  editorialMinWordCount   Int      @default(1500) @map("editorial_min_word_count")
+  roundupDaysWindow       Int      @default(6) @map("roundup_days_window")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  @@map("newsletter_generation_configs")
 }
