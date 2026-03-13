@@ -32,6 +32,7 @@ const henryRoutes = require('./routes/henry');
 const publicSubscribeRoutes = require('./routes/public/subscribe');
 const webhookNewsletterRoutes = require('./routes/webhooks/newsletter');
 const { authenticateToken, requireSuperAdmin } = require('./middleware/auth');
+const { authenticateAgentKey, auditLog } = require('./middleware/agentAuth');
 const passport = require('./passport');
 const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
 const { legacyRedirects } = require('./middleware/legacyRedirects');
@@ -165,6 +166,13 @@ app.get('/system/queue-status', async (req, res) => {
 
 const noop = (req, res, next) => next();
 
+const agentRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  keyGenerator: (req) => req.headers['x-agent-key']?.substring(0, 12) || req.ip,
+  message: { error: 'Agent API rate limit exceeded. Max 60 requests per minute.' },
+});
+
 const calculatorLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -193,6 +201,17 @@ app.use('/api/admin/subscribers', adminSubscribersRoutes);
 app.use('/api/admin/newsletters', adminNewslettersRoutes);
 app.use('/api/admin/ai-models', adminAiModelsRoutes);
 app.use('/api/admin/agent-keys', adminAgentKeysRoutes);
+app.use('/api/admin/agent-audit', require('./routes/admin/agentAudit'));
+// Agent API gateway — auth + rate limit + audit + no-cache
+app.use('/api/agent/v1', agentRateLimiter, authenticateAgentKey, auditLog, (req, res, next) => {
+  res.set('Cache-Control', 'private, no-store');
+  next();
+});
+app.use('/api/agent/v1/newsletters', require('./routes/agent/v1/newsletters'));
+app.use('/api/agent/v1/prompts', require('./routes/agent/v1/prompts'));
+app.use('/api/agent/v1/config', require('./routes/agent/v1/config'));
+app.use('/api/agent/v1/articles', require('./routes/agent/v1/articles'));
+app.use('/api/agent/v1/audit-log', require('./routes/agent/v1/auditLog'));
 app.use('/api/scenarios', authenticateToken, scenarioRoutes);
 app.use('/api/henry', henryRoutes);
 // Spec-required public API paths
