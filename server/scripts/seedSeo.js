@@ -328,7 +328,6 @@ const AU_EXTRA_KEYWORDS = [
   { keyword: 'off the plan apartment australia', market: 'AU', priority: 1, category: 'market' },
   { keyword: 'auction clearance rate australia', market: 'AU', priority: 2, category: 'market' },
 ];
-
 async function main() {
   console.log('Seeding SEO data...');
 
