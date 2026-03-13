@@ -437,12 +437,37 @@ async function generateNewsletter(jurisdiction, cadence = 'DAILY') {
     throw new Error('[newsletterService] AI output missing required field: subject');
   }
 
-  const htmlContent = sections.map(section => {
+  const TYPE_LABELS = {
+    DAILY: 'Daily Briefing',
+    EDITORIAL: 'Saturday Editorial',
+    WEEKLY_ROUNDUP: 'Weekly Roundup',
+  };
+  const typeLabel = TYPE_LABELS[cadence] || cadence;
+  const dateStr = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  const typeHeader = `<div style="text-align: center; padding: 12px 0; margin-bottom: 20px; border-bottom: 2px solid #d4b038;">
+  <span style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #d4b038;">
+    ${typeLabel}
+  </span>
+  <span style="font-size: 12px; color: #666; margin-left: 8px;">
+    ${dateStr}
+  </span>
+</div>`;
+
+  const typeFooter = `<div style="text-align: center; padding: 16px 0; margin-top: 24px; border-top: 1px solid #e5e5e5; font-size: 11px; color: #999;">
+  PropertyHack ${typeLabel} • ${dateStr}
+</div>`;
+
+  const bodyHtml = sections.map(section => {
     if (section.heading) {
       return `<h2>${section.heading}</h2>\n${section.html || ''}`;
     }
     return section.html || '';
   }).join('\n\n');
+
+  const htmlContent = `${typeHeader}\n\n${bodyHtml}\n\n${typeFooter}`;
 
   const globalSummarySection = sections.find(s => s.type === 'global-summary');
   const globalSummary = globalSummarySection
