@@ -264,7 +264,7 @@ const SourceList: React.FC = () => {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <Link
-                            to={`/admin/sources/${source.id}`}
+                            to={`/admin/sources/${source.id}/edit`}
                             className="text-xs px-2.5 py-1 rounded border border-base-300 text-content hover:bg-base-200 transition-colors"
                           >
                             Edit
@@ -329,7 +329,7 @@ const SourceList: React.FC = () => {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Link
-                      to={`/admin/sources/${source.id}`}
+                      to={`/admin/sources/${source.id}/edit`}
                       className="text-xs px-3 py-1.5 rounded border border-base-300 text-content hover:bg-base-200 transition-colors"
                     >
                       Edit
