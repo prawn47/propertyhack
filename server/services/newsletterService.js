@@ -3,8 +3,25 @@
 const { PrismaClient } = require('@prisma/client');
 const { generateEmbedding } = require('./embeddingService');
 const aiProviderService = require('./aiProviderService');
+const imagenService = require('./imagenService');
 
 const prisma = new PrismaClient();
+
+const DEFAULT_CONFIG = {
+  dailyArticleLimit: 20,
+  editorialArticleLimit: 50,
+  roundupArticleLimit: 30,
+  globalArticleLimit: 3,
+  historicalLookbackDays: 90,
+  similarityThreshold: 0.4,
+  editorialMinWordCount: 1500,
+  roundupDaysWindow: 6,
+};
+
+async function loadConfig() {
+  const row = await prisma.newsletterGenerationConfig.findFirst();
+  return row || DEFAULT_CONFIG;
+}
 
 async function selectTodaysArticles(jurisdiction, { prisma }) {
   const rows = await prisma.$queryRawUnsafe(
@@ -241,8 +258,8 @@ const JURISDICTION_NAMES = {
   ca: 'Canada',
 };
 
-async function buildNewsletterPrompt(jurisdiction, articleData, { prisma }) {
-  const { todaysArticles, historicalArticles, trendClusters } = articleData;
+async function buildDailyPrompt(jurisdiction, articleData, { prisma }) {
+  const { todaysArticles, historicalArticles, trendClusters, globalHighlights } = articleData;
 
   const tonePromptName = `newsletter-tone-${jurisdiction.toLowerCase()}`;
   const [toneRecord, criteriaRecord] = await Promise.all([
@@ -280,6 +297,10 @@ async function buildNewsletterPrompt(jurisdiction, articleData, { prisma }) {
 
   const editorialGuidelines = criteriaRecord ? criteriaRecord.content : '';
 
+  const globalBlock = globalHighlights && globalHighlights.length > 0
+    ? globalHighlights.map(a => `- [${a.title}](/article/${a.slug}) — ${a.market || 'Global'}: ${a.shortBlurb || ''}`).join('\n')
+    : 'No global highlights today.';
+
   const userPrompt = `You are writing the daily PropertyHack newsletter for ${jurisdictionName} subscribers.
 
 ## Editorial Guidelines
@@ -287,6 +308,9 @@ ${editorialGuidelines}
 
 ## Today's Top Articles
 ${todaysArticlesBlock}
+
+## Global Property Pulse
+${globalBlock}
 
 ## Historical Context & Trends
 ${trendClustersBlock}
@@ -299,8 +323,9 @@ Write a newsletter with these sections:
 1. Subject line (compelling, 60 chars max)
 2. Opening editorial paragraph — set the tone, reference today's key theme
 3. 3-5 main story sections — each with a headline, 2-3 paragraph commentary, and link to the full article on PropertyHack
-4. Trends & Insights — draw on historical data to identify patterns. Weave in backlinks to older articles NATURALLY as hyperlinked words within sentences, not as standalone links
-5. "Worth Revisiting" — 3-5 older articles relevant to today's themes, each with title, one-line blurb, and link
+4. **Global Property Pulse** — 1-2 sentences per global highlight with link to article. If the section contains substantive content, mark it with type "global-summary"
+5. Trends & Insights — draw on historical data to identify patterns. Weave in backlinks to older articles NATURALLY as hyperlinked words within sentences, not as standalone links
+6. "Worth Revisiting" — 3-5 older articles relevant to today's themes, each with title, one-line blurb, and link
 
 ALL links must use PropertyHack URLs: /article/{slug}
 Inline backlinks must be woven into narrative text as [hyperlinked phrases](/article/{slug}), not listed separately.
@@ -377,51 +402,41 @@ The articleSlugs array should contain the slugs of ALL articles referenced in th
 }
 
 /**
- * Generate a newsletter for the given jurisdiction and store it as a DRAFT.
+ * Generate a newsletter for the given jurisdiction and cadence, store as DRAFT.
  *
  * @param {string} jurisdiction - e.g. 'au', 'uk', 'us', 'ca', 'nz'
+ * @param {string} cadence - 'DAILY' | 'EDITORIAL' | 'WEEKLY_ROUNDUP'
  * @returns {Promise<object>} The created NewsletterDraft record
  */
-async function generateNewsletter(jurisdiction) {
+async function generateNewsletter(jurisdiction, cadence = 'DAILY') {
   const jur = jurisdiction.toLowerCase();
+  const config = await loadConfig();
 
-  // Step 1: Select today's articles
-  const todaysArticles = await selectTodaysArticles(jur, { prisma });
+  let systemPrompt, userPrompt, allArticles, articleSlugs, parsed, topic, globalHighlights;
 
-  // Step 2: Select historical context using today's article titles as the seed embedding
-  const todaysTitles = todaysArticles.map(a => a.title);
-  const historicalArticles = await selectHistoricalContext(jur, todaysTitles, { prisma });
-
-  // Step 3: Cluster trends from historical articles
-  const trendClusters = clusterTrends(historicalArticles);
-
-  const articleData = { todaysArticles, historicalArticles, trendClusters };
-
-  // Step 4: Build the generation prompt
-  const { systemPrompt, userPrompt } = await buildNewsletterPrompt(jur, articleData, { prisma });
-
-  // Step 5: Call AI
-  const { text } = await aiProviderService.generateText('newsletter-generation', userPrompt, {
-    systemPrompt,
-    jsonMode: true,
-  });
-
-  // Step 6: Parse AI output
-  let parsed;
-  try {
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-    parsed = JSON.parse(cleaned);
-  } catch (err) {
-    throw new Error(`[newsletterService] Failed to parse AI JSON output: ${err.message}. Raw: ${text.substring(0, 200)}`);
+  switch (cadence) {
+    case 'EDITORIAL':
+      ({ systemPrompt, userPrompt, allArticles, parsed, topic, globalHighlights } =
+        await _generateEditorialData(jur, config));
+      break;
+    case 'WEEKLY_ROUNDUP':
+      ({ systemPrompt, userPrompt, allArticles, parsed, globalHighlights } =
+        await _generateRoundupData(jur, config));
+      break;
+    case 'DAILY':
+    default:
+      ({ systemPrompt, userPrompt, allArticles, parsed, globalHighlights } =
+        await _generateDailyData(jur, config));
+      break;
   }
 
-  const { subject, sections = [], articleSlugs = [] } = parsed;
+  const { subject, sections = [] } = parsed;
+  articleSlugs = parsed.articleSlugs || [];
 
   if (!subject) {
     throw new Error('[newsletterService] AI output missing required field: subject');
   }
 
-  // Step 7: Build HTML content from sections
   const htmlContent = sections.map(section => {
     if (section.heading) {
       return `<h2>${section.heading}</h2>\n${section.html || ''}`;
@@ -429,8 +444,11 @@ async function generateNewsletter(jurisdiction) {
     return section.html || '';
   }).join('\n\n');
 
-  // Collect article IDs referenced — match slugs back to today's + historical articles
-  const allArticles = [...todaysArticles, ...historicalArticles];
+  const globalSummarySection = sections.find(s => s.type === 'global-summary');
+  const globalSummary = globalSummarySection
+    ? (globalSummarySection.heading ? `<h2>${globalSummarySection.heading}</h2>\n` : '') + (globalSummarySection.html || '')
+    : null;
+
   const slugToId = {};
   for (const a of allArticles) {
     if (a.slug) slugToId[a.slug] = a.id;
@@ -439,7 +457,6 @@ async function generateNewsletter(jurisdiction) {
     (articleSlugs || []).map(slug => slugToId[slug]).filter(Boolean)
   )];
 
-  // Step 8: Store as NewsletterDraft with status DRAFT
   const draft = await prisma.newsletterDraft.create({
     data: {
       jurisdiction: jur.toUpperCase(),
@@ -447,10 +464,110 @@ async function generateNewsletter(jurisdiction) {
       htmlContent,
       articleIds,
       status: 'DRAFT',
+      cadence,
+      ...(globalSummary && { globalSummary }),
+      ...(topic && { topic }),
     },
   });
 
+  // Hero image — try AI generation, fallback to first article image, or skip
+  let heroImageUrl = null;
+  const firstSectionText = sections[0]?.html || '';
+  try {
+    heroImageUrl = await imagenService.generateHeroImage(draft.id, subject, firstSectionText);
+  } catch (_err) {
+    // generateHeroImage returns null on failure, but catch just in case
+  }
+
+  if (!heroImageUrl && allArticles.length > 0) {
+    // Fallback: use first article's imageUrl if available
+    const firstWithImage = allArticles.find(a => a.imageUrl);
+    if (firstWithImage) {
+      heroImageUrl = firstWithImage.imageUrl;
+    }
+  }
+
+  if (heroImageUrl) {
+    await prisma.newsletterDraft.update({
+      where: { id: draft.id },
+      data: { heroImageUrl },
+    });
+    draft.heroImageUrl = heroImageUrl;
+  }
+
   return draft;
+}
+
+async function _generateDailyData(jur, config) {
+  const todaysArticles = await selectTodaysArticles(jur, { prisma });
+  const globalHighlights = await selectGlobalHighlights(jur, 1, config.globalArticleLimit, { prisma });
+  const todaysTitles = todaysArticles.map(a => a.title);
+  const historicalArticles = await selectHistoricalContext(jur, todaysTitles, { prisma });
+  const trendClusters = clusterTrends(historicalArticles);
+
+  const articleData = { todaysArticles, historicalArticles, trendClusters, globalHighlights };
+  const { systemPrompt, userPrompt } = await buildDailyPrompt(jur, articleData, { prisma });
+
+  const { text } = await aiProviderService.generateText('newsletter-generation', userPrompt, {
+    systemPrompt,
+    jsonMode: true,
+  });
+
+  const parsed = _parseAiJson(text);
+  const allArticles = [...todaysArticles, ...historicalArticles, ...globalHighlights];
+
+  return { systemPrompt, userPrompt, allArticles, parsed, globalHighlights };
+}
+
+async function _generateEditorialData(jur, config) {
+  const weekArticles = await selectWeekArticles(jur, 5, config.editorialArticleLimit, { prisma });
+  const { topic } = await identifyTrendingTopic(weekArticles, { prisma });
+  const articleTitles = weekArticles.map(a => a.title);
+  const historicalArticles = await selectHistoricalContext(jur, articleTitles, { prisma });
+  const globalHighlights = await selectGlobalHighlights(jur, 7, 2, { prisma });
+  const trendClusters = clusterTrends(historicalArticles);
+
+  const articleData = { topic, weekArticles, historicalArticles, globalHighlights, trendClusters };
+  const { systemPrompt, userPrompt } = await buildEditorialPrompt(jur, articleData, { prisma });
+
+  const { text } = await aiProviderService.generateText('newsletter-editorial', userPrompt, {
+    systemPrompt,
+    jsonMode: true,
+  });
+
+  const parsed = _parseAiJson(text);
+  const allArticles = [...weekArticles, ...historicalArticles, ...globalHighlights];
+
+  return { systemPrompt, userPrompt, allArticles, parsed, topic, globalHighlights };
+}
+
+async function _generateRoundupData(jur, config) {
+  const weekArticles = await selectWeekArticles(jur, config.roundupDaysWindow, config.roundupArticleLimit, { prisma });
+  const globalHighlights = await selectGlobalHighlights(jur, 7, 2, { prisma });
+  const articleTitles = weekArticles.map(a => a.title);
+  const historicalArticles = await selectHistoricalContext(jur, articleTitles, { prisma });
+
+  const articleData = { weekArticles, globalHighlights, historicalArticles };
+  const { systemPrompt, userPrompt } = await buildRoundupPrompt(jur, articleData, { prisma });
+
+  const { text } = await aiProviderService.generateText('newsletter-roundup', userPrompt, {
+    systemPrompt,
+    jsonMode: true,
+  });
+
+  const parsed = _parseAiJson(text);
+  const allArticles = [...weekArticles, ...historicalArticles, ...globalHighlights];
+
+  return { systemPrompt, userPrompt, allArticles, parsed, globalHighlights };
+}
+
+function _parseAiJson(text) {
+  try {
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+    return JSON.parse(cleaned);
+  } catch (err) {
+    throw new Error(`[newsletterService] Failed to parse AI JSON output: ${err.message}. Raw: ${text.substring(0, 200)}`);
+  }
 }
 
 async function buildEditorialPrompt(jurisdiction, articleData, { prisma }) {
@@ -596,4 +713,4 @@ Respond with JSON only: { "topic": "Your topic title here" }`;
   return { topic: `This Week in ${topCategory}`, sourceArticles };
 }
 
-module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, buildRoundupPrompt, buildEditorialPrompt, generateNewsletter, identifyTrendingTopic };
+module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildDailyPrompt, buildRoundupPrompt, buildEditorialPrompt, generateNewsletter, identifyTrendingTopic };
