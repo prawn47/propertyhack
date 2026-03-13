@@ -108,6 +108,44 @@ async function selectGlobalHighlights(jurisdiction, daysBack, limit, { prisma })
   }));
 }
 
+async function selectWeekArticles(jurisdiction, daysBack, limit, { prisma }) {
+  const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT
+      a.id,
+      a.title,
+      a.short_blurb as "shortBlurb",
+      a.long_summary as "longSummary",
+      a.slug,
+      a.category,
+      a.published_at as "publishedAt",
+      a.source_url as "sourceUrl",
+      a.relevance_score as "relevanceScore"
+    FROM articles a
+    WHERE a.status = 'PUBLISHED'
+      AND a.published_at >= $1
+      AND (a.market = $2 OR a.is_global = true)
+    ORDER BY a.relevance_score DESC NULLS LAST, a.published_at DESC
+    LIMIT $3`,
+    cutoff,
+    jurisdiction.toUpperCase(),
+    limit
+  );
+
+  return rows.map(row => ({
+    id: row.id,
+    title: row.title,
+    shortBlurb: row.shortBlurb,
+    longSummary: row.longSummary,
+    slug: row.slug,
+    category: row.category,
+    publishedAt: row.publishedAt,
+    sourceUrl: row.sourceUrl,
+    relevanceScore: row.relevanceScore,
+  }));
+}
+
 function cosineSimilarity(vecA, vecB) {
   if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
   let dot = 0;
@@ -348,4 +386,4 @@ async function generateNewsletter(jurisdiction) {
   return draft;
 }
 
-module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, clusterTrends, buildNewsletterPrompt, generateNewsletter };
+module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, generateNewsletter };
