@@ -80,6 +80,34 @@ async function selectHistoricalContext(jurisdiction, todaysArticleTitles, { pris
   }));
 }
 
+async function selectGlobalHighlights(jurisdiction, daysBack, limit, { prisma }) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT a.id, a.title, a.short_blurb as "shortBlurb", a.slug, a.market, a.published_at as "publishedAt"
+    FROM articles a
+    WHERE a.status = 'PUBLISHED'
+      AND a.published_at >= $1
+      AND a.market != $2
+      AND (a.is_global = true OR a.relevance_score >= 8)
+    ORDER BY a.relevance_score DESC NULLS LAST, a.published_at DESC
+    LIMIT $3`,
+    cutoffDate,
+    jurisdiction.toUpperCase(),
+    limit
+  );
+
+  return rows.map(row => ({
+    id: row.id,
+    title: row.title,
+    shortBlurb: row.shortBlurb,
+    slug: row.slug,
+    market: row.market,
+    publishedAt: row.publishedAt,
+  }));
+}
+
 function cosineSimilarity(vecA, vecB) {
   if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
   let dot = 0;
@@ -320,4 +348,4 @@ async function generateNewsletter(jurisdiction) {
   return draft;
 }
 
-module.exports = { selectTodaysArticles, selectHistoricalContext, clusterTrends, buildNewsletterPrompt, generateNewsletter };
+module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, clusterTrends, buildNewsletterPrompt, generateNewsletter };
