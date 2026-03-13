@@ -347,6 +347,14 @@ function AppInner() {
         }
       />
       <Route
+        path="/admin/newsletters"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><NewsletterList /></AdminPage>
+          </RequireAdmin>
+        }
+      />
+      <Route
         path="/admin/subscribers"
         element={
           <RequireAdmin>
