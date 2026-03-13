@@ -386,4 +386,59 @@ async function generateNewsletter(jurisdiction) {
   return draft;
 }
 
-module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, generateNewsletter };
+async function identifyTrendingTopic(weekArticles, { prisma }) {
+  if (!weekArticles || weekArticles.length === 0) {
+    return { topic: 'Property Market This Week', sourceArticles: [] };
+  }
+
+  const categoryMap = new Map();
+  for (const article of weekArticles) {
+    const cat = article.category || 'General';
+    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+    categoryMap.get(cat).push(article);
+  }
+
+  let topCategory = null;
+  let topScore = -1;
+  for (const [category, articles] of categoryMap) {
+    const avgRelevance = articles.reduce((sum, a) => sum + (a.relevanceScore ?? 5), 0) / articles.length;
+    const score = articles.length * avgRelevance;
+    if (score > topScore) {
+      topScore = score;
+      topCategory = category;
+    }
+  }
+
+  const sourceArticles = categoryMap.get(topCategory);
+
+  const articleList = sourceArticles
+    .map(a => `- "${a.title}"${a.shortBlurb ? `: ${a.shortBlurb}` : ''}`)
+    .join('\n');
+
+  const prompt = `You are an editorial assistant for PropertyHack, a property news platform.
+
+Below are the top articles from the "${topCategory}" category this week:
+
+${articleList}
+
+Pick and phrase a single compelling editorial topic suitable for a Saturday deep-dive editorial newsletter. The topic should tie together the key themes from these articles into one engaging title.
+
+Respond with JSON only: { "topic": "Your topic title here" }`;
+
+  try {
+    const { text } = await aiProviderService.generateText('newsletter-editorial', prompt, {
+      jsonMode: true,
+    });
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (parsed.topic && typeof parsed.topic === 'string') {
+      return { topic: parsed.topic, sourceArticles };
+    }
+  } catch (_err) {
+    // AI call failed — fall back to category name
+  }
+
+  return { topic: `This Week in ${topCategory}`, sourceArticles };
+}
+
+module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, generateNewsletter, identifyTrendingTopic };
