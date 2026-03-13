@@ -453,6 +453,94 @@ async function generateNewsletter(jurisdiction) {
   return draft;
 }
 
+async function buildEditorialPrompt(jurisdiction, articleData, { prisma }) {
+  const { topic, weekArticles, historicalArticles, globalHighlights, trendClusters } = articleData;
+
+  const tonePromptName = `newsletter-tone-${jurisdiction.toLowerCase()}`;
+  const [editorialInstructions, toneRecord] = await Promise.all([
+    prisma.systemPrompt.findUnique({ where: { name: 'newsletter-editorial-instructions' } }),
+    prisma.systemPrompt.findUnique({ where: { name: tonePromptName } }),
+  ]);
+
+  const systemPrompt = [
+    editorialInstructions ? editorialInstructions.content : '',
+    toneRecord ? toneRecord.content : '',
+  ].filter(Boolean).join('\n\n');
+
+  const jurisdictionName = JURISDICTION_NAMES[jurisdiction.toLowerCase()] || jurisdiction.toUpperCase();
+
+  const weekArticlesBlock = weekArticles && weekArticles.length > 0
+    ? weekArticles.map(a => `- [${a.title}](/article/${a.slug}): ${a.longSummary || a.shortBlurb || ''} (${a.category || 'General'})`).join('\n')
+    : 'No articles available for the week.';
+
+  const historicalBlock = historicalArticles && historicalArticles.length > 0
+    ? historicalArticles.slice(0, 15).map(a => {
+        const dateStr = a.publishedAt
+          ? new Date(a.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+          : '';
+        return `- [${a.title}](/article/${a.slug}): ${a.shortBlurb || ''} (published ${dateStr})`;
+      }).join('\n')
+    : 'No historical articles available for backlinking.';
+
+  const globalBlock = globalHighlights && globalHighlights.length > 0
+    ? globalHighlights.map(a => `- [${a.title}](/article/${a.slug}) — ${a.market || 'Global'}`).join('\n')
+    : 'No global highlights this week.';
+
+  const trendClustersBlock = trendClusters && trendClusters.length > 0
+    ? trendClusters.map(cluster => {
+        const timespanStr = cluster.timespan ? ` over ${cluster.timespan}` : '';
+        return `- "${cluster.description}" — ${cluster.count} article${cluster.count !== 1 ? 's' : ''}${timespanStr}`;
+      }).join('\n')
+    : '';
+
+  const trendSection = trendClustersBlock
+    ? `\n## Trend Clusters\n${trendClustersBlock}\n`
+    : '';
+
+  const userPrompt = `You are writing the Saturday Editorial deep-dive for PropertyHack's ${jurisdictionName} subscribers.
+
+## Editorial Topic
+${topic}
+
+## Source Articles From This Week (related to topic)
+${weekArticlesBlock}
+
+## Historical Articles (for backlinking)
+${historicalBlock}
+
+## Global Highlights
+${globalBlock}
+${trendSection}
+## Instructions
+Write a long-form editorial (1500–2500 words) on the topic above. This is a deep-dive analysis piece — not a news summary. Provide:
+1. Expert-style analysis and commentary on the topic
+2. Historical context drawn from the older articles listed above
+3. Forward-looking insights and implications for the ${jurisdictionName} property market
+4. Global perspective using the highlights provided
+
+Weave backlinks to older articles NATURALLY into the narrative as [hyperlinked phrases](/article/{slug}). Do not list backlinks separately — they must appear as part of flowing sentences.
+
+ALL links must use PropertyHack URLs: /article/{slug}
+
+Output as JSON:
+{
+  "subject": "Compelling subject line, 60 chars max",
+  "topic": "${topic}",
+  "sections": [
+    { "type": "editorial-intro", "html": "..." },
+    { "type": "analysis", "heading": "...", "html": "..." },
+    { "type": "analysis", "heading": "...", "html": "..." },
+    { "type": "global-perspective", "heading": "Global Property Pulse", "html": "..." },
+    { "type": "conclusion", "heading": "...", "html": "..." }
+  ],
+  "articleSlugs": ["slug1", "slug2"]
+}
+
+The articleSlugs array must contain the slugs of ALL articles referenced in the editorial.`;
+
+  return { systemPrompt, userPrompt };
+}
+
 async function identifyTrendingTopic(weekArticles, { prisma }) {
   if (!weekArticles || weekArticles.length === 0) {
     return { topic: 'Property Market This Week', sourceArticles: [] };
@@ -508,4 +596,4 @@ Respond with JSON only: { "topic": "Your topic title here" }`;
   return { topic: `This Week in ${topCategory}`, sourceArticles };
 }
 
-module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, buildRoundupPrompt, generateNewsletter, identifyTrendingTopic };
+module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, buildRoundupPrompt, buildEditorialPrompt, generateNewsletter, identifyTrendingTopic };
