@@ -41,7 +41,9 @@
     "rss-parser": "^3.13.0",
     "sharp": "^0.34.5",
     "svix": "^1.86.0",
-    "twitter-api-v2": "^1.29.0"
+    "swagger-ui-express": "^5.0.1",
+    "twitter-api-v2": "^1.29.0",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",

@@ -6,6 +6,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
 const { PrismaClient } = require('@prisma/client');
 
 const authRoutes = require('./routes/auth');
@@ -242,6 +244,18 @@ app.get('/api/locations/:slug/seo', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Swagger UI for Agent API documentation
+try {
+  const agentApiSpec = YAML.load(path.join(__dirname, 'docs/agent-api.yaml'));
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(agentApiSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'PropertyHack Agent API Documentation',
+  }));
+  app.get('/api/docs/openapi.json', (req, res) => res.json(agentApiSpec));
+} catch (err) {
+  console.warn('[swagger] Failed to load API docs:', err.message);
+}
 
 // Legacy AU-only URL redirects — 301 to country-prefixed paths
 app.use(legacyRedirects);
