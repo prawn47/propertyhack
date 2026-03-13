@@ -266,6 +266,7 @@ const ArticleList: React.FC = () => {
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Category</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Relevance</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Date</th>
+                  <th className="px-3 py-2 text-left font-medium text-content-secondary">Rel.</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Views</th>
                   <th className="px-3 py-2 text-left font-medium text-content-secondary">Actions</th>
                 </tr>
@@ -396,6 +397,9 @@ const ArticleRow: React.FC<ArticleRowProps> = ({ article, selected, onToggle, on
       </td>
       <td className="px-3 py-2.5 text-content-secondary text-xs whitespace-nowrap">
         {timeAgo(article.createdAt)}
+      </td>
+      <td className="px-3 py-2.5 text-xs">
+        <RelevanceBadge score={article.relevanceScore} />
       </td>
       <td className="px-3 py-2.5 text-content-secondary text-xs">
         {article.viewCount}
