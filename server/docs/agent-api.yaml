@@ -1,0 +1,1408 @@
+openapi: 3.0.3
+info:
+  title: PropertyHack Agent API
+  version: 1.0.0
+  description: |
+    Secure API for AI agents to manage PropertyHack newsletter generation,
+    system prompts, AI model configuration, and article retrieval.
+
+    **Authentication:** All endpoints require an API key passed via the
+    `X-Agent-Key` header. Keys are scoped — each endpoint documents its
+    required scope. Invalid or expired keys return 401; insufficient scope
+    returns 403.
+
+    **Rate limit:** 60 requests per minute per key.
+
+    **Audit logging:** Every call is logged to the AgentAuditLog table and
+    retained for 90 days.
+
+servers:
+  - url: /api/agent/v1
+    description: Agent API v1
+
+security:
+  - AgentApiKey: []
+
+components:
+  securitySchemes:
+    AgentApiKey:
+      type: apiKey
+      in: header
+      name: X-Agent-Key
+      description: API key prefixed with `phk_`. Obtain via Admin UI.
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Newsletter draft not found
+      required:
+        - error
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Validation failed
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              msg:
+                type: string
+              path:
+                type: string
+              location:
+                type: string
+
+    NewsletterDraftSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        jurisdiction:
+          type: string
+          enum: [AU, NZ, UK, US, CA]
+        cadence:
+          $ref: '#/components/schemas/NewsletterCadence'
+        subject:
+          type: string
+        status:
+          $ref: '#/components/schemas/NewsletterStatus'
+        generatedAt:
+          type: string
+          format: date-time
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        beehiivPostId:
+          type: string
+          nullable: true
+
+    NewsletterDraft:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        jurisdiction:
+          type: string
+          enum: [AU, NZ, UK, US, CA]
+        cadence:
+          $ref: '#/components/schemas/NewsletterCadence'
+        subject:
+          type: string
+        htmlContent:
+          type: string
+        textContent:
+          type: string
+          nullable: true
+        globalSummary:
+          type: string
+          nullable: true
+        heroImageUrl:
+          type: string
+          nullable: true
+        topic:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/NewsletterStatus'
+        generatedAt:
+          type: string
+          format: date-time
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        beehiivPostId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    NewsletterCadence:
+      type: string
+      enum: [DAILY, EDITORIAL, WEEKLY_ROUNDUP]
+
+    NewsletterStatus:
+      type: string
+      enum: [DRAFT, APPROVED, SENT]
+
+    SystemPrompt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: newsletter-daily-instructions
+        description:
+          type: string
+          nullable: true
+        content:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AiModelConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        task:
+          type: string
+          example: newsletter-generation
+        provider:
+          type: string
+          enum: [gemini, anthropic, openai, ollama]
+        model:
+          type: string
+          example: gemini-2.0-flash
+        fallbackProvider:
+          type: string
+          enum: [gemini, anthropic, openai, ollama]
+          nullable: true
+        fallbackModel:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    NewsletterGenerationConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        dailyArticleLimit:
+          type: integer
+          example: 20
+        editorialArticleLimit:
+          type: integer
+          example: 50
+        roundupArticleLimit:
+          type: integer
+          example: 30
+        globalArticleLimit:
+          type: integer
+          example: 3
+        historicalLookbackDays:
+          type: integer
+          example: 90
+        similarityThreshold:
+          type: number
+          format: float
+          example: 0.4
+        editorialMinWordCount:
+          type: integer
+          example: 1500
+        roundupDaysWindow:
+          type: integer
+          example: 6
+
+    Article:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        shortBlurb:
+          type: string
+          nullable: true
+        slug:
+          type: string
+        category:
+          type: string
+          nullable: true
+        market:
+          type: string
+          nullable: true
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        relevanceScore:
+          type: integer
+          nullable: true
+        isGlobal:
+          type: boolean
+        sourceUrl:
+          type: string
+
+    AgentAuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agentKeyName:
+          type: string
+        method:
+          type: string
+          example: GET
+        path:
+          type: string
+          example: /newsletters
+        requestSummary:
+          type: object
+          nullable: true
+        responseStatus:
+          type: integer
+          example: 200
+        durationMs:
+          type: integer
+          example: 42
+        createdAt:
+          type: string
+          format: date-time
+
+    PaginatedNewsletterDrafts:
+      type: object
+      properties:
+        drafts:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewsletterDraftSummary'
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+
+    PaginatedArticles:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Article'
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+
+    PaginatedAuditLog:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentAuditLogEntry'
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+
+paths:
+  /newsletters:
+    get:
+      summary: List newsletter drafts
+      description: |
+        Returns a paginated list of newsletter drafts, filterable by
+        jurisdiction, status, and cadence. Ordered by generatedAt descending.
+
+        **Required scope:** `newsletters:read`
+      operationId: listNewsletterDrafts
+      tags: [Newsletters]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+            enum: [AU, NZ, UK, US, CA]
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/NewsletterStatus'
+        - name: cadence
+          in: query
+          schema:
+            $ref: '#/components/schemas/NewsletterCadence'
+      responses:
+        '200':
+          description: Paginated list of newsletter draft summaries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNewsletterDrafts'
+              example:
+                drafts:
+                  - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    jurisdiction: AU
+                    cadence: DAILY
+                    subject: "Property Market Pulse: Sydney Auction Surge"
+                    status: DRAFT
+                    generatedAt: "2026-03-14T20:00:00.000Z"
+                    approvedAt: null
+                    sentAt: null
+                    beehiivPostId: null
+                total: 42
+                page: 1
+                totalPages: 3
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /newsletters/{id}:
+    get:
+      summary: Get newsletter draft
+      description: |
+        Returns a single newsletter draft with full content (HTML, text,
+        global summary, hero image URL).
+
+        **Required scope:** `newsletters:read`
+      operationId: getNewsletterDraft
+      tags: [Newsletters]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Full newsletter draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDraft'
+              example:
+                id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                jurisdiction: AU
+                cadence: DAILY
+                subject: "Property Market Pulse: Sydney Auction Surge"
+                htmlContent: "<h1>Daily Briefing</h1><p>...</p>"
+                textContent: "Daily Briefing\n\n..."
+                globalSummary: "<h2>Global Property Pulse</h2><p>...</p>"
+                heroImageUrl: "/images/newsletters/a1b2c3d4.png"
+                topic: null
+                status: DRAFT
+                generatedAt: "2026-03-14T20:00:00.000Z"
+                approvedAt: null
+                sentAt: null
+                beehiivPostId: null
+                createdAt: "2026-03-14T20:00:00.000Z"
+                updatedAt: "2026-03-14T20:00:00.000Z"
+        '400':
+          description: Invalid UUID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Draft not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Newsletter draft not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update newsletter draft
+      description: |
+        Updates editable fields on a DRAFT newsletter. Only drafts with
+        status `DRAFT` can be edited — approved or sent newsletters return 400.
+
+        **Required scope:** `newsletters:write`
+      operationId: updateNewsletterDraft
+      tags: [Newsletters]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  example: "Updated: Sydney Market Surge Continues"
+                htmlContent:
+                  type: string
+                  example: "<h1>Updated Daily Briefing</h1><p>...</p>"
+                textContent:
+                  type: string
+                  example: "Updated Daily Briefing\n\n..."
+                globalSummary:
+                  type: string
+                  example: "<h2>Global Property Pulse</h2><p>Revised highlights...</p>"
+      responses:
+        '200':
+          description: Updated draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDraft'
+        '400':
+          description: Validation error or draft is not in DRAFT status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Only DRAFT newsletters can be edited
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Draft not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete newsletter draft
+      description: |
+        Permanently deletes a newsletter draft.
+
+        **Required scope:** `newsletters:write`
+      operationId: deleteNewsletterDraft
+      tags: [Newsletters]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Draft deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              example:
+                success: true
+        '400':
+          description: Invalid UUID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Draft not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /newsletters/generate:
+    post:
+      summary: Generate newsletter
+      description: |
+        Enqueues a BullMQ job to generate a newsletter for the given
+        jurisdiction and cadence. Returns a job ID that can be used to
+        poll for completion.
+
+        **Required scope:** `newsletters:generate`
+      operationId: generateNewsletter
+      tags: [Newsletters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jurisdiction
+                - cadence
+              properties:
+                jurisdiction:
+                  type: string
+                  enum: [AU, NZ, UK, US, CA]
+                cadence:
+                  $ref: '#/components/schemas/NewsletterCadence'
+            example:
+              jurisdiction: AU
+              cadence: DAILY
+      responses:
+        '202':
+          description: Generation job queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    example: "47"
+                  message:
+                    type: string
+                    example: "Newsletter generation queued for AU (DAILY)"
+        '400':
+          description: Validation error (invalid jurisdiction or cadence)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /newsletters/{id}/approve:
+    post:
+      summary: Approve newsletter draft
+      description: |
+        Transitions a draft from `DRAFT` to `APPROVED` status and sets
+        `approvedAt` timestamp. Only drafts in `DRAFT` status can be approved.
+
+        **Required scope:** `newsletters:approve`
+      operationId: approveNewsletterDraft
+      tags: [Newsletters]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Draft approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDraft'
+        '400':
+          description: Draft is not in DRAFT status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Only DRAFT newsletters can be approved
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Draft not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /newsletters/{id}/send:
+    post:
+      summary: Send newsletter via Beehiiv
+      description: |
+        Sends an `APPROVED` newsletter via Beehiiv, transitions status to
+        `SENT`, and stores the Beehiiv post ID. Only drafts in `APPROVED`
+        status can be sent.
+
+        **Required scope:** `newsletters:send`
+      operationId: sendNewsletter
+      tags: [Newsletters]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Newsletter sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDraft'
+        '400':
+          description: Draft is not in APPROVED status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Only APPROVED newsletters can be sent
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Draft not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /prompts:
+    get:
+      summary: List system prompts
+      description: |
+        Returns all system prompts ordered by name ascending.
+
+        **Required scope:** `prompts:read`
+      operationId: listPrompts
+      tags: [Prompts]
+      responses:
+        '200':
+          description: Array of system prompts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemPrompt'
+              example:
+                - id: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+                  name: newsletter-daily-instructions
+                  description: Generation instructions for daily briefing format
+                  content: "You are a property news editor..."
+                  isActive: true
+                  createdAt: "2026-03-01T00:00:00.000Z"
+                  updatedAt: "2026-03-10T12:00:00.000Z"
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /prompts/{name}:
+    get:
+      summary: Get prompt by name
+      description: |
+        Returns a single system prompt by its unique name.
+
+        **Required scope:** `prompts:read`
+      operationId: getPrompt
+      tags: [Prompts]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: newsletter-daily-instructions
+      responses:
+        '200':
+          description: System prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemPrompt'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Prompt not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update prompt
+      description: |
+        Updates the content and/or description of an existing system prompt.
+        At least one of `content` or `description` must be provided.
+
+        **Required scope:** `prompts:write`
+      operationId: updatePrompt
+      tags: [Prompts]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: newsletter-daily-instructions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  example: "You are an expert property news editor. Write a concise daily briefing..."
+                description:
+                  type: string
+                  example: "Generation instructions for daily briefing format"
+            example:
+              content: "You are an expert property news editor. Write a concise daily briefing..."
+      responses:
+        '200':
+          description: Updated prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemPrompt'
+        '400':
+          description: No writable fields provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "No writable fields provided (content, description)"
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Prompt not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /config/ai-models:
+    get:
+      summary: List AI model configs
+      description: |
+        Returns all AI model configuration records, ordered by task name.
+
+        **Required scope:** `config:read`
+      operationId: listAiModelConfigs
+      tags: [Config]
+      responses:
+        '200':
+          description: Array of AI model configs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiModelConfig'
+              example:
+                - id: "c3d4e5f6-a7b8-9012-cdef-345678901234"
+                  task: newsletter-generation
+                  provider: gemini
+                  model: gemini-2.0-flash
+                  fallbackProvider: anthropic
+                  fallbackModel: claude-sonnet-4-20250514
+                  createdAt: "2026-03-01T00:00:00.000Z"
+                  updatedAt: "2026-03-10T12:00:00.000Z"
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /config/ai-models/{task}:
+    put:
+      summary: Update AI model config
+      description: |
+        Creates or updates the AI model configuration for a given task.
+        Uses upsert — if the task does not exist, a new record is created.
+
+        **Required scope:** `config:write`
+      operationId: updateAiModelConfig
+      tags: [Config]
+      parameters:
+        - name: task
+          in: path
+          required: true
+          schema:
+            type: string
+          example: newsletter-generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - model
+              properties:
+                provider:
+                  type: string
+                  enum: [gemini, anthropic, openai, ollama]
+                model:
+                  type: string
+                  example: gemini-2.0-flash
+                fallbackProvider:
+                  type: string
+                  enum: [gemini, anthropic, openai, ollama]
+                  nullable: true
+                fallbackModel:
+                  type: string
+                  nullable: true
+            example:
+              provider: gemini
+              model: gemini-2.0-flash
+              fallbackProvider: anthropic
+              fallbackModel: claude-sonnet-4-20250514
+      responses:
+        '200':
+          description: Updated or created AI model config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiModelConfig'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /config/generation-params:
+    get:
+      summary: Get generation parameters
+      description: |
+        Returns the newsletter generation configuration singleton. If no
+        record exists, returns sensible defaults.
+
+        **Required scope:** `config:read`
+      operationId: getGenerationParams
+      tags: [Config]
+      responses:
+        '200':
+          description: Generation parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterGenerationConfig'
+              example:
+                dailyArticleLimit: 20
+                editorialArticleLimit: 50
+                roundupArticleLimit: 30
+                globalArticleLimit: 3
+                historicalLookbackDays: 90
+                similarityThreshold: 0.4
+                editorialMinWordCount: 1500
+                roundupDaysWindow: 6
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update generation parameters
+      description: |
+        Updates newsletter generation parameters. All fields are optional —
+        only provided fields are updated. Creates the singleton record if
+        it does not exist.
+
+        **Required scope:** `config:write`
+      operationId: updateGenerationParams
+      tags: [Config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dailyArticleLimit:
+                  type: integer
+                  minimum: 1
+                  example: 20
+                editorialArticleLimit:
+                  type: integer
+                  minimum: 1
+                  example: 50
+                roundupArticleLimit:
+                  type: integer
+                  minimum: 1
+                  example: 30
+                globalArticleLimit:
+                  type: integer
+                  minimum: 0
+                  example: 3
+                historicalLookbackDays:
+                  type: integer
+                  minimum: 1
+                  example: 90
+                similarityThreshold:
+                  type: number
+                  format: float
+                  minimum: 0
+                  maximum: 1
+                  example: 0.4
+                editorialMinWordCount:
+                  type: integer
+                  minimum: 100
+                  example: 1500
+                roundupDaysWindow:
+                  type: integer
+                  minimum: 1
+                  example: 6
+            example:
+              dailyArticleLimit: 25
+              similarityThreshold: 0.35
+      responses:
+        '200':
+          description: Updated generation parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterGenerationConfig'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /articles:
+    get:
+      summary: List published articles
+      description: |
+        Returns a paginated list of published articles for agent context
+        when editing newsletters. Filterable by jurisdiction, category,
+        and date range.
+
+        **Required scope:** `newsletters:read`
+      operationId: listArticles
+      tags: [Articles]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+            enum: [AU, NZ, UK, US, CA]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          description: ISO 8601 date — filter articles published on or after this date
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: ISO 8601 date — filter articles published on or before this date
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Paginated list of articles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedArticles'
+              example:
+                articles:
+                  - id: "d4e5f6a7-b8c9-0123-def0-456789012345"
+                    title: "Sydney Auction Clearance Rates Hit 80%"
+                    shortBlurb: "Weekend auction results show strongest clearance..."
+                    slug: "sydney-auction-clearance-rates-hit-80"
+                    category: "Market Data"
+                    market: AU
+                    publishedAt: "2026-03-14T08:00:00.000Z"
+                    relevanceScore: 9
+                    isGlobal: false
+                    sourceUrl: "https://example.com/article"
+                total: 156
+                page: 1
+                totalPages: 8
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /audit-log:
+    get:
+      summary: List audit log entries
+      description: |
+        Returns a paginated list of agent API audit log entries, ordered by
+        createdAt descending. Filterable by key name and date range.
+        Entries are retained for 90 days.
+
+        **Required scope:** `config:read`
+      operationId: listAuditLog
+      tags: [Audit Log]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: keyName
+          in: query
+          description: Filter by agent key name
+          schema:
+            type: string
+        - name: from
+          in: query
+          description: ISO 8601 date — entries on or after this date
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: ISO 8601 date — entries on or before this date
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Paginated audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLog'
+              example:
+                entries:
+                  - id: "e5f6a7b8-c9d0-1234-ef01-567890123456"
+                    agentKeyName: "Dan's Claude agent"
+                    method: POST
+                    path: /newsletters/generate
+                    requestSummary:
+                      jurisdiction: AU
+                      cadence: DAILY
+                    responseStatus: 202
+                    durationMs: 42
+                    createdAt: "2026-03-14T20:01:00.000Z"
+                total: 340
+                page: 1
+                totalPages: 7
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid, expired, or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
