@@ -1,11 +1,13 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const beehiivService = require('../../services/beehiivService');
+const { newsletterGenerateQueue } = require('../../queues/newsletterGenerateQueue');
 
 const router = express.Router();
 
 const VALID_JURISDICTIONS = ['AU', 'NZ', 'UK', 'US', 'CA'];
 const VALID_STATUSES = ['DRAFT', 'APPROVED', 'SENT'];
+const VALID_CADENCES = ['DAILY', 'EDITORIAL', 'WEEKLY_ROUNDUP'];
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -15,17 +17,28 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// POST /generate — Trigger manual newsletter generation (placeholder)
+// POST /generate — Trigger manual newsletter generation
 router.post(
   '/generate',
   [
     body('jurisdiction')
       .isIn(VALID_JURISDICTIONS)
       .withMessage('jurisdiction must be one of: AU, NZ, UK, US, CA'),
+    body('cadence')
+      .optional()
+      .isIn(VALID_CADENCES)
+      .withMessage('cadence must be one of: DAILY, EDITORIAL, WEEKLY_ROUNDUP'),
   ],
   handleValidationErrors,
   async (req, res) => {
-    res.status(501).json({ error: 'Newsletter generation not yet implemented' });
+    try {
+      const { jurisdiction, cadence = 'DAILY' } = req.body;
+      const job = await newsletterGenerateQueue.add('generate-newsletter', { jurisdiction, cadence });
+      res.json({ jobId: job.id, message: `Newsletter generation queued for ${jurisdiction} (${cadence})` });
+    } catch (error) {
+      console.error('Newsletter generate error:', error);
+      res.status(500).json({ error: 'Failed to queue newsletter generation' });
+    }
   }
 );
 
