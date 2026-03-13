@@ -309,6 +309,73 @@ Output as JSON: { subject, sections: [{ type, heading?, html }], articleSlugs: [
   return { systemPrompt, userPrompt };
 }
 
+async function buildRoundupPrompt(jurisdiction, articleData, { prisma }) {
+  const { weekArticles, globalHighlights, historicalArticles } = articleData;
+
+  const tonePromptName = `newsletter-tone-${jurisdiction.toLowerCase()}`;
+  const [roundupInstructions, toneRecord] = await Promise.all([
+    prisma.systemPrompt.findUnique({ where: { name: 'newsletter-roundup-instructions' } }),
+    prisma.systemPrompt.findUnique({ where: { name: tonePromptName } }),
+  ]);
+
+  const systemPrompt = [
+    roundupInstructions ? roundupInstructions.content : '',
+    toneRecord ? toneRecord.content : '',
+  ].filter(Boolean).join('\n\n');
+
+  const jurisdictionName = JURISDICTION_NAMES[jurisdiction.toLowerCase()] || jurisdiction.toUpperCase();
+
+  const weekArticlesBlock = weekArticles && weekArticles.length > 0
+    ? weekArticles.map(a => {
+        const score = a.relevanceScore != null ? ` [relevance: ${a.relevanceScore}]` : '';
+        return `- [${a.title}](/article/${a.slug}): ${a.shortBlurb || ''}${score} (${a.category || 'General'})`;
+      }).join('\n')
+    : 'No articles available for the week.';
+
+  const globalBlock = globalHighlights && globalHighlights.length > 0
+    ? globalHighlights.map(a => `- [${a.title}](/article/${a.slug}) — ${a.market || 'Global'}`).join('\n')
+    : 'No global highlights this week.';
+
+  const historicalBlock = historicalArticles && historicalArticles.length > 0
+    ? historicalArticles.slice(0, 15).map(a => {
+        const dateStr = a.publishedAt
+          ? new Date(a.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+          : '';
+        return `- [${a.title}](/article/${a.slug}): ${a.shortBlurb || ''} (published ${dateStr})`;
+      }).join('\n')
+    : 'No historical articles available for trend analysis.';
+
+  const userPrompt = `You are writing the Sunday Weekly Roundup newsletter for PropertyHack's ${jurisdictionName} subscribers.
+
+## This Week's Articles (sorted by relevance)
+${weekArticlesBlock}
+
+## Global Highlights
+${globalBlock}
+
+## Historical Context (for trend analysis and backlinking)
+${historicalBlock}
+
+## Instructions
+Write a weekly roundup newsletter with these sections:
+1. **Subject line** — compelling, 60 chars max, should convey "this week in property"
+2. **"The Week in Property"** — a summary paragraph (3-5 sentences) capturing the overall theme of the week's property news in ${jurisdictionName}
+3. **Top 5 Stories** — the five most important stories of the week, each with a headline, 1-2 paragraph summary, and link to the full article on PropertyHack
+4. **Market Data & Stats Callout** — a short section highlighting any notable statistics, price movements, or data points from the week's articles
+5. **Emerging Trends** — identify 2-3 emerging trends based on this week's coverage and historical context. Weave in backlinks to older articles NATURALLY as hyperlinked words within sentences
+6. **Global Property Pulse** — 1-2 sentences per global highlight with link to article
+7. **Notable Backlinks** — 3-5 older articles relevant to this week's themes, each with title, one-line blurb, and link
+
+ALL links must use PropertyHack URLs: /article/{slug}
+Inline backlinks must be woven into narrative text as [hyperlinked phrases](/article/{slug}), not listed separately.
+Target length: 1000-1500 words.
+
+Output as JSON: { subject, sections: [{ type, heading?, html }], articleSlugs: [] }
+The articleSlugs array should contain the slugs of ALL articles referenced in the newsletter.`;
+
+  return { systemPrompt, userPrompt };
+}
+
 /**
  * Generate a newsletter for the given jurisdiction and store it as a DRAFT.
  *
@@ -441,4 +508,4 @@ Respond with JSON only: { "topic": "Your topic title here" }`;
   return { topic: `This Week in ${topCategory}`, sourceArticles };
 }
 
-module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, generateNewsletter, identifyTrendingTopic };
+module.exports = { selectTodaysArticles, selectHistoricalContext, selectGlobalHighlights, selectWeekArticles, clusterTrends, buildNewsletterPrompt, buildRoundupPrompt, generateNewsletter, identifyTrendingTopic };
