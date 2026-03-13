@@ -5,6 +5,8 @@ const BASE = getApiUrl('/api/admin/newsletters');
 
 export type NewsletterStatus = 'DRAFT' | 'APPROVED' | 'SENT';
 
+export type NewsletterCadence = 'DAILY' | 'EDITORIAL' | 'WEEKLY_ROUNDUP';
+
 export interface NewsletterDraft {
   id: string;
   jurisdiction: string;
@@ -13,6 +15,10 @@ export interface NewsletterDraft {
   textContent: string | null;
   articleIds: string[];
   status: NewsletterStatus;
+  cadence: NewsletterCadence;
+  globalSummary: string | null;
+  heroImageUrl: string | null;
+  topic: string | null;
   beehiivPostId: string | null;
   generatedAt: string;
   approvedAt: string | null;
@@ -89,7 +95,7 @@ export async function getNewsletter(id: string): Promise<NewsletterDraft> {
   return res.json();
 }
 
-export async function updateNewsletter(id: string, data: { subject?: string; htmlContent?: string }): Promise<NewsletterDraft> {
+export async function updateNewsletter(id: string, data: { subject?: string; htmlContent?: string; globalSummary?: string }): Promise<NewsletterDraft> {
   const res = await authFetch(`${BASE}/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),

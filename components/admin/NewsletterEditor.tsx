@@ -12,6 +12,12 @@ import {
 } from '../../services/adminNewsletterService';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
+const CADENCE_LABELS: Record<string, string> = {
+  DAILY: 'Daily Briefing',
+  EDITORIAL: 'Saturday Editorial',
+  WEEKLY_ROUNDUP: 'Weekly Roundup',
+};
+
 const JURISDICTION_LABELS: Record<string, string> = {
   AU: 'Australia',
   NZ: 'New Zealand',
@@ -162,6 +168,7 @@ const NewsletterEditor: React.FC = () => {
 
   const [draft, setDraft] = useState<NewsletterDraft | null>(null);
   const [subject, setSubject] = useState('');
+  const [globalSummary, setGlobalSummary] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
@@ -173,6 +180,7 @@ const NewsletterEditor: React.FC = () => {
   const [currentHtml, setCurrentHtml] = useState('');
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const globalSummarySaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const articleLinks = useMemo(() => extractArticleLinks(currentHtml), [currentHtml]);
 
   const editor = useEditor({
@@ -204,6 +212,7 @@ const NewsletterEditor: React.FC = () => {
       .then((data) => {
         setDraft(data);
         setSubject(data.subject);
+        setGlobalSummary(data.globalSummary || '');
         editor?.commands.setContent(data.htmlContent || '');
         setCurrentHtml(data.htmlContent || '');
         setSaveStatus('saved');
@@ -215,11 +224,12 @@ const NewsletterEditor: React.FC = () => {
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (globalSummarySaveTimer.current) clearTimeout(globalSummarySaveTimer.current);
     };
   }, []);
 
   const handleSave = useCallback(
-    async (newSubject?: string, newHtml?: string) => {
+    async (newSubject?: string, newHtml?: string, newGlobalSummary?: string) => {
       if (!id) return;
       setSaving(true);
       setSaveStatus('saving');
@@ -227,6 +237,7 @@ const NewsletterEditor: React.FC = () => {
         const updated = await updateNewsletter(id, {
           subject: newSubject ?? subject,
           htmlContent: newHtml ?? editor?.getHTML() ?? '',
+          globalSummary: newGlobalSummary ?? globalSummary,
         });
         setDraft(updated);
         setSaveStatus('saved');
@@ -237,7 +248,7 @@ const NewsletterEditor: React.FC = () => {
         setSaving(false);
       }
     },
-    [id, subject, editor]
+    [id, subject, globalSummary, editor]
   );
 
   const handleSubjectBlur = () => {
@@ -385,6 +396,12 @@ const NewsletterEditor: React.FC = () => {
 
       {/* Status pipeline bar */}
       <div className="flex items-center gap-0 bg-base-200 rounded overflow-hidden text-xs">
+        <div className="flex-shrink-0 px-3 py-2 bg-brand-gold text-brand-primary font-semibold">
+          {CADENCE_LABELS[draft.cadence] || draft.cadence}
+        </div>
+        <svg className="w-3 h-6 text-base-300 flex-shrink-0" viewBox="0 0 12 24" fill="none">
+          <path d="M0 0 L12 12 L0 24" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
         {(['DRAFT', 'APPROVED', 'SENT'] as const).map((step, i) => {
           const timestamps: Record<string, string | null> = {
             DRAFT: draft.generatedAt,
@@ -434,6 +451,25 @@ const NewsletterEditor: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Hero image preview */}
+      {draft.heroImageUrl && (
+        <div className="rounded overflow-hidden border border-base-300">
+          <img
+            src={draft.heroImageUrl}
+            alt="Newsletter hero"
+            className="w-full h-auto object-cover"
+          />
+        </div>
+      )}
+
+      {/* Editorial topic */}
+      {draft.cadence === 'EDITORIAL' && draft.topic && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-content-secondary uppercase tracking-wide">Editorial Topic</label>
+          <p className="text-sm text-content-secondary">{draft.topic}</p>
+        </div>
+      )}
 
       {/* Subject line */}
       <div className="space-y-1.5">
@@ -552,6 +588,29 @@ const NewsletterEditor: React.FC = () => {
             This newsletter is {draft.status.toLowerCase()} and cannot be edited.
           </p>
         )}
+      </div>
+
+      {/* Global Property Pulse */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-content-secondary uppercase tracking-wide">Global Property Pulse</label>
+        <textarea
+          value={globalSummary}
+          onChange={(e) => {
+            setGlobalSummary(e.target.value);
+            setSaveStatus('unsaved');
+            if (globalSummarySaveTimer.current) clearTimeout(globalSummarySaveTimer.current);
+            globalSummarySaveTimer.current = setTimeout(() => {
+              handleSave(undefined, undefined, e.target.value);
+            }, 1500);
+          }}
+          disabled={draft.status !== 'DRAFT'}
+          placeholder="Cross-jurisdiction highlights and global property insights..."
+          rows={5}
+          className="w-full border border-base-300 rounded px-3 py-2 text-sm text-content bg-base-100 focus:outline-none focus:border-brand-gold disabled:bg-base-200 disabled:text-content-secondary resize-y"
+        />
+        <p className="text-xs text-content-secondary">
+          Separate section for cross-market highlights. Saved automatically.
+        </p>
       </div>
 
       {/* Article links panel */}
