@@ -102,14 +102,14 @@ const SubscriberList: React.FC = () => {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm flex items-start justify-between gap-4">
-        <span>{error}</span>
-        <button
-          onClick={load}
-          className="shrink-0 text-xs px-2 py-1 bg-red-100 border border-red-300 rounded hover:bg-red-200 font-medium"
-        >
-          Retry
-        </button>
-      </div>
+          <span>{error}</span>
+          <button
+            onClick={load}
+            className="shrink-0 text-xs px-2 py-1 bg-red-100 border border-red-300 rounded hover:bg-red-200 font-medium"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {loading ? (
