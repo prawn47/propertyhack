@@ -99,6 +99,10 @@ function buildMetaTags({ title, description, url, image, imageAlt, type, jsonLd,
   }
   tags.push(`<link rel="canonical" href="${SITE_URL}${url}" />`);
 
+  if (keywords && keywords.length > 0) {
+    tags.push(`<meta name="keywords" content="${escapeHtml(keywords.join(', '))}" />`);
+  }
+
   if (hreflang) {
     tags.push(hreflang);
   }
