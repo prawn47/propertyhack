@@ -1,4 +1,5 @@
 const fs = require('fs').promises;
+const crypto = require('crypto');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const aiProviderService = require('./aiProviderService');
@@ -124,7 +125,7 @@ function getRandomFallbackImage() {
   return { imageData: null, mimeType: 'image/svg+xml', filename: null, publicPath };
 }
 
-async function generateArticleImage(title, shortBlurb, category, slug, attemptsMade = 0) {
+async function generateArticleImage(title, shortBlurb, category, slug, attemptsMade = 0, articleId = null) {
   if (!process.env.GEMINI_API_KEY) {
     console.warn('[imageGen] GEMINI_API_KEY not set — skipping image generation');
     return null;
@@ -155,8 +156,28 @@ async function generateArticleImage(title, shortBlurb, category, slug, attemptsM
   const rawSlug = slug || generateSlug(title);
   const fileSlug = rawSlug.replace(/-[a-z0-9]{5}$/, '');
   const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
-  const filename = `${fileSlug}.${ext}`;
-  const filePath = path.join(IMAGES_DIR, filename);
+  let filename = `${fileSlug}.${ext}`;
+  let filePath = path.join(IMAGES_DIR, filename);
+
+  // Collision prevention: if file exists and is owned by a different article, add a hash suffix
+  try {
+    await fs.access(filePath);
+    // File exists — check DB ownership
+    const publicPath = `/images/articles/${filename}`;
+    const owner = await prisma.article.findFirst({
+      where: { imageUrl: publicPath },
+      select: { id: true },
+    });
+    const ownedByOther = owner && owner.id !== articleId;
+    if (ownedByOther || !owner) {
+      const hashSuffix = crypto.randomBytes(3).toString('hex');
+      filename = `${fileSlug}-${hashSuffix}.${ext}`;
+      filePath = path.join(IMAGES_DIR, filename);
+      console.log(`[imageGen] Collision on ${fileSlug}.${ext} — using ${filename}`);
+    }
+  } catch {
+    // File does not exist — no collision, proceed with original filename
+  }
 
   try {
     await fs.mkdir(IMAGES_DIR, { recursive: true });

@@ -245,7 +245,6 @@ router.get('/maintenance/backfill-alt-text/:jobId', async (req, res) => {
     res.status(500).json({ error: 'Failed to get job status' });
   }
 });
-
 // POST /maintenance/detect-duplicate-images — Find articles sharing the same imageUrl
 router.post('/maintenance/detect-duplicate-images', async (req, res) => {
   try {
@@ -385,6 +384,7 @@ router.post(
     }
   }
 );
+
 // GET /:id — Get single article
 router.get(
   '/:id',
