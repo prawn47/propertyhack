@@ -37,6 +37,8 @@ import PromptList from './components/admin/PromptList';
 import PromptEditor from './components/admin/PromptEditor';
 import SeoSettings from './components/admin/SeoSettings';
 import SubscriberList from './components/admin/SubscriberList';
+import NewsletterList from './components/admin/NewsletterList';
+import NewsletterEditor from './components/admin/NewsletterEditor';
 import RegisterPage from './components/auth/RegisterPage';
 import VerifyEmailPage from './components/auth/VerifyEmailPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
