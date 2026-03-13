@@ -21,6 +21,25 @@ export interface NewsletterDraft {
   updatedAt: string;
 }
 
+export interface BeehiivStats {
+  opens: number;
+  clicks: number;
+  subscribers_sent_to: number;
+}
+
+export interface NewsletterHistoryItem extends Pick<NewsletterDraft, 'id' | 'jurisdiction' | 'subject' | 'status' | 'beehiivPostId' | 'generatedAt' | 'approvedAt' | 'sentAt'> {
+  stats: BeehiivStats | null;
+}
+
+export interface NewsletterHistoryResponse {
+  drafts: NewsletterHistoryItem[];
+  aggregate: {
+    totalSent: number;
+    avgOpenRate: number | null;
+    avgClickRate: number | null;
+  };
+}
+
 export interface NewsletterListResponse {
   drafts: NewsletterDraft[];
   total: number;
@@ -52,6 +71,14 @@ export async function getNewsletters(params: NewsletterListParams = {}): Promise
   if (params.jurisdiction) qs.set('jurisdiction', params.jurisdiction);
   if (params.status) qs.set('status', params.status);
   const res = await authFetch(`${BASE}?${qs}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getNewsletterHistory(jurisdiction?: string): Promise<NewsletterHistoryResponse> {
+  const qs = new URLSearchParams();
+  if (jurisdiction) qs.set('jurisdiction', jurisdiction);
+  const res = await authFetch(`${BASE}/history?${qs}`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
