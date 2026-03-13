@@ -343,7 +343,6 @@ model AiModelConfig {
 
   @@map("ai_model_configs")
 }
-
 model LocationSeo {
   id              String   @id @default(cuid())
   location        String   @unique
