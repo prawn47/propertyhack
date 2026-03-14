@@ -46,7 +46,7 @@
 # ═══════════════════════════════════════════════════════════════════════
 
 name = "propertyhack-api"
-main = "worker-entry.js"
+main = "worker-entry-simple.js"
 compatibility_date = "2026-03-14"
 compatibility_flags = ["nodejs_compat"]
 
@@ -75,7 +75,7 @@ JWT_REFRESH_EXPIRES_IN = "7d"
 #   wrangler hyperdrive create propertyhack-db --connection-string="<DO_CONNECTION_STRING>"
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "TO_BE_CONFIGURED"  # TODO: Replace with ID from `wrangler hyperdrive create`
+id = "5caf6ba401da41f984b59fdb969aba62"
 
 # ── R2 Bucket (Image Storage) ───────────────────────────────────────
 # Replaces local filesystem storage for article and newsletter images.
@@ -93,7 +93,7 @@ bucket_name = "propertyhack-images"
 # Create with: wrangler kv namespace create RATE_LIMIT
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "TO_BE_CONFIGURED"  # TODO: Replace with ID from `wrangler kv namespace create`
+id = "06d651b30ac340b99444493a76c91029"
 
 # ── CF Queues (Replace BullMQ + Redis) ──────────────────────────────
 # Each BullMQ queue maps 1:1 to a CF Queue. The cfAdapter.js module
