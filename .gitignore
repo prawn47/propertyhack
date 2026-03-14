@@ -118,3 +118,9 @@ qa-*.png
 # Dolt database files (added by bd init)
 .dolt/
 .claude/worktrees/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
