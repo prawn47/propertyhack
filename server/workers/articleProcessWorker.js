@@ -12,6 +12,20 @@ const { generateSlug } = require('../utils/slug');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+/**
+ * Calculate title similarity using word overlap (Jaccard similarity)
+ * @param {string} a - First title (normalised)
+ * @param {string} b - Second title (normalised) 
+ * @returns {number} - Similarity ratio (0-1)
+ */
+function titleSimilarity(a, b) {
+  const wordsA = new Set(a.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2));
+  const wordsB = new Set(b.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2));
+  const intersection = [...wordsA].filter(w => wordsB.has(w));
+  const union = new Set([...wordsA, ...wordsB]);
+  return union.size > 0 ? intersection.length / union.size : 0;
+}
+
 async function processJob(data) {
   const { sourceId, article } = data;
   const { title, content, url, imageUrl, date, author, sourceName } = article;
@@ -60,6 +74,42 @@ async function processJob(data) {
   if (titleMatch && normaliseText(titleMatch.title) === normTitle) {
     console.log(`[article-process] Title duplicate skipped: ${title}`);
     return { skipped: true, reason: 'title_duplicate' };
+  }
+
+  // Cross-source fuzzy title dedup (v2 enhancement)
+  const recentArticles = await prisma.article.findMany({
+    where: {
+      publishedAt: { 
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) 
+      }
+    },
+    select: { id: true, title: true, sourceUrl: true }
+  });
+
+  // Check title similarity across all recent articles
+  const currentNormTitle = normaliseText(title);
+  for (const existing of recentArticles) {
+    const existingNormTitle = normaliseText(existing.title);
+    if (titleSimilarity(currentNormTitle, existingNormTitle) > 0.85) {
+      console.log(`[article-process] Cross-source duplicate skipped: "${title}" matches "${existing.title}"`);
+      return { skipped: true, reason: 'cross_source_duplicate' };
+    }
+  }
+
+  // URL path dedup for Fairfax network syndication (v2 enhancement) 
+  try {
+    const urlPath = new URL(url).pathname.replace(/\/$/, '');
+    const pathMatch = recentArticles.find(a => {
+      try {
+        return new URL(a.sourceUrl).pathname.replace(/\/$/, '') === urlPath;
+      } catch { return false; }
+    });
+    if (pathMatch) {
+      console.log(`[article-process] URL path duplicate skipped: ${url} matches ${pathMatch.sourceUrl}`);
+      return { skipped: true, reason: 'url_path_duplicate' };
+    }
+  } catch {
+    // Invalid URL, continue processing
   }
 
   let slug;
