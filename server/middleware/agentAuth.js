@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../lib/prisma')
 const agentKeyService = require('../services/agentKeyService')
-
-const prisma = new PrismaClient()
 
 const SENSITIVE_FIELDS = ['key', 'token', 'secret', 'password', 'authorization']
 

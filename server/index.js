@@ -22,7 +22,7 @@ if (!isCloudflareWorker) {
   swaggerUi = require('swagger-ui-express');
   YAML = require('yamljs');
 }
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./lib/prisma');
 
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/user/profile');
@@ -80,7 +80,6 @@ const { startHenryCleanup } = require('./jobs/henryCleanup');
 const { startNewsletterScheduler } = require('./jobs/newsletterScheduler');
 
 const app = express();
-const prisma = new PrismaClient();
 
 // Local filesystem image directory (not used on CF Workers — uses R2 instead)
 if (!isCloudflareWorker) {
