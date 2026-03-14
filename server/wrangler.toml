@@ -46,7 +46,7 @@
 # ═══════════════════════════════════════════════════════════════════════
 
 name = "propertyhack-api"
-main = "worker-entry-simple.js"
+main = "worker-entry.js"
 compatibility_date = "2026-03-14"
 compatibility_flags = ["nodejs_compat"]
 

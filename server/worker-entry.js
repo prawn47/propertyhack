@@ -49,39 +49,69 @@ export default {
       // Simple approach: convert to Node.js style request
       const url = new URL(request.url);
       const method = request.method;
-      const headers = Object.fromEntries(request.headers.entries());
+      
+      // Safely extract headers
+      const headers = {};
+      if (request.headers && typeof request.headers.entries === 'function') {
+        for (const [key, value] of request.headers.entries()) {
+          headers[key.toLowerCase()] = value;
+        }
+      }
+      
       const body = request.body ? await request.text() : '';
       
       // Create a simple response promise
       return new Promise(async (resolve, reject) => {
         try {
-          const { app } = require('./index.js');
+          // Use the same import approach as getApp
+          const app = await getApp(env);
           
-          // Create minimal Node.js-style request object
+          // Create comprehensive Node.js-style request object
           const req = {
             method,
             url: url.pathname + url.search,
             headers,
             body,
             get: (name) => headers[name.toLowerCase()],
-            ip: headers['cf-connecting-ip'] || '127.0.0.1',
+            header: (name) => headers[name.toLowerCase()], // alias for get
+            ip: headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '127.0.0.1',
+            protocol: 'https',
+            secure: true,
+            hostname: url.hostname,
+            path: url.pathname,
+            query: Object.fromEntries(url.searchParams.entries()),
+            params: {},
+            // Essential for rate limiting and other middleware
+            connection: { remoteAddress: headers['cf-connecting-ip'] || '127.0.0.1' },
+            socket: { remoteAddress: headers['cf-connecting-ip'] || '127.0.0.1' },
           };
           
-          // Create response object
+          // Create comprehensive response object
           let statusCode = 200;
           const responseHeaders = {};
           const chunks = [];
+          let headersSent = false;
           
           const res = {
             statusCode: 200,
-            setHeader: (name, value) => { responseHeaders[name.toLowerCase()] = value; },
+            headersSent: false,
+            setHeader: (name, value) => { 
+              if (!headersSent) responseHeaders[name.toLowerCase()] = value; 
+            },
+            getHeader: (name) => responseHeaders[name.toLowerCase()],
+            removeHeader: (name) => { 
+              if (!headersSent) delete responseHeaders[name.toLowerCase()]; 
+            },
             writeHead: (code, hdrs) => {
+              if (headersSent) return;
               statusCode = code;
               if (hdrs) Object.entries(hdrs).forEach(([k, v]) => { responseHeaders[k.toLowerCase()] = v; });
+              headersSent = true;
             },
             write: (chunk) => chunks.push(chunk),
             end: (data) => {
               if (data) chunks.push(data);
+              headersSent = true;
               const responseBody = chunks.join('');
               resolve(new Response(responseBody, {
                 status: statusCode,
@@ -90,7 +120,20 @@ export default {
             },
             json: (obj) => {
               responseHeaders['content-type'] = 'application/json';
+              headersSent = true;
               const body = JSON.stringify(obj);
+              resolve(new Response(body, { status: statusCode, headers: responseHeaders }));
+            },
+            status: (code) => {
+              statusCode = code;
+              return res;
+            },
+            send: (data) => {
+              headersSent = true;
+              const body = typeof data === 'object' ? JSON.stringify(data) : String(data);
+              if (typeof data === 'object' && !responseHeaders['content-type']) {
+                responseHeaders['content-type'] = 'application/json';
+              }
               resolve(new Response(body, { status: statusCode, headers: responseHeaders }));
             }
           };
