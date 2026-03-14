@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 // Express backend URL — sitemaps and crawler SSR live here directly
-const API_BASE = 'http://localhost:3001'
+const API_BASE = process.env.VITE_API_URL || 'http://localhost:3001'
 const GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
 const SITE_URL = 'https://propertyhack.com.au'
 
