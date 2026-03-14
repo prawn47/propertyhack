@@ -12,12 +12,12 @@ const configs = [
   {
     task: 'image-alt-text',
     provider: 'gemini',
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-2.5-flash',
   },
   {
     task: 'image-generation',
     provider: 'gemini',
-    model: 'gemini-2.0-flash-exp-image-generation',
+    model: 'gemini-2.5-flash-image',
   },
   {
     task: 'newsletter-generation',

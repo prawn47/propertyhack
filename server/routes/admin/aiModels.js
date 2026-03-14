@@ -10,8 +10,8 @@ const PROVIDER_MODELS = {
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', capabilities: ['text'] },
     { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', capabilities: ['text'] },
     { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', capabilities: ['text'] },
-    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Exp', capabilities: ['text'] },
-    { id: 'gemini-2.0-flash-exp-image-generation', name: 'Gemini 2.0 Flash Exp Image Generation', capabilities: ['text', 'image'] },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', capabilities: ['text'] },
+    { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', capabilities: ['text', 'image'] },
     { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', capabilities: ['text', 'image'] },
   ],
   anthropic: [
