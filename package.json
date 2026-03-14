@@ -6,14 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --outDir frontend-dist",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "test": "vitest run && cd server && vitest run",
     "test:unit": "vitest run",
     "test:server": "cd server && vitest run",
     "test:integration": "cd server && vitest run --config vitest.integration.config.js",
     "test:e2e": "npx playwright test",
     "test:coverage": "vitest run --coverage && cd server && vitest run --coverage",
-    "test:load": "node tests/load/loadTest.js"
+    "test:load": "node tests/load/loadTest.js",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@tiptap/extension-link": "^3.20.1",
@@ -37,6 +38,7 @@
     "vite": "^6.2.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.28.0",
     "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -44,6 +46,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "jsdom": "^28.1.0",
     "msw": "^2.12.10",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "wrangler": "^4.73.0"
   }
 }
