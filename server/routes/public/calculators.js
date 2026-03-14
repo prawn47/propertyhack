@@ -2,8 +2,17 @@
 
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
-const path = require('path');
 const router = express.Router();
+
+// Pre-loaded calculator configs for CF Workers compatibility
+const calculatorConfigs = {
+  'stampDutyBrackets': require('../../config/calculators/stampDutyBrackets.json'),
+  'ukTransferTax': require('../../config/calculators/ukTransferTax.json'),
+  'caTransferTax': require('../../config/calculators/caTransferTax.json'),
+  'usTransferTax': require('../../config/calculators/usTransferTax.json'),
+  'nzBuyingCosts': require('../../config/calculators/nzBuyingCosts.json'),
+  'marketDefaults': require('../../config/calculators/marketDefaults.json'),
+};
 
 const mortgageCalculator = require('../../calculators/mortgageCalculator');
 const stampDutyCalculator = require('../../calculators/stampDutyCalculator');
@@ -405,16 +414,15 @@ router.get('/config/:market/:type', (req, res) => {
   }
 
   const configFileName = marketConfigs[type];
-  const configPath = path.join(__dirname, '../../config/calculators', `${configFileName}.json`);
-
-  try {
-    const data = require(configPath);
-    return res.json({ market, type, data });
-  } catch {
+  const data = calculatorConfigs[configFileName];
+  
+  if (!data) {
     return res.status(404).json({
       error: `Config not found for market=${market} type=${type}`,
     });
   }
+
+  return res.json({ market, type, data });
 });
 
 module.exports = router;

@@ -1,7 +1,6 @@
 'use strict';
 
-const path = require('path');
-const config = require(path.join(__dirname, '../config/calculators/usTransferTax.json'));
+const config = require('../config/calculators/usTransferTax.json');
 
 const stateMap = {};
 for (const s of config.states) {

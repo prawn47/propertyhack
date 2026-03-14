@@ -1,18 +1,17 @@
 'use strict';
 
-const path = require('path');
-
-// Cache loaded market configs to avoid repeated file I/O
-const configCache = {};
+// Pre-loaded market configs for CF Workers compatibility
+const borrowingPowerConfigs = {
+  AU: require('../config/calculators/borrowingPower/au.json'),
+  US: require('../config/calculators/borrowingPower/us.json'),
+  UK: require('../config/calculators/borrowingPower/uk.json'),
+  NZ: require('../config/calculators/borrowingPower/nz.json'),
+  CA: require('../config/calculators/borrowingPower/ca.json'),
+};
 
 function loadMarketConfig(market) {
   const key = market.toUpperCase();
-  if (!configCache[key]) {
-    configCache[key] = require(
-      path.join(__dirname, `../config/calculators/borrowingPower/${key.toLowerCase()}.json`)
-    );
-  }
-  return configCache[key];
+  return borrowingPowerConfigs[key] || borrowingPowerConfigs['AU'];
 }
 
 // Generic bracket-based income tax calculator
@@ -118,7 +117,7 @@ function estimateTotalTax(grossAnnualDollars, marketConfig) {
 let hemTable = null;
 function getHemTable() {
   if (!hemTable) {
-    hemTable = require(path.join(__dirname, '../config/calculators/hemTable.json'));
+    hemTable = require('../config/calculators/hemTable.json');
   }
   return hemTable;
 }

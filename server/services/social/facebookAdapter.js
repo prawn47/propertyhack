@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
 
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+
 const CHAR_LIMIT = 63206;
 const DRY_RUN = process.env.SOCIAL_DRY_RUN === 'true';
 const GRAPH_API_VERSION = 'v19.0';
@@ -26,7 +28,7 @@ async function publish(post, credentials) {
 
   if (post.processedImage) {
     const imagePath = post.processedImage.startsWith('/')
-      ? path.join(__dirname, '../../public', post.processedImage)
+      ? (isCloudflareWorker ? post.processedImage : path.join(__dirname, '../../public', post.processedImage))
       : post.processedImage;
 
     if (fs.existsSync(imagePath)) {

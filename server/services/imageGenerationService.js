@@ -5,7 +5,10 @@ const { PrismaClient } = require('@prisma/client');
 const aiProviderService = require('./aiProviderService');
 
 const prisma = new PrismaClient();
-const IMAGES_DIR = path.join(__dirname, '../public/images/articles');
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+const IMAGES_DIR = isCloudflareWorker 
+  ? '/images/articles' 
+  : path.join(__dirname, '../public/images/articles');
 
 let cachedPromptTemplate = null;
 let cacheTimestamp = 0;

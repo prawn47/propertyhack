@@ -1,7 +1,6 @@
 'use strict';
 
-const path = require('path');
-const config = require(path.join(__dirname, '../config/calculators/nzBuyingCosts.json'));
+const config = require('../config/calculators/nzBuyingCosts.json');
 
 function calculate(inputs) {
   const {

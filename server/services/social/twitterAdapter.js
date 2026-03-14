@@ -2,6 +2,8 @@ const { TwitterApi } = require('twitter-api-v2');
 const fs = require('fs');
 const path = require('path');
 
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+
 const DRY_RUN = process.env.SOCIAL_DRY_RUN === 'true';
 
 async function publish(post, credentials) {
@@ -29,7 +31,7 @@ async function publish(post, credentials) {
   if (post.processedImage) {
     // Resolve to absolute path if relative
     const imagePath = post.processedImage.startsWith('/')
-      ? path.join(__dirname, '../../public', post.processedImage)
+      ? (isCloudflareWorker ? post.processedImage : path.join(__dirname, '../../public', post.processedImage))
       : post.processedImage;
 
     if (fs.existsSync(imagePath)) {

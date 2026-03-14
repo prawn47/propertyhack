@@ -1,7 +1,6 @@
 'use strict';
 
-const path = require('path');
-const config = require(path.join(__dirname, '../config/calculators/caTransferTax.json'));
+const config = require('../config/calculators/caTransferTax.json');
 
 /**
  * Compute progressive bracket tax for a given price and bracket array.

@@ -1,6 +1,10 @@
-const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+
+// Sharp is not available on CF Workers, but this service may not be used there
+const sharp = isCloudflareWorker ? null : require('sharp');
 
 const PLATFORM_CONFIGS = {
   facebook:  { width: 1200, height: 630, fit: 'cover' },
@@ -8,13 +12,19 @@ const PLATFORM_CONFIGS = {
   instagram: { width: 1080, height: 1080, fit: 'cover' },
 };
 
-const SOCIAL_IMAGE_DIR = path.join(__dirname, '../public/images/social');
+const SOCIAL_IMAGE_DIR = isCloudflareWorker 
+  ? '/images/social' 
+  : path.join(__dirname, '../public/images/social');
 
 if (!fs.existsSync(SOCIAL_IMAGE_DIR)) {
   fs.mkdirSync(SOCIAL_IMAGE_DIR, { recursive: true });
 }
 
 async function processImageForPlatform(sourceImagePath, platform, articleId) {
+  if (isCloudflareWorker) {
+    throw new Error('Social image processing not available on CF Workers (sharp not supported)');
+  }
+  
   const config = PLATFORM_CONFIGS[platform];
   if (!config) throw new Error(`Unknown platform: ${platform}`);
 

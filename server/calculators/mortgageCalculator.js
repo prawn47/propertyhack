@@ -1,7 +1,6 @@
 'use strict';
 
-const path = require('path');
-const marketDefaults = require(path.join(__dirname, '../config/calculators/marketDefaults.json'));
+const marketDefaults = require('../config/calculators/marketDefaults.json');
 
 const CMHC_PREMIUMS = [
   { minDownPercent: 5, maxDownPercent: 9.99, rate: 0.04 },

@@ -1,7 +1,6 @@
 'use strict';
 
-const path = require('path');
-const brackets = require(path.join(__dirname, '../config/calculators/stampDutyBrackets.json'));
+const brackets = require('../config/calculators/stampDutyBrackets.json');
 
 const LEGAL_FEES = 200000;
 const INSPECTION_COSTS = 50000;

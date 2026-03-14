@@ -16,7 +16,7 @@
 const express = require('express');
 const router = express.Router();
 
-router.get('/images/*', async (req, res, next) => {
+router.use('/images', async (req, res, next) => {
   const r2Bucket = globalThis.__cf_env?.IMAGES_BUCKET;
 
   if (!r2Bucket) {
@@ -25,7 +25,7 @@ router.get('/images/*', async (req, res, next) => {
   }
 
   // Extract the key from the URL path: /images/articles/foo.png → articles/foo.png
-  const key = req.path.replace(/^\/images\//, '');
+  const key = req.path.replace(/^\//, '');
 
   if (!key) {
     return res.status(404).json({ error: 'Image not found' });

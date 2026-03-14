@@ -2,7 +2,10 @@ const fs = require('fs/promises');
 const path = require('path');
 const aiProviderService = require('./aiProviderService');
 
-const NEWSLETTERS_DIR = path.join(__dirname, '..', 'public', 'images', 'newsletters');
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+const NEWSLETTERS_DIR = isCloudflareWorker 
+  ? '/images/newsletters' 
+  : path.join(__dirname, '..', 'public', 'images', 'newsletters');
 const STYLE_PREFIX = 'Professional editorial illustration for a property news newsletter. No text overlays, no watermarks. ';
 
 /**

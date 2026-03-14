@@ -1,7 +1,13 @@
 const { PrismaClient } = require('@prisma/client');
 const { generateHeadlinesWithConfig } = require('./socialHeadlineService');
-const { processImageForPlatform } = require('./socialImageService');
 const { socialPublishQueue } = require('../queues/socialPublishQueue');
+
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+
+// Conditionally import socialImageService only if not on CF Workers
+const socialImageService = isCloudflareWorker 
+  ? null 
+  : require('./socialImageService');
 
 const prisma = new PrismaClient();
 
@@ -57,7 +63,11 @@ async function generateSocialPosts(articleId) {
     const sourceImage = article.imageUrl;
     let processedImage = null;
     try {
-      processedImage = await processImageForPlatform(sourceImage, platform, article.id);
+      if (socialImageService) {
+        processedImage = await socialImageService.processImageForPlatform(sourceImage, platform, article.id);
+      } else {
+        console.log(`[socialGeneration] Image processing skipped on CF Workers for ${platform}`);
+      }
     } catch (err) {
       console.error(`[socialGeneration] Image processing failed for ${platform}:`, err.message);
     }

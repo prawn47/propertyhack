@@ -1,7 +1,6 @@
 'use strict';
 
-const path = require('path');
-const config = require(path.join(__dirname, '../config/calculators/ukTransferTax.json'));
+const config = require('../config/calculators/ukTransferTax.json');
 
 function applyProgressiveBands(price, bands) {
   const result = [];
