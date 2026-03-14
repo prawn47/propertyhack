@@ -90,8 +90,9 @@ if (!isCloudflareWorker) {
 app.use(helmet());
 app.use(cors({
   origin: [
-    process.env.CORS_ORIGIN || 'http://localhost:3004',
+    ...(process.env.CORS_ORIGIN || 'http://localhost:3004').split(','),
     'https://propertyhack.vercel.app',
+    'https://propertyhack-web.pages.dev',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
