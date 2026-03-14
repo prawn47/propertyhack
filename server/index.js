@@ -15,8 +15,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
-const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
+// swagger-ui-express uses __dirname which doesn't exist on CF Workers
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined' || typeof __dirname === 'undefined';
+let swaggerUi, YAML;
+if (!isCloudflareWorker) {
+  swaggerUi = require('swagger-ui-express');
+  YAML = require('yamljs');
+}
 const { PrismaClient } = require('@prisma/client');
 
 const authRoutes = require('./routes/auth');
@@ -77,8 +82,11 @@ const { startNewsletterScheduler } = require('./jobs/newsletterScheduler');
 const app = express();
 const prisma = new PrismaClient();
 
-const imgDir = path.join(__dirname, 'public/images/articles');
-if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+// Local filesystem image directory (not used on CF Workers — uses R2 instead)
+if (!isCloudflareWorker) {
+  const imgDir = path.join(__dirname, 'public/images/articles');
+  if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+}
 
 app.use(helmet());
 app.use(cors({
@@ -134,7 +142,10 @@ app.use(passport.initialize());
 const imageRoutes = require('./routes/images');
 app.use(imageRoutes);
 
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
+// Static file serving only on local dev (CF Workers uses R2 via imageRoutes)
+if (!isCloudflareWorker) {
+  app.use('/images', express.static(path.join(__dirname, 'public/images')));
+}
 
 app.use((req, res, next) => {
   req.prisma = prisma;
@@ -260,24 +271,29 @@ app.get('/api/locations/:slug/seo', async (req, res) => {
   }
 });
 
-// Swagger UI for Agent API documentation
-try {
-  const agentApiSpec = YAML.load(path.join(__dirname, 'docs/agent-api.yaml'));
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(agentApiSpec, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'PropertyHack Agent API Documentation',
-  }));
-  app.get('/api/docs/openapi.json', (req, res) => res.json(agentApiSpec));
-} catch (err) {
-  console.warn('[swagger] Failed to load API docs:', err.message);
+// Swagger UI for Agent API documentation (disabled on CF Workers — __dirname not available)
+if (!isCloudflareWorker) {
+  try {
+    const agentApiSpec = YAML.load(path.join(__dirname, 'docs/agent-api.yaml'));
+    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(agentApiSpec, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'PropertyHack Agent API Documentation',
+    }));
+    app.get('/api/docs/openapi.json', (req, res) => res.json(agentApiSpec));
+  } catch (err) {
+    console.warn('[swagger] Failed to load API docs:', err.message);
+  }
 }
 
 // Legacy AU-only URL redirects — 301 to country-prefixed paths
 app.use(legacyRedirects);
 
 // Crawler SSR middleware — serves dynamic meta tags to search engine bots
-const indexHtmlPath = path.join(__dirname, '..', 'frontend-dist', 'index.html');
-app.use(createCrawlerSsrMiddleware(indexHtmlPath));
+// On CF Workers, frontend is served by CF Pages, not this Worker
+if (!isCloudflareWorker) {
+  const indexHtmlPath = path.join(__dirname, '..', 'frontend-dist', 'index.html');
+  app.use(createCrawlerSsrMiddleware(indexHtmlPath));
+}
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
