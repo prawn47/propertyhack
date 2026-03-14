@@ -38,6 +38,12 @@ async function getRelevanceThresholds() {
 async function processJob(data) {
   const { articleId } = data;
   console.log(`[article-summarise] Processing article: ${articleId}`);
+  
+  // Mark article as being summarised
+  await prisma.article.update({
+    where: { id: articleId },
+    data: { status: 'SUMMARISING' },
+  });
 
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -90,6 +96,7 @@ async function processJob(data) {
   const primaryMarket = summary.markets.find(m => m !== 'ALL') || summary.markets[0] || 'AU';
 
   const isDraft = score < thresholds.reviewBelow;
+  const finalStatus = isDraft ? 'SUMMARISED' : 'PUBLISHED';
 
   await prisma.article.update({
     where: { id: articleId },
@@ -103,7 +110,7 @@ async function processJob(data) {
       isEvergreen: summary.isEvergreen,
       isGlobal: summary.isGlobal,
       relevanceScore: score,
-      status: isDraft ? 'DRAFT' : 'PUBLISHED',
+      status: finalStatus,
       publishedAt: isDraft ? undefined : new Date(),
     },
   });

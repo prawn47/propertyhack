@@ -21,9 +21,11 @@ enum SourceType {
 }
 
 enum ArticleStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
+  DRAFT        // Just ingested, awaiting summarisation
+  SUMMARISING  // In the summarise queue
+  SUMMARISED   // Summary complete, ready for image generation
+  PUBLISHED    // Live on the site (may have image generation in progress)
+  ARCHIVED     // Archived or hidden
 }
 
 enum SocialPostStatus {
@@ -177,6 +179,8 @@ model Article {
   source      IngestionSource @relation(fields: [sourceId], references: [id])
   socialPosts SocialPost[]
 
+  @@unique([contentHash])
+  @@unique([sourceUrl])
   @@index([sourceUrl])
   @@index([status])
   @@index([market])

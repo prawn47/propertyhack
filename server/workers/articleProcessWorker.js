@@ -121,28 +121,39 @@ async function processJob(data) {
     console.log(`[article-process] Slug fallback to UUID for article: ${url}`);
   }
 
-  const savedArticle = await prisma.article.create({
-    data: {
-      sourceId,
-      sourceUrl: normalizedUrl,
-      contentHash,
-      title: title || 'Untitled',
-      slug,
-      shortBlurb: '',
-      longSummary: '',
-      originalContent: content || null,
-      imageUrl: imageUrl || null,
-      category: source?.category || 'uncategorized',
-      market: source?.market || 'AU',
-      status: 'DRAFT',
-      metadata: {
-        originalUrl: url,
-        author: author || null,
-        date: date || null,
-        sourceName: sourceName || null,
+  let savedArticle;
+  try {
+    savedArticle = await prisma.article.create({
+      data: {
+        sourceId,
+        sourceUrl: normalizedUrl,
+        contentHash,
+        title: title || 'Untitled',
+        slug,
+        shortBlurb: '',
+        longSummary: '',
+        originalContent: content || null,
+        imageUrl: imageUrl || null,
+        category: source?.category || 'uncategorized',
+        market: source?.market || 'AU',
+        status: 'DRAFT',
+        metadata: {
+          originalUrl: url,
+          author: author || null,
+          date: date || null,
+          sourceName: sourceName || null,
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    // Handle unique constraint violations (P2002 error)
+    if (err.code === 'P2002') {
+      console.log(`[article-process] DB unique constraint caught duplicate: "${title}" (${url})`);
+      return { skipped: true, reason: 'db_unique_constraint' };
+    }
+    // Re-throw other errors
+    throw err;
+  }
 
   console.log(`[article-process] Saved article ${savedArticle.id}: "${title}"`);
 
