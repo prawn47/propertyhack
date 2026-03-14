@@ -22,7 +22,24 @@ async function generateNewsletterImage(prompt) {
  * @param {string} filename - Without extension
  * @returns {Promise<string>} URL path (e.g. /images/newsletters/abc123.png)
  */
+/**
+ * Save image — R2 (CF Workers) or local filesystem.
+ * Ref: Beads workspace-8i6
+ */
 async function saveImage(imageData, filename) {
+  const r2Bucket = globalThis.__cf_env?.IMAGES_BUCKET;
+
+  if (r2Bucket) {
+    // CF Workers — save to R2
+    const r2Key = `newsletters/${filename}.png`;
+    await r2Bucket.put(r2Key, imageData, {
+      httpMetadata: { contentType: 'image/png' },
+    });
+    console.log(`[imagenService] Saved to R2: ${r2Key}`);
+    return `/images/newsletters/${filename}.png`;
+  }
+
+  // Local — save to filesystem
   await fs.mkdir(NEWSLETTERS_DIR, { recursive: true });
   const filePath = path.join(NEWSLETTERS_DIR, `${filename}.png`);
   await fs.writeFile(filePath, imageData);

@@ -1,5 +1,9 @@
-const { Worker } = require('bullmq');
-const { connection } = require('../queues/connection');
+/**
+ * Alt Text Backfill Worker — generates alt text for images missing it
+ * Dual-mode: CF Queue consumer (via processJob) or BullMQ worker (local dev)
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('../queues/connection');
 const { generateImageAltText } = require('../services/articleSummaryService');
 const { PrismaClient } = require('@prisma/client');
 
@@ -22,7 +26,7 @@ async function getSeoKeywords(category, location) {
   return keywords.map(k => k.keyword);
 }
 
-const altTextBackfillWorker = new Worker('alt-text-backfill', async (job) => {
+async function processJob(data, job) {
   const articles = await prisma.article.findMany({
     where: {
       status: 'PUBLISHED',
@@ -37,7 +41,7 @@ const altTextBackfillWorker = new Worker('alt-text-backfill', async (job) => {
   let processed = 0;
   let failures = 0;
 
-  await job.updateProgress({ total, processed, failures });
+  if (job?.updateProgress) await job.updateProgress({ total, processed, failures });
 
   for (const article of articles) {
     try {
@@ -54,22 +58,30 @@ const altTextBackfillWorker = new Worker('alt-text-backfill', async (job) => {
       processed++;
     }
 
-    await job.updateProgress({ total, processed, failures });
+    if (job?.updateProgress) await job.updateProgress({ total, processed, failures });
   }
 
   return { total, processed, failures };
-}, {
-  connection,
-  concurrency: 1,
-  lockDuration: 600000,
-});
+}
 
-altTextBackfillWorker.on('completed', (job) => {
-  console.log(`[alt-text-backfill] Job ${job.id} completed`);
-});
+// ── BullMQ Worker (local dev only) ─────────────────────────────────
+let altTextBackfillWorker = null;
 
-altTextBackfillWorker.on('failed', (job, err) => {
-  console.error(`[alt-text-backfill] Job ${job.id} failed:`, err.message);
-});
+if (!isCFWorkers) {
+  const { Worker } = require('bullmq');
+  altTextBackfillWorker = new Worker('alt-text-backfill', async (job) => {
+    return processJob(job.data, job);
+  }, { connection, concurrency: 1, lockDuration: 600000 });
 
-module.exports = { altTextBackfillWorker };
+  altTextBackfillWorker.on('completed', (job) => {
+    console.log(`[alt-text-backfill] Job ${job.id} completed`);
+  });
+
+  altTextBackfillWorker.on('failed', (job, err) => {
+    console.error(`[alt-text-backfill] Job ${job.id} failed:`, err.message);
+  });
+} else {
+  altTextBackfillWorker = { close: async () => {} };
+}
+
+module.exports = { altTextBackfillWorker, processJob };

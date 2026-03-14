@@ -1,13 +1,17 @@
-const { Worker } = require('bullmq')
-const { connection } = require('../queues/connection')
+/**
+ * Article Embed Worker — generates vector embeddings via OpenAI
+ * Dual-mode: CF Queue consumer (via processJob) or BullMQ worker (local dev)
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('../queues/connection')
 const { PrismaClient } = require('@prisma/client')
 const { generateEmbedding } = require('../services/embeddingService')
 const { pingIndexNow } = require('../services/indexNowService')
 
 const prisma = new PrismaClient()
 
-const articleEmbedWorker = new Worker('article-embed', async (job) => {
-  const { articleId } = job.data
+async function processJob(data) {
+  const { articleId } = data
 
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -48,17 +52,26 @@ const articleEmbedWorker = new Worker('article-embed', async (job) => {
   }
 
   return { embedded: textContent.trim().length > 0, articleId }
-}, {
-  connection,
-  concurrency: 3,
-})
+}
 
-articleEmbedWorker.on('completed', (job) => {
-  console.log(`[article-embed] Job ${job.id} completed`)
-})
+// ── BullMQ Worker (local dev only) ─────────────────────────────────
+let articleEmbedWorker = null
 
-articleEmbedWorker.on('failed', (job, err) => {
-  console.error(`[article-embed] Job ${job.id} failed:`, err.message)
-})
+if (!isCFWorkers) {
+  const { Worker } = require('bullmq')
+  articleEmbedWorker = new Worker('article-embed', async (job) => {
+    return processJob(job.data)
+  }, { connection, concurrency: 3 })
 
-module.exports = { articleEmbedWorker }
+  articleEmbedWorker.on('completed', (job) => {
+    console.log(`[article-embed] Job ${job.id} completed`)
+  })
+
+  articleEmbedWorker.on('failed', (job, err) => {
+    console.error(`[article-embed] Job ${job.id} failed:`, err.message)
+  })
+} else {
+  articleEmbedWorker = { close: async () => {} }
+}
+
+module.exports = { articleEmbedWorker, processJob }

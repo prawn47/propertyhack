@@ -8,6 +8,10 @@ server/node_modules/
 .env.production
 .env.development
 server/.env
+server/.dev.vars
+
+# Cloudflare Workers
+.wrangler/
 
 # Build outputs
 dist/

@@ -1,17 +1,28 @@
-const { Queue } = require('bullmq');
-const { connection } = require('./connection');
+/**
+ * source-fetch queue — dual-mode for CF Workers and local dev
+ * Auto-selects CFQueue adapter on CF Workers, BullMQ locally.
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('./connection');
 
-const sourceFetchQueue = new Queue('source-fetch', {
-  connection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 5000,
+let sourceFetchQueue;
+
+if (isCFWorkers) {
+  // CF Workers — use CF Queues adapter
+  const { CFQueue } = require('./cfAdapter');
+  sourceFetchQueue = new CFQueue('source-fetch');
+} else {
+  // Local / traditional server — use BullMQ + Redis
+  const { Queue } = require('bullmq');
+  sourceFetchQueue = new Queue('source-fetch', {
+    connection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 200 },
     },
-    removeOnComplete: { count: 100 },
-    removeOnFail: { count: 200 },
-  },
-});
+  });
+}
 
 module.exports = { sourceFetchQueue };

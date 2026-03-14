@@ -1,0 +1,28 @@
+# ═══════════════════════════════════════════════════════════════════════
+# PropertyHack Frontend — Cloudflare Pages Redirects
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Proxies API requests from the frontend (Pages) to the backend (Worker).
+# This avoids CORS issues in production.
+#
+# The API Worker is deployed as propertyhack-api.workers.dev
+# or api.propertyhack.com (once DNS is configured).
+#
+# Ref: Beads workspace-8i6
+# ═══════════════════════════════════════════════════════════════════════
+
+# Proxy all /api/* requests to the backend Worker
+/api/*  https://api.propertyhack.com/api/:splat  200
+
+# Proxy health check
+/health https://api.propertyhack.com/health  200
+
+# Proxy system status
+/system/* https://api.propertyhack.com/system/:splat  200
+
+# Proxy sitemaps and RSS feeds
+/sitemap* https://api.propertyhack.com/sitemap:splat  200
+/feed*    https://api.propertyhack.com/feed:splat  200
+
+# SPA fallback — serve index.html for all non-file routes
+/*  /index.html  200

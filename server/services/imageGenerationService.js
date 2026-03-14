@@ -179,20 +179,52 @@ async function generateArticleImage(title, shortBlurb, category, slug, attemptsM
     // File does not exist — no collision, proceed with original filename
   }
 
-  try {
-    await fs.mkdir(IMAGES_DIR, { recursive: true });
-    await fs.writeFile(filePath, imageData);
-    console.log(`[imageGen] Saved: ${filename} (${(imageData.length / 1024).toFixed(0)}KB)`);
-  } catch (err) {
-    throw new Error(`Failed to save image: ${err.message}`);
-  }
+  // ── Save image: R2 (CF Workers) or local filesystem ─────────────
+  // On CF Workers, images go to the R2 bucket configured in wrangler.toml.
+  // Locally, images go to server/public/images/articles/ as before.
+  // Ref: Beads workspace-8i6
+  const r2Bucket = globalThis.__cf_env?.IMAGES_BUCKET;
 
-  return {
-    imageData,
-    mimeType,
-    filename,
-    publicPath: `/images/articles/${filename}`,
-  };
+  if (r2Bucket) {
+    // CF Workers — save to R2
+    try {
+      const r2Key = `articles/${filename}`;
+      await r2Bucket.put(r2Key, imageData, {
+        httpMetadata: { contentType: mimeType },
+      });
+      console.log(`[imageGen] Saved to R2: ${r2Key} (${(imageData.length / 1024).toFixed(0)}KB)`);
+    } catch (err) {
+      throw new Error(`Failed to save image to R2: ${err.message}`);
+    }
+
+    // TODO: Update this URL once R2 custom domain is configured
+    // Use the SITE_URL + /images/ path, or the R2 public URL
+    const siteUrl = process.env.SITE_URL || 'https://propertyhack.com';
+    return {
+      imageData,
+      mimeType,
+      filename,
+      publicPath: `/images/articles/${filename}`,
+      // r2Url can be used if serving directly from R2 with custom domain:
+      // r2Url: `https://images.propertyhack.com/articles/${filename}`,
+    };
+  } else {
+    // Local / traditional — save to filesystem
+    try {
+      await fs.mkdir(IMAGES_DIR, { recursive: true });
+      await fs.writeFile(filePath, imageData);
+      console.log(`[imageGen] Saved: ${filename} (${(imageData.length / 1024).toFixed(0)}KB)`);
+    } catch (err) {
+      throw new Error(`Failed to save image: ${err.message}`);
+    }
+
+    return {
+      imageData,
+      mimeType,
+      filename,
+      publicPath: `/images/articles/${filename}`,
+    };
+  }
 }
 
 module.exports = {

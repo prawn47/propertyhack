@@ -1,5 +1,9 @@
-const { Worker } = require('bullmq');
-const { connection } = require('../queues/connection');
+/**
+ * Article Image Worker — generates AI images for articles
+ * Dual-mode: CF Queue consumer (via processJob) or BullMQ worker (local dev)
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('../queues/connection');
 const { articleEmbedQueue } = require('../queues/articleEmbedQueue');
 const { socialGenerateQueue } = require('../queues/socialGenerateQueue');
 const { generateArticleImage } = require('../services/imageGenerationService');
@@ -26,8 +30,8 @@ async function getSeoKeywords(category, location) {
   return keywords.map(k => k.keyword);
 }
 
-const articleImageWorker = new Worker('article-image', async (job) => {
-  const { articleId } = job.data;
+async function processJob(data) {
+  const { articleId } = data;
   console.log(`[article-image] Processing article: ${articleId}`);
 
   const article = await prisma.article.findUnique({
@@ -115,19 +119,26 @@ const articleImageWorker = new Worker('article-image', async (job) => {
 
   console.log(`[article-image] Completed: ${articleId}`);
   return { articleId, hasImage: !!imageResult };
-}, {
-  connection,
-  concurrency: 1,
-  lockDuration: 120000,
-  stalledInterval: 120000,
-});
+}
 
-articleImageWorker.on('completed', (job) => {
-  console.log(`[article-image] Job ${job.id} completed`);
-});
+// ── BullMQ Worker (local dev only) ─────────────────────────────────
+let articleImageWorker = null;
 
-articleImageWorker.on('failed', (job, err) => {
-  console.error(`[article-image] Job ${job.id} failed:`, err.message);
-});
+if (!isCFWorkers) {
+  const { Worker } = require('bullmq');
+  articleImageWorker = new Worker('article-image', async (job) => {
+    return processJob(job.data);
+  }, { connection, concurrency: 1, lockDuration: 120000, stalledInterval: 120000 });
 
-module.exports = { articleImageWorker };
+  articleImageWorker.on('completed', (job) => {
+    console.log(`[article-image] Job ${job.id} completed`);
+  });
+
+  articleImageWorker.on('failed', (job, err) => {
+    console.error(`[article-image] Job ${job.id} failed:`, err.message);
+  });
+} else {
+  articleImageWorker = { close: async () => {} };
+}
+
+module.exports = { articleImageWorker, processJob };

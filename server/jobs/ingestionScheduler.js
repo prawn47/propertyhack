@@ -1,4 +1,8 @@
-const cron = require('node-cron');
+/**
+ * Ingestion Scheduler — checks and enqueues due news sources
+ * Dual-mode: CF Cron Trigger (via runScheduler) or node-cron (local dev)
+ * Ref: Beads workspace-8i6
+ */
 const { PrismaClient } = require('@prisma/client');
 const { sourceFetchQueue } = require('../queues/sourceFetchQueue');
 
@@ -96,9 +100,24 @@ async function checkAndEnqueueSources() {
   }
 }
 
+/**
+ * Run the scheduler once — called by CF Cron Trigger or node-cron.
+ * Exported for use in worker-entry.js scheduled handler.
+ */
+async function runScheduler() {
+  await checkAndEnqueueSources();
+}
+
 function startScheduler() {
+  const { isCFWorkers } = require('../queues/connection');
+  if (isCFWorkers) {
+    // CF Workers — cron triggers handled by worker-entry.js scheduled handler
+    console.log('[ingestion-scheduler] CF Workers mode — cron triggers configured in wrangler.toml');
+    return;
+  }
+  const cron = require('node-cron');
   console.log('[ingestion-scheduler] Starting — runs every 5 minutes');
   cron.schedule('*/5 * * * *', checkAndEnqueueSources);
 }
 
-module.exports = { startScheduler };
+module.exports = { startScheduler, runScheduler };

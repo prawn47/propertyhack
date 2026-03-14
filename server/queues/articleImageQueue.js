@@ -1,17 +1,28 @@
-const { Queue } = require('bullmq');
-const { connection } = require('./connection');
+/**
+ * article-image queue — dual-mode for CF Workers and local dev
+ * Auto-selects CFQueue adapter on CF Workers, BullMQ locally.
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('./connection');
 
-const articleImageQueue = new Queue('article-image', {
-  connection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 5000,
+let articleImageQueue;
+
+if (isCFWorkers) {
+  // CF Workers — use CF Queues adapter
+  const { CFQueue } = require('./cfAdapter');
+  articleImageQueue = new CFQueue('article-image');
+} else {
+  // Local / traditional server — use BullMQ + Redis
+  const { Queue } = require('bullmq');
+  articleImageQueue = new Queue('article-image', {
+    connection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 200 },
     },
-    removeOnComplete: { count: 200 },
-    removeOnFail: { count: 200 },
-  },
-});
+  });
+}
 
 module.exports = { articleImageQueue };

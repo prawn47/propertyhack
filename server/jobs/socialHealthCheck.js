@@ -1,12 +1,14 @@
-const cron = require('node-cron');
+/**
+ * Social Health Check — verifies social media account connections
+ * Dual-mode: CF Cron Trigger (via runSocialHealthCheck) or node-cron (local dev)
+ * Ref: Beads workspace-8i6
+ */
 const { PrismaClient } = require('@prisma/client');
 const { decrypt } = require('../utils/encryption');
 
 const prisma = new PrismaClient();
 
-function startSocialHealthCheck() {
-  // Run every 6 hours
-  cron.schedule('0 */6 * * *', async () => {
+async function runSocialHealthCheck() {
     console.log('[social-health] Running connection health check...');
 
     const accounts = await prisma.socialAccount.findMany({
@@ -27,8 +29,16 @@ function startSocialHealthCheck() {
     }
 
     console.log('[social-health] Health check complete');
-  }, { timezone: 'Australia/Sydney' });
+}
 
+function startSocialHealthCheck() {
+  const { isCFWorkers } = require('../queues/connection');
+  if (isCFWorkers) {
+    console.log('[social-health] CF Workers mode — cron triggers configured in wrangler.toml');
+    return;
+  }
+  const cron = require('node-cron');
+  cron.schedule('0 */6 * * *', runSocialHealthCheck, { timezone: 'Australia/Sydney' });
   console.log('[social-health] Scheduled health check (every 6 hours)');
 }
 
@@ -86,4 +96,4 @@ async function checkAccountHealth(account) {
   console.log(`[social-health] ${platform}: ${status}`);
 }
 
-module.exports = { startSocialHealthCheck };
+module.exports = { startSocialHealthCheck, runSocialHealthCheck };

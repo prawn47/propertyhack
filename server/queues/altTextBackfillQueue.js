@@ -1,13 +1,28 @@
-const { Queue } = require('bullmq');
-const { connection } = require('./connection');
+/**
+ * alt-text-backfill queue — dual-mode for CF Workers and local dev
+ * Auto-selects CFQueue adapter on CF Workers, BullMQ locally.
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('./connection');
 
-const altTextBackfillQueue = new Queue('alt-text-backfill', {
-  connection,
-  defaultJobOptions: {
-    attempts: 1,
-    removeOnComplete: { count: 10 },
-    removeOnFail: { count: 10 },
-  },
-});
+let altTextBackfillQueue;
+
+if (isCFWorkers) {
+  // CF Workers — use CF Queues adapter
+  const { CFQueue } = require('./cfAdapter');
+  altTextBackfillQueue = new CFQueue('alt-text-backfill');
+} else {
+  // Local / traditional server — use BullMQ + Redis
+  const { Queue } = require('bullmq');
+  altTextBackfillQueue = new Queue('alt-text-backfill', {
+    connection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 200 },
+    },
+  });
+}
 
 module.exports = { altTextBackfillQueue };

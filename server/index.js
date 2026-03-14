@@ -1,3 +1,12 @@
+/**
+ * PropertyHack API — Express Application
+ *
+ * Runs in two modes:
+ * 1. Traditional server (local dev / VPS / Fly.io): app.listen() at the bottom
+ * 2. CF Workers: imported by worker-entry.js, app is exported, no app.listen()
+ *
+ * Ref: Beads workspace-8i6
+ */
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
@@ -118,6 +127,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
+
+// R2 image serving (CF Workers) — must be before express.static fallback
+// On CF Workers, this route serves images from the R2 bucket.
+// On local dev, this route falls through to express.static below.
+const imageRoutes = require('./routes/images');
+app.use(imageRoutes);
 
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
@@ -320,19 +335,29 @@ async function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-const PORT = process.env.PORT || 3001;
+// ── Export app for CF Workers entry point ───────────────────────────
+// worker-entry.js imports this to bridge Express ↔ CF Workers fetch()
+module.exports.app = app;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`Queue status: http://localhost:${PORT}/system/queue-status`);
-  console.log(`CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3004'}`);
-  console.log('BullMQ workers initialized');
-  console.log('  - source-fetch worker (concurrency: 3)');
-  console.log('  - article-process worker (concurrency: 5)');
-  console.log('  - article-summarise worker (concurrency: 2)');
-  console.log('  - article-image worker (concurrency: 1)');
-  console.log('  - article-embed worker (concurrency: 3)');
-  console.log('  - social-publish worker (concurrency: 1)');
-  console.log('  - social-generate worker (concurrency: 1)');
-});
+// ── Start server (local dev / VPS / Fly.io only) ───────────────────
+// When running on CF Workers, worker-entry.js handles incoming requests.
+// The app is only started via app.listen() in traditional environments.
+const isCFWorkers = !!globalThis.__cf_env;
+
+if (!isCFWorkers) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log(`Queue status: http://localhost:${PORT}/system/queue-status`);
+    console.log(`CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3004'}`);
+    console.log('BullMQ workers initialized');
+    console.log('  - source-fetch worker (concurrency: 3)');
+    console.log('  - article-process worker (concurrency: 5)');
+    console.log('  - article-summarise worker (concurrency: 2)');
+    console.log('  - article-image worker (concurrency: 1)');
+    console.log('  - article-embed worker (concurrency: 3)');
+    console.log('  - social-publish worker (concurrency: 1)');
+    console.log('  - social-generate worker (concurrency: 1)');
+  });
+}

@@ -1,4 +1,8 @@
-const cron = require('node-cron');
+/**
+ * Henry Cleanup — deletes old AI assistant conversations (>90 days)
+ * Dual-mode: CF Cron Trigger (via runHenryCleanup) or node-cron (local dev)
+ * Ref: Beads workspace-8i6
+ */
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -21,10 +25,22 @@ async function cleanupOldConversations() {
   }
 }
 
+/**
+ * Run cleanup once — called by CF Cron Trigger or node-cron.
+ */
+async function runHenryCleanup() {
+  await cleanupOldConversations();
+}
+
 function startHenryCleanup() {
-  // Run daily at 3am
+  const { isCFWorkers } = require('../queues/connection');
+  if (isCFWorkers) {
+    console.log('[henry-cleanup] CF Workers mode — cron triggers configured in wrangler.toml');
+    return;
+  }
+  const cron = require('node-cron');
   cron.schedule('0 3 * * *', cleanupOldConversations, { timezone: 'Australia/Sydney' });
   console.log('[henry-cleanup] Scheduled daily cleanup at 3am');
 }
 
-module.exports = { startHenryCleanup };
+module.exports = { startHenryCleanup, runHenryCleanup };

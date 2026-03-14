@@ -1,5 +1,9 @@
-const { Worker } = require('bullmq');
-const { connection } = require('../queues/connection');
+/**
+ * Article Summarise Worker — AI summarisation via Gemini
+ * Dual-mode: CF Queue consumer (via processJob) or BullMQ worker (local dev)
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('../queues/connection');
 const { articleImageQueue } = require('../queues/articleImageQueue');
 const { generateArticleSummary } = require('../services/articleSummaryService');
 const { PrismaClient } = require('@prisma/client');
@@ -31,8 +35,8 @@ async function getRelevanceThresholds() {
   return { rejectBelow: 4, reviewBelow: 7 };
 }
 
-const articleSummariseWorker = new Worker('article-summarise', async (job) => {
-  const { articleId } = job.data;
+async function processJob(data) {
+  const { articleId } = data;
   console.log(`[article-summarise] Processing article: ${articleId}`);
 
   const article = await prisma.article.findUnique({
@@ -111,19 +115,26 @@ const articleSummariseWorker = new Worker('article-summarise', async (job) => {
   const flags = [categorySlug, ...summary.markets, summary.isEvergreen ? 'evergreen' : 'news', summary.isGlobal ? 'global' : '', isDraft ? `draft(score:${score})` : `published(score:${score})`].filter(Boolean).join(', ');
   console.log(`[article-summarise] Completed: ${articleId} → ${flags}`);
   return { articleId, category: categorySlug, markets: summary.markets, isEvergreen: summary.isEvergreen, isGlobal: summary.isGlobal, relevanceScore: score, isDraft };
-}, {
-  connection,
-  concurrency: 1,
-  lockDuration: 120000,
-  stalledInterval: 120000,
-});
+}
 
-articleSummariseWorker.on('completed', (job) => {
-  console.log(`[article-summarise] Job ${job.id} completed`);
-});
+// ── BullMQ Worker (local dev only) ─────────────────────────────────
+let articleSummariseWorker = null;
 
-articleSummariseWorker.on('failed', (job, err) => {
-  console.error(`[article-summarise] Job ${job.id} failed:`, err.message);
-});
+if (!isCFWorkers) {
+  const { Worker } = require('bullmq');
+  articleSummariseWorker = new Worker('article-summarise', async (job) => {
+    return processJob(job.data);
+  }, { connection, concurrency: 1, lockDuration: 120000, stalledInterval: 120000 });
 
-module.exports = { articleSummariseWorker };
+  articleSummariseWorker.on('completed', (job) => {
+    console.log(`[article-summarise] Job ${job.id} completed`);
+  });
+
+  articleSummariseWorker.on('failed', (job, err) => {
+    console.error(`[article-summarise] Job ${job.id} failed:`, err.message);
+  });
+} else {
+  articleSummariseWorker = { close: async () => {} };
+}
+
+module.exports = { articleSummariseWorker, processJob };

@@ -1,5 +1,9 @@
-const { Worker } = require('bullmq');
-const { connection } = require('../queues/connection');
+/**
+ * Article Audit Worker — re-scores article relevance via Gemini
+ * Dual-mode: CF Queue consumer (via processJob) or BullMQ worker (local dev)
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('../queues/connection');
 const { PrismaClient } = require('@prisma/client');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -61,8 +65,8 @@ Respond with JSON only: { "relevanceScore": <integer 1-10>, "reason": "<brief re
   return score;
 }
 
-const articleAuditWorker = new Worker('article-audit', async (job) => {
-  const { limit = 0 } = job.data || {};
+async function processJob(data, job) {
+  const { limit = 0 } = data || {};
 
   const articles = await prisma.article.findMany({
     where: {
@@ -85,7 +89,7 @@ const articleAuditWorker = new Worker('article-audit', async (job) => {
   let published = 0;
   let errors = 0;
 
-  await job.updateProgress({ total, processed: 0, deleted, keptDraft, published, errors });
+  if (job?.updateProgress) await job.updateProgress({ total, processed: 0, deleted, keptDraft, published, errors });
 
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
@@ -118,7 +122,7 @@ const articleAuditWorker = new Worker('article-audit', async (job) => {
       errors++;
     }
 
-    await job.updateProgress({ total, processed: i + 1, deleted, keptDraft, published, errors });
+    if (job?.updateProgress) await job.updateProgress({ total, processed: i + 1, deleted, keptDraft, published, errors });
 
     if (i < articles.length - 1) {
       await sleep(RATE_LIMIT_MS);
@@ -126,19 +130,26 @@ const articleAuditWorker = new Worker('article-audit', async (job) => {
   }
 
   return { total, deleted, keptDraft, published, errors };
-}, {
-  connection,
-  concurrency: 1,
-  lockDuration: 3600000,
-  stalledInterval: 60000,
-});
+}
 
-articleAuditWorker.on('completed', (job, result) => {
-  console.log(`[article-audit] Job ${job.id} completed:`, result);
-});
+// ── BullMQ Worker (local dev only) ─────────────────────────────────
+let articleAuditWorker = null;
 
-articleAuditWorker.on('failed', (job, err) => {
-  console.error(`[article-audit] Job ${job.id} failed:`, err.message);
-});
+if (!isCFWorkers) {
+  const { Worker } = require('bullmq');
+  articleAuditWorker = new Worker('article-audit', async (job) => {
+    return processJob(job.data, job);
+  }, { connection, concurrency: 1, lockDuration: 3600000, stalledInterval: 60000 });
 
-module.exports = { articleAuditWorker };
+  articleAuditWorker.on('completed', (job, result) => {
+    console.log(`[article-audit] Job ${job.id} completed:`, result);
+  });
+
+  articleAuditWorker.on('failed', (job, err) => {
+    console.error(`[article-audit] Job ${job.id} failed:`, err.message);
+  });
+} else {
+  articleAuditWorker = { close: async () => {} };
+}
+
+module.exports = { articleAuditWorker, processJob };

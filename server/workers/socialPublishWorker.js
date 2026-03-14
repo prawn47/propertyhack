@@ -1,13 +1,17 @@
-const { Worker } = require('bullmq');
+/**
+ * Social Publish Worker — publishes posts to social media platforms
+ * Dual-mode: CF Queue consumer (via processJob) or BullMQ worker (local dev)
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('../queues/connection');
 const { PrismaClient } = require('@prisma/client');
-const { connection } = require('../queues/connection');
 const { getAdapter } = require('../services/social');
 const { decrypt } = require('../utils/encryption');
 
 const prisma = new PrismaClient();
 
-const socialPublishWorker = new Worker('social-publish', async (job) => {
-  const { postId } = job.data;
+async function processJob(data) {
+  const { postId } = data;
   console.log(`[social-publish] Job ${job.id} — postId: ${postId}`);
 
   const post = await prisma.socialPost.findUnique({
@@ -67,12 +71,9 @@ const socialPublishWorker = new Worker('social-publish', async (job) => {
       },
     });
 
-    throw err; // Re-throw for BullMQ retry logic
+    throw err; // Re-throw for retry logic (BullMQ or CF Queues)
   }
-}, {
-  connection,
-  concurrency: 1,
-});
+}
 
 async function getPlatformCredentials(platform) {
   // Try to read from SocialAccount model first
@@ -124,12 +125,24 @@ async function getPlatformCredentials(platform) {
   }
 }
 
-socialPublishWorker.on('completed', (job, result) => {
-  console.log(`[social-publish] Job ${job.id} completed — ${result?.platform}: ${result?.status}`);
-});
+// ── BullMQ Worker (local dev only) ─────────────────────────────────
+let socialPublishWorker = null;
 
-socialPublishWorker.on('failed', (job, err) => {
-  console.error(`[social-publish] Job ${job.id} failed:`, err.message);
-});
+if (!isCFWorkers) {
+  const { Worker } = require('bullmq');
+  socialPublishWorker = new Worker('social-publish', async (job) => {
+    return processJob(job.data);
+  }, { connection, concurrency: 1 });
 
-module.exports = { socialPublishWorker };
+  socialPublishWorker.on('completed', (job, result) => {
+    console.log(`[social-publish] Job ${job.id} completed — ${result?.platform}: ${result?.status}`);
+  });
+
+  socialPublishWorker.on('failed', (job, err) => {
+    console.error(`[social-publish] Job ${job.id} failed:`, err.message);
+  });
+} else {
+  socialPublishWorker = { close: async () => {} };
+}
+
+module.exports = { socialPublishWorker, processJob };

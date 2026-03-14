@@ -1,6 +1,10 @@
-const { Worker } = require('bullmq');
+/**
+ * Article Process Worker — deduplicates and creates DRAFT articles
+ * Dual-mode: CF Queue consumer (via processJob) or BullMQ worker (local dev)
+ * Ref: Beads workspace-8i6
+ */
+const { connection, isCFWorkers } = require('../queues/connection');
 const { v4: uuidv4 } = require('uuid');
-const { connection } = require('../queues/connection');
 const { articleSummariseQueue } = require('../queues/articleSummariseQueue');
 const { normalizeUrl } = require('../utils/urlNormalizer');
 const { generateContentHash, normaliseText } = require('../utils/contentHash');
@@ -8,8 +12,8 @@ const { generateSlug } = require('../utils/slug');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const articleProcessWorker = new Worker('article-process', async (job) => {
-  const { sourceId, article } = job.data;
+async function processJob(data) {
+  const { sourceId, article } = data;
   const { title, content, url, imageUrl, date, author, sourceName } = article;
 
   console.log(`[article-process] Processing: "${title}" (${url})`);
@@ -100,21 +104,30 @@ const articleProcessWorker = new Worker('article-process', async (job) => {
   });
 
   return { articleId: savedArticle.id };
-}, {
-  connection,
-  concurrency: 5,
-});
+}
 
-articleProcessWorker.on('completed', (job, result) => {
-  if (result?.skipped) {
-    console.log(`[article-process] Job ${job.id} skipped (duplicate)`);
-  } else {
-    console.log(`[article-process] Job ${job.id} completed — article ${result?.articleId}`);
-  }
-});
+// ── BullMQ Worker (local dev only) ─────────────────────────────────
+let articleProcessWorker = null;
 
-articleProcessWorker.on('failed', (job, err) => {
-  console.error(`[article-process] Job ${job.id} failed:`, err.message);
-});
+if (!isCFWorkers) {
+  const { Worker } = require('bullmq');
+  articleProcessWorker = new Worker('article-process', async (job) => {
+    return processJob(job.data);
+  }, { connection, concurrency: 5 });
 
-module.exports = { articleProcessWorker };
+  articleProcessWorker.on('completed', (job, result) => {
+    if (result?.skipped) {
+      console.log(`[article-process] Job ${job.id} skipped (duplicate)`);
+    } else {
+      console.log(`[article-process] Job ${job.id} completed — article ${result?.articleId}`);
+    }
+  });
+
+  articleProcessWorker.on('failed', (job, err) => {
+    console.error(`[article-process] Job ${job.id} failed:`, err.message);
+  });
+} else {
+  articleProcessWorker = { close: async () => {} };
+}
+
+module.exports = { articleProcessWorker, processJob };

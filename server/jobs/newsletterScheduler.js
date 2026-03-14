@@ -1,4 +1,8 @@
-const cron = require('node-cron');
+/**
+ * Newsletter Scheduler — enqueues newsletter generation at market-specific times
+ * Dual-mode: CF Cron Trigger (via runNewsletterScheduler) or node-cron (local dev)
+ * Ref: Beads workspace-8i6
+ */
 const { newsletterGenerateQueue } = require('../queues/newsletterGenerateQueue');
 
 // Cron times are in UTC
@@ -28,7 +32,54 @@ const NEWSLETTER_SCHEDULES = [
   { jurisdiction: 'CA', cadence: 'WEEKLY_ROUNDUP', cron: '0 11 * * 0' },
 ];
 
+/**
+ * Run the newsletter scheduler once — checks which newsletters are due NOW.
+ * Called by CF Cron Trigger every 6 hours. Compares current UTC time against
+ * the configured schedules and enqueues any that match.
+ */
+async function runNewsletterScheduler() {
+  const now = new Date();
+  const currentHour = now.getUTCHours();
+  const currentDay = now.getUTCDay(); // 0=Sun, 6=Sat
+
+  for (const { jurisdiction, cadence, cron: schedule } of NEWSLETTER_SCHEDULES) {
+    // Parse simple cron patterns: "0 H * * D" or "0 H * * D1-D2"
+    const parts = schedule.split(' ');
+    const cronHour = parseInt(parts[1], 10);
+    const cronDayPart = parts[4];
+
+    // Check if the hour matches (within the 6-hour cron window)
+    if (Math.abs(currentHour - cronHour) > 3) continue;
+
+    // Check if the day matches
+    let dayMatch = false;
+    if (cronDayPart === '*') {
+      dayMatch = true;
+    } else if (cronDayPart.includes('-')) {
+      const [start, end] = cronDayPart.split('-').map(Number);
+      dayMatch = currentDay >= start && currentDay <= end;
+    } else {
+      dayMatch = currentDay === parseInt(cronDayPart, 10);
+    }
+
+    if (dayMatch && currentHour === cronHour) {
+      console.log(`[newsletter-scheduler] Enqueuing ${jurisdiction} (${cadence})`);
+      try {
+        await newsletterGenerateQueue.add('generate-newsletter', { jurisdiction, cadence });
+      } catch (err) {
+        console.error(`[newsletter-scheduler] Failed to enqueue for ${jurisdiction} (${cadence}):`, err.message);
+      }
+    }
+  }
+}
+
 function startNewsletterScheduler() {
+  const { isCFWorkers } = require('../queues/connection');
+  if (isCFWorkers) {
+    console.log('[newsletter-scheduler] CF Workers mode — cron triggers configured in wrangler.toml');
+    return;
+  }
+  const cron = require('node-cron');
   for (const { jurisdiction, cadence, cron: schedule } of NEWSLETTER_SCHEDULES) {
     cron.schedule(schedule, async () => {
       console.log(`[newsletter-scheduler] Enqueuing newsletter generation for ${jurisdiction} (${cadence})`);
@@ -42,4 +93,4 @@ function startNewsletterScheduler() {
   }
 }
 
-module.exports = { startNewsletterScheduler };
+module.exports = { startNewsletterScheduler, runNewsletterScheduler };
