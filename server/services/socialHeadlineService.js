@@ -1,8 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const prisma = new PrismaClient();
 
 async function generateHeadlines(article, tonePrompt) {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
@@ -89,6 +88,7 @@ function generateFallbackHeadlines(article) {
 }
 
 async function generateHeadlinesWithConfig(article) {
+  const prisma = getClient();
   const config = await prisma.socialConfig.findFirst();
   const tonePrompt = config?.tonePrompt || 'Informative, concise, neutral news tone.';
   const headlines = await generateHeadlines(article, tonePrompt);

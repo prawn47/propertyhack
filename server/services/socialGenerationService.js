@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const { generateHeadlinesWithConfig } = require('./socialHeadlineService');
 const { socialPublishQueue } = require('../queues/socialPublishQueue');
 
@@ -9,11 +9,10 @@ const socialImageService = isCloudflareWorker
   ? null 
   : require('./socialImageService');
 
-const prisma = new PrismaClient();
-
 const PLATFORMS = ['facebook', 'twitter', 'instagram'];
 
 async function generateSocialPosts(articleId) {
+  const prisma = getClient();
   const article = await prisma.article.findUnique({
     where: { id: articleId },
     include: { source: true },
@@ -131,6 +130,7 @@ function buildPostContent(platform, platformData, articleUrl) {
 }
 
 async function calculateScheduleTimes(platforms, config) {
+  const prisma = getClient();
   const now = new Date();
   const { minPostGapMins, maxDelayMins } = config;
   const schedules = {};

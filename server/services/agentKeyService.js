@@ -1,8 +1,7 @@
 const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
-const { PrismaClient } = require('@prisma/client')
+const { getClient } = require('../lib/prisma')
 
-const prisma = new PrismaClient()
 const BCRYPT_ROUNDS = 10
 
 async function generateKey() {
@@ -15,6 +14,7 @@ async function generateKey() {
 }
 
 async function createKey(name, scopes, expiresAt) {
+  const prisma = getClient()
   const { plainKey, keyHash, keyPrefix } = await generateKey()
   const record = await prisma.agentApiKey.create({
     data: {
@@ -29,6 +29,7 @@ async function createKey(name, scopes, expiresAt) {
 }
 
 async function revokeKey(id) {
+  const prisma = getClient()
   const record = await prisma.agentApiKey.update({
     where: { id },
     data: { isActive: false },
@@ -37,6 +38,7 @@ async function revokeKey(id) {
 }
 
 async function listKeys() {
+  const prisma = getClient()
   const keys = await prisma.agentApiKey.findMany({
     orderBy: { createdAt: 'desc' },
     select: {
@@ -57,6 +59,7 @@ async function listKeys() {
 async function validateKey(providedKey) {
   if (!providedKey || providedKey.length < 12) return null
 
+  const prisma = getClient()
   const prefix = providedKey.substring(0, 12)
   const candidates = await prisma.agentApiKey.findMany({
     where: {

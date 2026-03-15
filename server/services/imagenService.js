@@ -64,12 +64,11 @@ async function generateHeroImage(newsletterId, subject, themeText) {
     let prompt = `${subject}. ${themeText}`;
 
     try {
-      const { PrismaClient } = require('@prisma/client');
-      const prisma = new PrismaClient();
+      const { getClient } = require('../lib/prisma');
+      const prisma = getClient();
       const template = await prisma.systemPrompt.findFirst({
         where: { name: 'newsletter-image-prompt-template', isActive: true },
       });
-      await prisma.$disconnect();
 
       if (template && template.content) {
         prompt = template.content

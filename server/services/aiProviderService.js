@@ -51,8 +51,8 @@ async function getTaskConfig(task) {
 
   let config = null;
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
+    const { getClient } = require('../lib/prisma');
+    const prisma = getClient();
     const record = await prisma.aiModelConfig.findUnique({ where: { task } });
     if (record && record.isActive) {
       config = {
@@ -62,7 +62,6 @@ async function getTaskConfig(task) {
         fallbackModel: record.fallbackModel || null,
       };
     }
-    await prisma.$disconnect();
   } catch {
     // AiModelConfig table may not exist yet — fall through to defaults
   }

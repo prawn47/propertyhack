@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const aiProviderService = require('./aiProviderService');
-
-const prisma = new PrismaClient();
 
 let cachedSummaryPrompt = null;
 let summaryCacheTimestamp = 0;
@@ -13,6 +11,7 @@ async function getSummaryPromptTemplate() {
     return cachedSummaryPrompt;
   }
   try {
+    const prisma = getClient();
     const record = await prisma.systemPrompt.findUnique({ where: { name: 'article-summarisation' } });
     if (record && record.isActive) {
       cachedSummaryPrompt = record.content;

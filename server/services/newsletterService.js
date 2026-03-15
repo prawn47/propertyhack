@@ -1,11 +1,9 @@
 'use strict';
 
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const { generateEmbedding } = require('./embeddingService');
 const aiProviderService = require('./aiProviderService');
 const imagenService = require('./imagenService');
-
-const prisma = new PrismaClient();
 
 const DEFAULT_CONFIG = {
   dailyArticleLimit: 20,
@@ -19,6 +17,7 @@ const DEFAULT_CONFIG = {
 };
 
 async function loadConfig() {
+  const prisma = getClient();
   const row = await prisma.newsletterGenerationConfig.findFirst();
   return row || DEFAULT_CONFIG;
 }
@@ -409,6 +408,7 @@ The articleSlugs array should contain the slugs of ALL articles referenced in th
  * @returns {Promise<object>} The created NewsletterDraft record
  */
 async function generateNewsletter(jurisdiction, cadence = 'DAILY') {
+  const prisma = getClient();
   const jur = jurisdiction.toLowerCase();
   const config = await loadConfig();
 
@@ -524,6 +524,7 @@ async function generateNewsletter(jurisdiction, cadence = 'DAILY') {
 }
 
 async function _generateDailyData(jur, config) {
+  const prisma = getClient();
   const todaysArticles = await selectTodaysArticles(jur, { prisma });
   const globalHighlights = await selectGlobalHighlights(jur, 1, config.globalArticleLimit, { prisma });
   const todaysTitles = todaysArticles.map(a => a.title);
@@ -545,6 +546,7 @@ async function _generateDailyData(jur, config) {
 }
 
 async function _generateEditorialData(jur, config) {
+  const prisma = getClient();
   const weekArticles = await selectWeekArticles(jur, 5, config.editorialArticleLimit, { prisma });
   const { topic } = await identifyTrendingTopic(weekArticles, { prisma });
   const articleTitles = weekArticles.map(a => a.title);
@@ -567,6 +569,7 @@ async function _generateEditorialData(jur, config) {
 }
 
 async function _generateRoundupData(jur, config) {
+  const prisma = getClient();
   const weekArticles = await selectWeekArticles(jur, config.roundupDaysWindow, config.roundupArticleLimit, { prisma });
   const globalHighlights = await selectGlobalHighlights(jur, 7, 2, { prisma });
   const articleTitles = weekArticles.map(a => a.title);

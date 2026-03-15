@@ -1,7 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { getClient } = require('../lib/prisma');
 
 let cachedPromptTemplate = null;
 let cacheTimestamp = 0;
@@ -13,6 +11,7 @@ async function getPromptTemplate() {
     return cachedPromptTemplate;
   }
   try {
+    const prisma = getClient();
     const record = await prisma.systemPrompt.findUnique({ where: { name: 'social-generation' } });
     if (record && record.isActive) {
       cachedPromptTemplate = record.content;

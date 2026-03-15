@@ -1,10 +1,8 @@
 const fs = require('fs').promises;
 const crypto = require('crypto');
 const path = require('path');
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const aiProviderService = require('./aiProviderService');
-
-const prisma = new PrismaClient();
 const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
 const IMAGES_DIR = isCloudflareWorker 
   ? '/images/articles' 
@@ -20,6 +18,7 @@ async function getPromptTemplate() {
     return cachedPromptTemplate;
   }
   try {
+    const prisma = getClient();
     const record = await prisma.systemPrompt.findUnique({ where: { name: 'image-generation' } });
     if (record && record.isActive) {
       cachedPromptTemplate = record.content;
@@ -228,6 +227,7 @@ function getRandomFallbackImage() {
 }
 
 async function generateArticleImage(title, shortBlurb, category, slug, market = 'AU', attemptsMade = 0, articleId = null) {
+  const prisma = getClient();
   if (!process.env.GEMINI_API_KEY) {
     console.warn('[imageGen] GEMINI_API_KEY not set — skipping image generation');
     return null;
