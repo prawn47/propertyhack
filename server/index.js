@@ -134,7 +134,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('/{*path}', cors(corsOptions));
 
 // On CF Workers, in-memory rate limiting is useless (each request is an isolated execution).
 // Rate limiting should be handled by CF's built-in rate limiting rules instead.
