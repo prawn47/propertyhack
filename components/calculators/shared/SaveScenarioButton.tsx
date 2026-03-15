@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import type { CalculatorType } from '../../../services/calculatorService';
+import { getApiUrl } from '../../../services/apiConfig';
 
 interface SaveScenarioButtonProps {
   calculatorType: CalculatorType;
@@ -72,7 +73,7 @@ const SaveScenarioButton: React.FC<SaveScenarioButtonProps> = ({
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/scenarios', {
+      const response = await fetch(`${getApiUrl('/api')}/scenarios`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,3 +1,5 @@
+import { getApiUrl } from './apiConfig';
+
 export type CalculatorType =
   | 'mortgage'
   | 'stamp-duty'
@@ -25,7 +27,7 @@ export async function calculate(
   const endpoint = mapping ? mapping.endpoint : type;
   const marketParam = mapping?.market ? `?market=${mapping.market}` : '';
 
-  const response = await fetch(`/api/calculators/${endpoint}/calculate${marketParam}`, {
+  const response = await fetch(`${getApiUrl('/api')}/calculators/${endpoint}/calculate${marketParam}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(inputs),

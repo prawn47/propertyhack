@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCountry } from '../../contexts/CountryContext';
+import { getApiUrl } from '../../services/apiConfig';
 
 const REGION_OPTIONS: Record<string, { code: string; label: string }[]> = {
   AU: [
@@ -96,7 +97,7 @@ const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/subscribe', {
+      const res = await fetch(`${getApiUrl('/api')}/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, firstName, country, region }),

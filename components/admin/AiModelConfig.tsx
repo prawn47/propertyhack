@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import { getApiUrl } from '../../services/apiConfig';
 
 interface TaskConfig {
   id: string;
@@ -48,7 +49,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 async function fetchTaskConfigs(): Promise<TaskConfig[]> {
-  const res = await fetch('/api/admin/ai-models', {
+  const res = await fetch(`${getApiUrl('/api')}/admin/ai-models`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
   });
   if (!res.ok) throw new Error('Failed to load task configs');
@@ -56,7 +57,7 @@ async function fetchTaskConfigs(): Promise<TaskConfig[]> {
 }
 
 async function fetchProviders(): Promise<ProviderStatus[]> {
-  const res = await fetch('/api/admin/ai-models/providers', {
+  const res = await fetch(`${getApiUrl('/api')}/admin/ai-models/providers`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
   });
   if (!res.ok) throw new Error('Failed to load providers');
@@ -67,7 +68,7 @@ async function updateTaskConfig(
   task: string,
   data: { provider: string; model: string; fallbackProvider?: string | null; fallbackModel?: string | null }
 ): Promise<TaskConfig> {
-  const res = await fetch(`/api/admin/ai-models/${task}`, {
+  const res = await fetch(`${getApiUrl('/api')}/admin/ai-models/${task}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { calculate, CalculatorType } from '../services/calculatorService';
+import { getApiUrl } from '../services/apiConfig';
 
 interface UseCalculatorReturn<TInputs, TOutputs> {
   inputs: TInputs;
@@ -67,7 +68,7 @@ export function useCalculator<TInputs extends Record<string, unknown>, TOutputs>
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    fetch(`/api/scenarios/${scenarioId}`, {
+    fetch(`${getApiUrl('/api')}/scenarios/${scenarioId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
