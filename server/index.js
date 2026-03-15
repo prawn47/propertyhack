@@ -167,16 +167,20 @@ const authLimiter = createLimiter({
 // Body parsing
 if (isCloudflareWorker) {
   // On CF Workers, worker-entry.js pre-parses JSON and sets req.body + req.rawBody.
-  // This middleware ensures the body survives Express's prototype chain modifications.
+  // Express's init middleware changes the prototype chain which can lose own properties.
+  // This middleware re-parses from rawBody AFTER Express init runs, guaranteeing req.body is set.
   app.use((req, res, next) => {
-    if (req.body === undefined && req.rawBody) {
-      const ct = req.get('content-type') || '';
+    if (req.rawBody) {
+      const ct = (req.get && req.get('content-type')) || req.headers?.['content-type'] || '';
       if (ct.includes('application/json')) {
         try { req.body = JSON.parse(req.rawBody); } catch (e) { /* leave as-is */ }
       } else if (ct.includes('urlencoded')) {
         req.body = Object.fromEntries(new URLSearchParams(req.rawBody));
+      } else {
+        req.body = req.rawBody;
       }
     }
+    if (!req.body) req.body = {};
     next();
   });
 } else {
