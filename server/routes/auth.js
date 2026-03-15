@@ -9,8 +9,14 @@ const beehiivService = require('../services/beehiivService');
 
 const router = express.Router();
 
-// Rate limiters
-const authLimiter = rateLimit({
+// On CF Workers, in-memory rate limiting is useless (each request is isolated)
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+function createLimiter(opts) {
+  if (isCloudflareWorker) return (req, res, next) => next();
+  return rateLimit(opts);
+}
+
+const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: 'Too many attempts, please try again later.' },
@@ -18,7 +24,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const sensitiveOtpLimiter = rateLimit({
+const sensitiveOtpLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: 3,
   message: { error: 'Too many requests, please try again later.' },

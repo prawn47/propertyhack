@@ -6,8 +6,14 @@ const henryService = require('../services/henryService');
 
 const router = express.Router();
 
-// Rate limiters
-const anonChatLimiter = rateLimit({
+// On CF Workers, in-memory rate limiting is useless (each request is isolated)
+const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
+function createLimiter(opts) {
+  if (isCloudflareWorker) return (req, res, next) => next();
+  return rateLimit(opts);
+}
+
+const anonChatLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: parseInt(process.env.HENRY_RATE_LIMIT_ANON || '10'),
   message: { error: "You've sent a lot of messages recently. Please wait a few minutes." },
@@ -15,7 +21,7 @@ const anonChatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const authChatLimiter = rateLimit({
+const authChatLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: parseInt(process.env.HENRY_RATE_LIMIT_AUTH || '60'),
   keyGenerator: (req) => req.user?.id || 'anon',

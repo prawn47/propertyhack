@@ -72,7 +72,7 @@ if (!isCloudflareWorker) {
 }
 // Fallback objects for CF Workers environment
 if (isCloudflareWorker) {
-  const mockWorker = { gracefulShutdown: () => {} };
+  const mockWorker = { gracefulShutdown: () => {}, close: async () => {} };
   sourceFetchWorker = mockWorker;
   articleProcessWorker = mockWorker;
   articleSummariseWorker = mockWorker;
@@ -134,8 +134,16 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
-const limiter = rateLimit({
+// On CF Workers, in-memory rate limiting is useless (each request is an isolated execution).
+// Rate limiting should be handled by CF's built-in rate limiting rules instead.
+function createLimiter(opts) {
+  if (isCloudflareWorker) return (req, res, next) => next();
+  return rateLimit(opts);
+}
+
+const limiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: { error: 'Too many requests from this IP, please try again later.' },
@@ -148,7 +156,7 @@ if (isProduction) {
   app.use(limiter);
 }
 
-const authLimiter = rateLimit({
+const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: { error: 'Too many authentication attempts, please try again later.' },
@@ -156,16 +164,16 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Raw body capture for Resend webhook signature verification (must be before general JSON parser)
-app.use('/api/webhooks/newsletter', express.json({
-  limit: '10mb',
-  verify: (req, res, buf) => {
-    req.rawBody = buf.toString();
-  }
-}));
-
-// Body parsing middleware - disabled for CF Workers (handled in worker-entry.js)
+// Body parsing — on CF Workers, worker-entry.js pre-parses the body and sets req.body directly.
+// In traditional mode, Express middleware handles it.
 if (!isCloudflareWorker) {
+  // Raw body capture for Resend webhook signature verification (must be before general JSON parser)
+  app.use('/api/webhooks/newsletter', express.json({
+    limit: '10mb',
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    }
+  }));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
 }
@@ -232,14 +240,14 @@ app.get('/system/queue-status', async (req, res) => {
 
 const noop = (req, res, next) => next();
 
-const agentRateLimiter = rateLimit({
+const agentRateLimiter = createLimiter({
   windowMs: 60 * 1000,
   max: 60,
   keyGenerator: (req) => req.headers['x-agent-key']?.substring(0, 12) || req.ip,
   message: { error: 'Agent API rate limit exceeded. Max 60 requests per minute.' },
 });
 
-const calculatorLimiter = rateLimit({
+const calculatorLimiter = createLimiter({
   windowMs: 60 * 1000,
   max: 60,
   message: { error: 'Too many calculation requests.' },

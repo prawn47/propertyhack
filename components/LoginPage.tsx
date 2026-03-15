@@ -39,18 +39,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
     <div className="min-h-screen bg-base-200 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          {onBack && (
+          {onBack ? (
             <button
               onClick={onBack}
               className="inline-flex items-center text-sm text-content-secondary hover:text-brand-accent transition-colors mb-4"
             >
               ← Back to Home
             </button>
+          ) : (
+            <Link
+              to="/"
+              className="inline-flex items-center text-sm text-content-secondary hover:text-brand-accent transition-colors mb-4"
+            >
+              ← Back to PropertyHack
+            </Link>
           )}
-          <div className="flex flex-col items-center justify-center mb-3">
-            <img src="/ph-logo.jpg" alt="PropertyHack" className="h-16 w-16 rounded-xl mb-3" />
+          <Link to="/" className="flex flex-col items-center justify-center mb-3">
+            <img src="/ph-logo.jpg" alt="PropertyHack — Global Property News & Intelligence" className="h-16 w-16 rounded-xl mb-3" />
             <h1 className="text-3xl font-bold text-content">PropertyHack</h1>
-          </div>
+          </Link>
           <p className="text-content-secondary mt-2">Sign in to your account</p>
         </div>
 

@@ -6,26 +6,18 @@ const { subscribe: beehiivSubscribe, unsubscribe: beehiivUnsubscribe } = require
 
 const router = express.Router();
 
-// CF Workers-compatible rate limiter configuration
+// On CF Workers, in-memory rate limiting is useless (each request is isolated)
 const isCloudflareWorker = typeof globalThis.__cf_env !== 'undefined';
 
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Custom key generator for CF Workers
-  keyGenerator: (req) => {
-    if (isCloudflareWorker) {
-      // In CF Workers, use the CF-Connecting-IP header
-      return req.headers['cf-connecting-ip'] || req.ip || 'anonymous';
-    }
-    // Default behavior for traditional Node.js environments
-    return req.ip;
-  },
-});
-
-router.use(limiter);
+if (!isCloudflareWorker) {
+  const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  router.use(limiter);
+}
 
 router.post(
   '/',
