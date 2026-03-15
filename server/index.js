@@ -164,9 +164,22 @@ const authLimiter = createLimiter({
   legacyHeaders: false,
 });
 
-// Body parsing — on CF Workers, worker-entry.js pre-parses the body and sets req.body directly.
-// In traditional mode, Express middleware handles it.
-if (!isCloudflareWorker) {
+// Body parsing
+if (isCloudflareWorker) {
+  // On CF Workers, worker-entry.js pre-parses JSON and sets req.body + req.rawBody.
+  // This middleware ensures the body survives Express's prototype chain modifications.
+  app.use((req, res, next) => {
+    if (req.body === undefined && req.rawBody) {
+      const ct = req.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        try { req.body = JSON.parse(req.rawBody); } catch (e) { /* leave as-is */ }
+      } else if (ct.includes('urlencoded')) {
+        req.body = Object.fromEntries(new URLSearchParams(req.rawBody));
+      }
+    }
+    next();
+  });
+} else {
   // Raw body capture for Resend webhook signature verification (must be before general JSON parser)
   app.use('/api/webhooks/newsletter', express.json({
     limit: '10mb',
