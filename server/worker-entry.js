@@ -127,8 +127,14 @@ export default {
         }
       }
 
-      // Read body as Buffer for proper stream handling
-      const rawBody = request.body ? await request.text() : '';
+      // Read body — request.body is a ReadableStream on CF Workers
+      let rawBody = '';
+      try {
+        rawBody = await request.text();
+      } catch (e) {
+        // Body may already be consumed or empty
+        rawBody = '';
+      }
 
       // Pre-parse JSON body so Express doesn't need express.json()
       let parsedBody = rawBody;
@@ -152,6 +158,15 @@ export default {
             headers: responseHeaders,
           }));
         }
+
+        // Safety timeout — prevent worker from hanging forever (CF kills at 30s anyway)
+        setTimeout(() => {
+          if (!resolved) {
+            console.error('[worker] Response timeout — Express never sent a response for', url.pathname);
+            finishResponse(504, { 'content-type': 'application/json' },
+              JSON.stringify({ error: 'Request timed out' }));
+          }
+        }, 25000);
 
         // ─── Request Object ───────────────────────────────────
         // Plain object with all properties Express expects
