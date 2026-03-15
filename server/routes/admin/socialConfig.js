@@ -1,16 +1,14 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // GET /api/admin/social-config
 router.get('/', async (req, res) => {
   try {
-    let config = await prisma.socialConfig.findFirst();
+    let config = await req.prisma.socialConfig.findFirst();
     if (!config) {
-      config = await prisma.socialConfig.create({
+      config = await req.prisma.socialConfig.create({
         data: {
           tonePrompt: 'Informative, concise, neutral news tone. Not salesy or clickbaity.',
           defaultHashtags: ['#PropertyNews', '#RealEstate'],
@@ -41,7 +39,7 @@ router.put('/',
     }
 
     try {
-      let config = await prisma.socialConfig.findFirst();
+      let config = await req.prisma.socialConfig.findFirst();
       const updateData = {};
 
       if (req.body.tonePrompt !== undefined) updateData.tonePrompt = req.body.tonePrompt;
@@ -51,9 +49,9 @@ router.put('/',
       if (req.body.fallbackImageUrl !== undefined) updateData.fallbackImageUrl = req.body.fallbackImageUrl;
 
       if (!config) {
-        config = await prisma.socialConfig.create({ data: updateData });
+        config = await req.prisma.socialConfig.create({ data: updateData });
       } else {
-        config = await prisma.socialConfig.update({
+        config = await req.prisma.socialConfig.update({
           where: { id: config.id },
           data: updateData,
         });

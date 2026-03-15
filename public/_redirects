@@ -1,28 +1,8 @@
-# ═══════════════════════════════════════════════════════════════════════
-# PropertyHack Frontend — Cloudflare Pages Redirects
-# ═══════════════════════════════════════════════════════════════════════
+# PropertyHack Frontend — Cloudflare Workers Static Assets
 #
-# Proxies API requests from the frontend (Pages) to the backend (Worker).
-# This avoids CORS issues in production.
+# SPA routing is handled by wrangler.jsonc:
+#   "not_found_handling": "single-page-application"
 #
-# The API Worker is deployed as propertyhack-api.workers.dev
-# or api.propertyhack.com (once DNS is configured).
-#
-# Ref: Beads workspace-8i6
-# ═══════════════════════════════════════════════════════════════════════
-
-# Proxy all /api/* requests to the backend Worker
-/api/*  https://api.propertyhack.com/api/:splat  200
-
-# Proxy health check
-/health https://api.propertyhack.com/health  200
-
-# Proxy system status
-/system/* https://api.propertyhack.com/system/:splat  200
-
-# Proxy sitemaps and RSS feeds
-/sitemap* https://api.propertyhack.com/sitemap:splat  200
-/feed*    https://api.propertyhack.com/feed:splat  200
-
-# SPA fallback — serve index.html for all non-file routes
-/*  /index.html  200
+# API calls go directly to the backend Worker
+# (propertyhack-api.dan-6ca.workers.dev) via VITE_API_URL.
+# No proxy rules needed here.

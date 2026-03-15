@@ -3,10 +3,8 @@
  * Dual-mode: CF Cron Trigger (via runScheduler) or node-cron (local dev)
  * Ref: Beads workspace-8i6
  */
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const { sourceFetchQueue } = require('../queues/sourceFetchQueue');
-
-const prisma = new PrismaClient();
 
 const DEFAULT_SCHEDULES = {
   RSS:         '*/30 * * * *',  // 30 min
@@ -69,6 +67,7 @@ function parseCronIntervalMs(schedule) {
 }
 
 async function checkAndEnqueueSources() {
+  const prisma = getClient();
   console.log('[ingestion-scheduler] Checking active sources...');
 
   let sources;

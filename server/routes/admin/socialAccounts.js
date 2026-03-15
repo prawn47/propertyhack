@@ -1,17 +1,15 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { body, param, validationResult } = require('express-validator');
 const { encrypt, decrypt } = require('../../utils/encryption');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 const VALID_PLATFORMS = ['facebook', 'twitter', 'instagram'];
 
 // GET /api/admin/social-accounts — list all accounts
 router.get('/', async (req, res) => {
   try {
-    const accounts = await prisma.socialAccount.findMany({
+    const accounts = await req.prisma.socialAccount.findMany({
       orderBy: { platform: 'asc' },
     });
 
@@ -68,7 +66,7 @@ router.put('/:platform',
       if (req.body.autoPublish !== undefined) updateData.autoPublish = req.body.autoPublish;
       if (req.body.accountName !== undefined) updateData.accountName = req.body.accountName;
 
-      const account = await prisma.socialAccount.upsert({
+      const account = await req.prisma.socialAccount.upsert({
         where: { platform },
         update: updateData,
         create: { platform, ...updateData },
@@ -115,7 +113,7 @@ router.post('/:platform/connect',
         if (refreshToken) encryptedRefresh = encrypt(refreshToken);
       }
 
-      const account = await prisma.socialAccount.upsert({
+      const account = await req.prisma.socialAccount.upsert({
         where: { platform },
         update: {
           accessToken: encryptedToken,
@@ -156,7 +154,7 @@ router.post('/:platform/disconnect',
     try {
       const { platform } = req.params;
 
-      await prisma.socialAccount.upsert({
+      await req.prisma.socialAccount.upsert({
         where: { platform },
         update: {
           isConnected: false,
@@ -184,7 +182,7 @@ router.post('/:platform/test',
   async (req, res) => {
     try {
       const { platform } = req.params;
-      const account = await prisma.socialAccount.findUnique({ where: { platform } });
+      const account = await req.prisma.socialAccount.findUnique({ where: { platform } });
 
       if (!account || !account.accessToken) {
         return res.status(400).json({ error: `${platform} is not connected` });
@@ -216,14 +214,14 @@ router.post('/:platform/test',
           if (testResult.error) throw new Error(testResult.error.message);
         }
 
-        await prisma.socialAccount.update({
+        await req.prisma.socialAccount.update({
           where: { platform },
           data: { lastCheckedAt: new Date(), lastError: null },
         });
 
         res.json({ platform, healthy: true, details: testResult });
       } catch (testErr) {
-        await prisma.socialAccount.update({
+        await req.prisma.socialAccount.update({
           where: { platform },
           data: { lastCheckedAt: new Date(), lastError: testErr.message, isConnected: false },
         });

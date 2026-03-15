@@ -3,12 +3,11 @@
  * Dual-mode: CF Cron Trigger (via runSocialHealthCheck) or node-cron (local dev)
  * Ref: Beads workspace-8i6
  */
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const { decrypt } = require('../utils/encryption');
 
-const prisma = new PrismaClient();
-
 async function runSocialHealthCheck() {
+    const prisma = getClient();
     console.log('[social-health] Running connection health check...');
 
     const accounts = await prisma.socialAccount.findMany({
@@ -22,7 +21,7 @@ async function runSocialHealthCheck() {
 
     for (const account of accounts) {
       try {
-        await checkAccountHealth(account);
+        await checkAccountHealth(prisma, account);
       } catch (err) {
         console.error(`[social-health] Error checking ${account.platform}:`, err.message);
       }
@@ -42,7 +41,7 @@ function startSocialHealthCheck() {
   console.log('[social-health] Scheduled health check (every 6 hours)');
 }
 
-async function checkAccountHealth(account) {
+async function checkAccountHealth(prisma, account) {
   const { platform } = account;
   let healthy = false;
   let error = null;

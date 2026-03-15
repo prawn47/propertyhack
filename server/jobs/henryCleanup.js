@@ -3,11 +3,10 @@
  * Dual-mode: CF Cron Trigger (via runHenryCleanup) or node-cron (local dev)
  * Ref: Beads workspace-8i6
  */
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { getClient } = require('../lib/prisma');
 
 async function cleanupOldConversations() {
+  const prisma = getClient();
   console.log('[henry-cleanup] Running old conversation cleanup...');
 
   const cutoff = new Date();

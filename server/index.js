@@ -22,7 +22,7 @@ if (!isCloudflareWorker) {
   swaggerUi = require('swagger-ui-express');
   YAML = require('yamljs');
 }
-const prisma = require('./lib/prisma');
+const { getClient } = require('./lib/prisma');
 
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/user/profile');
@@ -209,13 +209,7 @@ if (!isCloudflareWorker) {
 }
 
 app.use((req, res, next) => {
-  if (isCloudflareWorker) {
-    // Hyperdrive connections are request-scoped — must create fresh client per request
-    const { createRequestClient } = require('./lib/prisma');
-    req.prisma = createRequestClient();
-  } else {
-    req.prisma = prisma;
-  }
+  req.prisma = getClient();
   next();
 });
 
