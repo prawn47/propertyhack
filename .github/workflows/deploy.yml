@@ -30,6 +30,8 @@ jobs:
           node-version: '20'
       - run: cd server && npm ci
       - run: cd server && npx prisma generate
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
       - run: cd server && npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
