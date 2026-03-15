@@ -59,8 +59,8 @@ router.get('/', async (req, res) => {
 
     if (applyCountryFilter) {
       where.OR = [
-        { market: countryUpper },
-        { market: 'ALL' },
+        { markets: { has: countryUpper } },
+        { markets: { has: 'ALL' } },
       ];
     }
 
@@ -92,7 +92,7 @@ router.get('/', async (req, res) => {
         let paramIdx = 2;
 
         if (applyCountryFilter) {
-          filterClauses.push(`(a.market = $${paramIdx} OR a.market = 'ALL')`);
+          filterClauses.push(`($${paramIdx} = ANY(a.markets) OR 'ALL' = ANY(a.markets))`);
           filterValues.push(countryUpper);
           paramIdx++;
         }
@@ -124,7 +124,7 @@ router.get('/', async (req, res) => {
         const countValues = [];
         let countIdx = 1;
         if (applyCountryFilter) {
-          countClauses.push(`(a.market = $${countIdx} OR a.market = 'ALL')`);
+          countClauses.push(`($${countIdx} = ANY(a.markets) OR 'ALL' = ANY(a.markets))`);
           countValues.push(countryUpper);
           countIdx++;
         }
@@ -279,7 +279,7 @@ router.get('/search-overview', async (req, res) => {
     let paramIdx = 2;
 
     if (applyCountryFilter) {
-      filterClauses.push(`(a.market = $${paramIdx} OR a.is_evergreen = true OR a.is_global = true)`);
+      filterClauses.push(`($${paramIdx} = ANY(a.markets) OR 'ALL' = ANY(a.markets) OR a.is_evergreen = true OR a.is_global = true)`);
       filterValues.push(countryUpper);
       paramIdx++;
     }
@@ -382,8 +382,8 @@ router.get('/trending', async (req, res) => {
 
     if (applyCountryFilter) {
       where.OR = [
-        { market: countryUpper },
-        { market: 'ALL' },
+        { markets: { has: countryUpper } },
+        { markets: { has: 'ALL' } },
       ];
     }
 

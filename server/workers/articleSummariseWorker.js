@@ -92,8 +92,9 @@ async function processJob(data) {
     categorySlug = fallback ? 'uncategorized' : categorySlug;
   }
 
-  // Primary market = first in list (or first non-ALL)
-  const primaryMarket = summary.markets.find(m => m !== 'ALL') || summary.markets[0] || 'AU';
+  // Primary market = first in list (or first non-ALL), fall back to source market
+  const sourceMarket = article.source?.market;
+  const primaryMarket = summary.markets.find(m => m !== 'ALL') || summary.markets[0] || sourceMarket || 'AU';
 
   const isDraft = score < thresholds.reviewBelow;
   const finalStatus = isDraft ? 'SUMMARISED' : 'PUBLISHED';

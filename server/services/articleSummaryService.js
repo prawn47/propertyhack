@@ -70,9 +70,12 @@ async function generateArticleSummary(articleContent) {
   const { title, content, sourceUrl, sourceName, sourceMarket } = articleContent;
 
   const hasContent = content && content.trim().length > 50;
+  const sourceMarketHint = sourceMarket && sourceMarket !== 'ALL'
+    ? `\nSource market: ${sourceMarket} — use this as a strong signal for market classification, but override if the content is clearly about a different market.`
+    : '';
   const inputText = hasContent
-    ? `Title: ${title}\nSource: ${sourceName || sourceUrl}\nContent:\n${content}`
-    : `Title: ${title}\nSource: ${sourceName || sourceUrl}\n(Full article content not available — summarise from title only)`;
+    ? `Title: ${title}\nSource: ${sourceName || sourceUrl}${sourceMarketHint}\nContent:\n${content}`
+    : `Title: ${title}\nSource: ${sourceName || sourceUrl}${sourceMarketHint}\n(Full article content not available — summarise from title only)`;
 
   const englishVariant = ENGLISH_VARIANT[sourceMarket] || ENGLISH_VARIANT.AU;
 
@@ -142,10 +145,11 @@ Return ONLY a JSON object with two fields: "shortBlurb" and "longSummary". No ma
     : 'uncategorized';
 
   const validMarkets = ['AU', 'NZ', 'US', 'UK', 'CA', 'ALL'];
+  const fallbackMarket = validMarkets.includes(sourceMarket) && sourceMarket !== 'ALL' ? sourceMarket : 'AU';
   const markets = Array.isArray(parsed.markets)
     ? parsed.markets.filter(m => validMarkets.includes(m))
-    : ['AU'];
-  if (markets.length === 0) markets.push('AU');
+    : [fallbackMarket];
+  if (markets.length === 0) markets.push(fallbackMarket);
 
   const relevanceScore = Number.isInteger(parsed.relevanceScore) && parsed.relevanceScore >= 1 && parsed.relevanceScore <= 10
     ? parsed.relevanceScore
