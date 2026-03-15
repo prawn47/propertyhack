@@ -4,13 +4,12 @@
  * Ref: Beads workspace-8i6
  */
 const { connection, isCFWorkers } = require('../queues/connection')
-const { PrismaClient } = require('@prisma/client')
+const { getClient } = require('../lib/prisma')
 const { generateEmbedding } = require('../services/embeddingService')
 const { pingIndexNow } = require('../services/indexNowService')
 
-const prisma = new PrismaClient()
-
 async function processJob(data) {
+  const prisma = getClient()
   const { articleId } = data
 
   const article = await prisma.article.findUnique({

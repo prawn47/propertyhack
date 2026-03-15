@@ -4,12 +4,11 @@
  * Ref: Beads workspace-8i6
  */
 const { connection, isCFWorkers } = require('../queues/connection');
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const { generateSocialPosts } = require('../services/socialGenerationService');
 
-const prisma = new PrismaClient();
-
 async function processJob(data) {
+  const prisma = getClient();
   const { articleId } = data;
   console.log(`[social-generate] Job ${job.id} — articleId: ${articleId}`);
 

@@ -6,9 +6,7 @@
 const { connection, isCFWorkers } = require('../queues/connection');
 const { articleProcessQueue } = require('../queues/articleProcessQueue');
 const { getFetcher } = require('../services/fetchers');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { getClient } = require('../lib/prisma');
 
 // ── Source Locking (KV-based for CF Workers) ──────────────────────
 
@@ -48,6 +46,7 @@ async function releaseSourceLock(sourceId, env) {
  * @param {object} env - CF Workers environment (contains KV binding, optional for local dev)
  */
 async function processJob(data, env = null) {
+  const prisma = getClient();
   const { sourceId, sourceType, config } = data;
   console.log(`[source-fetch] Processing sourceId: ${sourceId}, type: ${sourceType}`);
   

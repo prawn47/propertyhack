@@ -4,13 +4,12 @@
  * Ref: Beads workspace-8i6
  */
 const { connection, isCFWorkers } = require('../queues/connection');
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const { getAdapter } = require('../services/social');
 const { decrypt } = require('../utils/encryption');
 
-const prisma = new PrismaClient();
-
 async function processJob(data) {
+  const prisma = getClient();
   const { postId } = data;
   console.log(`[social-publish] Job ${job.id} — postId: ${postId}`);
 
@@ -76,6 +75,7 @@ async function processJob(data) {
 }
 
 async function getPlatformCredentials(platform) {
+  const prisma = getClient();
   // Try to read from SocialAccount model first
   const account = await prisma.socialAccount.findUnique({ where: { platform } });
 

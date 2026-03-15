@@ -6,15 +6,14 @@
 const { connection, isCFWorkers } = require('../queues/connection');
 const { articleImageQueue } = require('../queues/articleImageQueue');
 const { generateArticleSummary } = require('../services/articleSummaryService');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { getClient } = require('../lib/prisma');
 
 let cachedThresholds = null;
 let thresholdsCacheTimestamp = 0;
 const THRESHOLDS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 async function getRelevanceThresholds() {
+  const prisma = getClient();
   const now = Date.now();
   if (cachedThresholds && (now - thresholdsCacheTimestamp) < THRESHOLDS_CACHE_TTL) {
     return cachedThresholds;
@@ -36,6 +35,7 @@ async function getRelevanceThresholds() {
 }
 
 async function processJob(data) {
+  const prisma = getClient();
   const { articleId } = data;
   console.log(`[article-summarise] Processing article: ${articleId}`);
   

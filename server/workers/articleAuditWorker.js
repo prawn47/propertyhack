@@ -4,10 +4,8 @@
  * Ref: Beads workspace-8i6
  */
 const { connection, isCFWorkers } = require('../queues/connection');
-const { PrismaClient } = require('@prisma/client');
+const { getClient } = require('../lib/prisma');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const RATE_LIMIT_MS = 1000;
@@ -66,6 +64,7 @@ Respond with JSON only: { "relevanceScore": <integer 1-10>, "reason": "<brief re
 }
 
 async function processJob(data, job) {
+  const prisma = getClient();
   const { limit = 0 } = data || {};
 
   const articles = await prisma.article.findMany({

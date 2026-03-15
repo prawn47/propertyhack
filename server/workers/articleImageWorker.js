@@ -8,11 +8,10 @@ const { articleEmbedQueue } = require('../queues/articleEmbedQueue');
 const { socialGenerateQueue } = require('../queues/socialGenerateQueue');
 const { generateArticleImage } = require('../services/imageGenerationService');
 const { generateImageAltText } = require('../services/articleSummaryService');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { getClient } = require('../lib/prisma');
 
 async function getSeoKeywords(category, location) {
+  const prisma = getClient();
   const where = { isActive: true };
   const conditions = [];
   if (category) conditions.push({ category });
@@ -31,6 +30,7 @@ async function getSeoKeywords(category, location) {
 }
 
 async function processJob(data) {
+  const prisma = getClient();
   const { articleId } = data;
   console.log(`[article-image] Processing article: ${articleId}`);
 

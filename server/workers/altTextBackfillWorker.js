@@ -5,11 +5,10 @@
  */
 const { connection, isCFWorkers } = require('../queues/connection');
 const { generateImageAltText } = require('../services/articleSummaryService');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { getClient } = require('../lib/prisma');
 
 async function getSeoKeywords(category, location) {
+  const prisma = getClient();
   const where = { isActive: true };
   const conditions = [];
   if (category) conditions.push({ category });
@@ -27,6 +26,7 @@ async function getSeoKeywords(category, location) {
 }
 
 async function processJob(data, job) {
+  const prisma = getClient();
   const articles = await prisma.article.findMany({
     where: {
       status: 'PUBLISHED',

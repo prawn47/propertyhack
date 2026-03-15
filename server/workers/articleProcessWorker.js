@@ -9,8 +9,7 @@ const { articleSummariseQueue } = require('../queues/articleSummariseQueue');
 const { normalizeUrl } = require('../utils/urlNormalizer');
 const { generateContentHash, normaliseText } = require('../utils/contentHash');
 const { generateSlug } = require('../utils/slug');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { getClient } = require('../lib/prisma');
 
 /**
  * Calculate title similarity using word overlap (Jaccard similarity)
@@ -27,6 +26,7 @@ function titleSimilarity(a, b) {
 }
 
 async function processJob(data) {
+  const prisma = getClient();
   const { sourceId, article } = data;
   const { title, content, url, imageUrl, date, author, sourceName } = article;
 
