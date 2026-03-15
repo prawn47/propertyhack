@@ -1,0 +1,190 @@
+# ═══════════════════════════════════════════════════════════════════════
+# PropertyHack API — Cloudflare Workers Configuration (FIXED)
+# ═══════════════════════════════════════════════════════════════════════
+
+name = "propertyhack-api"
+main = "worker-entry.js"
+compatibility_date = "2026-03-14"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Environment Variables ────────────────────────────────────────────
+[vars]
+NODE_ENV = "production"
+PORT = "3001"
+CORS_ORIGIN = "https://propertyhack.com,https://propertyhack-web.pages.dev"
+RESEND_FROM_EMAIL = "hello@propertyhack.com"
+SITE_URL = "https://propertyhack.com"
+HENRY_MAX_ARTICLES = "10"
+HENRY_SIMILARITY_THRESHOLD = "0.3"
+HENRY_MAX_HISTORY_MESSAGES = "20"
+HENRY_RATE_LIMIT_ANON = "10"
+HENRY_RATE_LIMIT_AUTH = "60"
+JWT_ACCESS_EXPIRES_IN = "15m"
+JWT_REFRESH_EXPIRES_IN = "7d"
+
+# ── Hyperdrive (Connection Pooling to DO Managed Postgres) ───────────
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "5caf6ba401da41f984b59fdb969aba62"
+
+# ── R2 Bucket (Image Storage) ───────────────────────────────────────
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "propertyhack-images"
+
+# ── KV Namespace (Rate Limiting Cache) ──────────────────────────────
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "06d651b30ac340b99444493a76c91029"
+
+# ── Build Configuration ──────────────────────────────────────────────
+[build]
+# Use esbuild bundling with external dependencies
+command = "echo 'Building with externalized dependencies'"
+
+# ── Esbuild Configuration ──────────────────────────────────────────
+[build.esbuild]
+# Mark all problematic packages as external
+external = [
+  "dotenv",
+  "express", 
+  "cors",
+  "helmet",
+  "cookie-parser",
+  "express-rate-limit",
+  "swagger-ui-express",
+  "yamljs",
+  "@prisma/client",
+  "@prisma/adapter-pg",
+  "pg",
+  "bullmq",
+  "ioredis",
+  "node-cron",
+  "jsonwebtoken",
+  "passport",
+  "passport-google-oauth20",
+  "bcrypt",
+  "bcryptjs",
+  "express-validator",
+  "axios",
+  "cheerio",
+  "rss-parser",
+  "openai",
+  "@google/generative-ai",
+  "resend",
+  "form-data",
+  "twitter-api-v2",
+  "sharp",
+  "svix",
+  "uuid"
+]
+
+# ── Queue Producers ──────────────────────────────────────────────────
+[[queues.producers]]
+queue = "source-fetch"
+binding = "SOURCE_FETCH_QUEUE"
+
+[[queues.producers]]
+queue = "article-process"
+binding = "ARTICLE_PROCESS_QUEUE"
+
+[[queues.producers]]
+queue = "article-summarise"
+binding = "ARTICLE_SUMMARISE_QUEUE"
+
+[[queues.producers]]
+queue = "article-image"
+binding = "ARTICLE_IMAGE_QUEUE"
+
+[[queues.producers]]
+queue = "article-embed"
+binding = "ARTICLE_EMBED_QUEUE"
+
+[[queues.producers]]
+queue = "social-generate"
+binding = "SOCIAL_GENERATE_QUEUE"
+
+[[queues.producers]]
+queue = "social-publish"
+binding = "SOCIAL_PUBLISH_QUEUE"
+
+[[queues.producers]]
+queue = "newsletter-generate"
+binding = "NEWSLETTER_GENERATE_QUEUE"
+
+[[queues.producers]]
+queue = "article-audit"
+binding = "ARTICLE_AUDIT_QUEUE"
+
+[[queues.producers]]
+queue = "alt-text-backfill"
+binding = "ALT_TEXT_BACKFILL_QUEUE"
+
+# ── Queue Consumers ───────────────────────────────────────────────────
+[[queues.consumers]]
+queue = "source-fetch"
+max_batch_size = 3
+max_retries = 3
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "article-process"
+max_batch_size = 5
+max_retries = 3
+max_batch_timeout = 10
+
+[[queues.consumers]]
+queue = "article-summarise"
+max_batch_size = 1
+max_retries = 2
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "article-image"
+max_batch_size = 1
+max_retries = 2
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "article-embed"
+max_batch_size = 3
+max_retries = 3
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "social-generate"
+max_batch_size = 1
+max_retries = 2
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "social-publish"
+max_batch_size = 1
+max_retries = 2
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "newsletter-generate"
+max_batch_size = 1
+max_retries = 2
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "article-audit"
+max_batch_size = 5
+max_retries = 2
+max_batch_timeout = 60
+
+[[queues.consumers]]
+queue = "alt-text-backfill"
+max_batch_size = 3
+max_retries = 2
+max_batch_timeout = 60
+
+# ── Cron Triggers ────────────────────────────────────────────────────
+[triggers]
+crons = [
+  "*/5 * * * *",
+  "0 */6 * * *",
+  "0 3 * * *",
+]

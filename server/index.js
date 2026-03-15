@@ -54,16 +54,36 @@ const { createCrawlerSsrMiddleware } = require('./middleware/crawlerSsr');
 const { legacyRedirects } = require('./middleware/legacyRedirects');
 const sitemapRoutes = require('./routes/sitemap');
 const feedRoutes = require('./routes/feed');
-const { sourceFetchWorker } = require('./workers/sourceFetchWorker');
-const { articleProcessWorker } = require('./workers/articleProcessWorker');
-const { articleSummariseWorker } = require('./workers/articleSummariseWorker');
-const { articleImageWorker } = require('./workers/articleImageWorker');
-const { articleEmbedWorker } = require('./workers/articleEmbedWorker');
-const { socialPublishWorker } = require('./workers/socialPublishWorker');
-const { socialGenerateWorker } = require('./workers/socialGenerateWorker');
-const { newsletterGenerateWorker } = require('./workers/newsletterGenerateWorker');
-const { articleAuditWorker } = require('./workers/articleAuditWorker');
-const { altTextBackfillWorker } = require('./workers/altTextBackfillWorker');
+// Workers are only loaded in traditional Node.js environments, not CF Workers
+let sourceFetchWorker, articleProcessWorker, articleSummariseWorker, articleImageWorker;
+let articleEmbedWorker, socialPublishWorker, socialGenerateWorker, newsletterGenerateWorker;
+let articleAuditWorker, altTextBackfillWorker;
+if (!isCloudflareWorker) {
+  sourceFetchWorker = require('./workers/sourceFetchWorker').sourceFetchWorker;
+  articleProcessWorker = require('./workers/articleProcessWorker').articleProcessWorker;
+  articleSummariseWorker = require('./workers/articleSummariseWorker').articleSummariseWorker;
+  articleImageWorker = require('./workers/articleImageWorker').articleImageWorker;
+  articleEmbedWorker = require('./workers/articleEmbedWorker').articleEmbedWorker;
+  socialPublishWorker = require('./workers/socialPublishWorker').socialPublishWorker;
+  socialGenerateWorker = require('./workers/socialGenerateWorker').socialGenerateWorker;
+  newsletterGenerateWorker = require('./workers/newsletterGenerateWorker').newsletterGenerateWorker;
+  articleAuditWorker = require('./workers/articleAuditWorker').articleAuditWorker;
+  altTextBackfillWorker = require('./workers/altTextBackfillWorker').altTextBackfillWorker;
+}
+// Fallback objects for CF Workers environment
+if (isCloudflareWorker) {
+  const mockWorker = { gracefulShutdown: () => {} };
+  sourceFetchWorker = mockWorker;
+  articleProcessWorker = mockWorker;
+  articleSummariseWorker = mockWorker;
+  articleImageWorker = mockWorker;
+  articleEmbedWorker = mockWorker;
+  socialPublishWorker = mockWorker;
+  socialGenerateWorker = mockWorker;
+  newsletterGenerateWorker = mockWorker;
+  articleAuditWorker = mockWorker;
+  altTextBackfillWorker = mockWorker;
+}
 
 const { sourceFetchQueue } = require('./queues/sourceFetchQueue');
 const { articleProcessQueue } = require('./queues/articleProcessQueue');
@@ -74,10 +94,21 @@ const { socialPublishQueue } = require('./queues/socialPublishQueue');
 const { socialGenerateQueue } = require('./queues/socialGenerateQueue');
 const { newsletterGenerateQueue } = require('./queues/newsletterGenerateQueue');
 
-const { startScheduler } = require('./jobs/ingestionScheduler');
-const { startSocialHealthCheck } = require('./jobs/socialHealthCheck');
-const { startHenryCleanup } = require('./jobs/henryCleanup');
-const { startNewsletterScheduler } = require('./jobs/newsletterScheduler');
+// Schedulers are only loaded in traditional Node.js environments
+let startScheduler, startSocialHealthCheck, startHenryCleanup, startNewsletterScheduler;
+if (!isCloudflareWorker) {
+  startScheduler = require('./jobs/ingestionScheduler').startScheduler;
+  startSocialHealthCheck = require('./jobs/socialHealthCheck').startSocialHealthCheck;
+  startHenryCleanup = require('./jobs/henryCleanup').startHenryCleanup;
+  startNewsletterScheduler = require('./jobs/newsletterScheduler').startNewsletterScheduler;
+} else {
+  // No-op functions for CF Workers (cron handles these instead)
+  const noop = () => {};
+  startScheduler = noop;
+  startSocialHealthCheck = noop;
+  startHenryCleanup = noop;
+  startNewsletterScheduler = noop;
+}
 
 const app = express();
 
@@ -88,7 +119,7 @@ if (!isCloudflareWorker) {
 }
 
 app.use(helmet());
-app.use(cors({
+const corsOptions = {
   origin: [
     ...(process.env.CORS_ORIGIN || 'http://localhost:3004').split(','),
     'https://propertyhack.vercel.app',
@@ -100,7 +131,9 @@ app.use(cors({
     'http://localhost:3004'
   ],
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -131,8 +164,11 @@ app.use('/api/webhooks/newsletter', express.json({
   }
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Body parsing middleware - disabled for CF Workers (handled in worker-entry.js)
+if (!isCloudflareWorker) {
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true }));
+}
 app.use(cookieParser());
 app.use(passport.initialize());
 

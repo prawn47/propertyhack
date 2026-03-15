@@ -32,8 +32,8 @@ let app;
 async function getApp(env) {
   if (!app) {
     exposeEnvGlobally(env);
-    const { app: expressApp } = await import('./index.js');
-    app = expressApp;
+    const indexModule = await import('./index.js');
+    app = indexModule.app;
   }
   return app;
 }
@@ -58,7 +58,20 @@ export default {
         }
       }
       
-      const body = request.body ? await request.text() : '';
+      const rawBody = request.body ? await request.text() : '';
+      
+      // Parse the body based on content-type
+      let parsedBody = rawBody;
+      const contentType = headers['content-type'] || '';
+      
+      if (contentType.includes('application/json') && rawBody) {
+        try {
+          parsedBody = JSON.parse(rawBody);
+        } catch (e) {
+          // Keep as string if parsing fails
+          parsedBody = rawBody;
+        }
+      }
       
       // Create a simple response promise
       return new Promise(async (resolve, reject) => {
@@ -71,7 +84,8 @@ export default {
             method,
             url: url.pathname + url.search,
             headers,
-            body,
+            body: parsedBody,
+            rawBody,
             get: (name) => headers[name.toLowerCase()],
             header: (name) => headers[name.toLowerCase()], // alias for get
             ip: headers['cf-connecting-ip'] || headers['x-forwarded-for'] || '127.0.0.1',
