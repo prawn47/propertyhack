@@ -1,47 +1,36 @@
 /**
  * Shared Prisma Client for PropertyHack API
  *
- * Supports dual-mode operation:
- * - CF Workers: Uses driver adapter with Hyperdrive (pg + @prisma/adapter-pg)
- * - Local dev: Standard Prisma client
- *
- * The client is lazy-initialised to ensure CF environment bindings
- * are available before creating the connection.
+ * Dual-mode:
+ * - CF Workers: createRequestClient() builds a fresh client per request
+ *   (Hyperdrive connections are request-scoped — caching the Pool causes hangs)
+ * - Local dev: singleton client via require()
  */
 const { PrismaClient } = require('@prisma/client');
 
-let prisma;
+let localPrisma;
 
-function createPrismaClient() {
-  const isCF = typeof globalThis.__cf_env !== 'undefined';
+function createRequestClient() {
+  const { Pool } = require('pg');
+  const { PrismaPg } = require('@prisma/adapter-pg');
 
-  if (isCF) {
-    // CF Workers — use driver adapter with Hyperdrive
-    const { Pool } = require('pg');
-    const { PrismaPg } = require('@prisma/adapter-pg');
-
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      console.error('[prisma] DATABASE_URL not set — Hyperdrive binding may be missing');
-    }
-
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaPg(pool);
-    console.log('[prisma] Using driver adapter (CF Workers + Hyperdrive)');
-    return new PrismaClient({ adapter });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.error('[prisma] DATABASE_URL not set — Hyperdrive binding may be missing');
   }
 
-  // Local dev — standard Prisma
-  return new PrismaClient();
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+  return new PrismaClient({ adapter });
 }
 
-// Use a Proxy to lazy-initialise the Prisma client on first use
-// This ensures globalThis.__cf_env and process.env.DATABASE_URL are set
-module.exports = new Proxy({}, {
-  get(target, prop) {
-    if (!prisma) {
-      prisma = createPrismaClient();
-    }
-    return prisma[prop];
-  },
-});
+function getLocalClient() {
+  if (!localPrisma) {
+    localPrisma = new PrismaClient();
+  }
+  return localPrisma;
+}
+
+const isCF = typeof globalThis.__cf_env !== 'undefined';
+module.exports = isCF ? { createRequestClient } : getLocalClient();
+module.exports.createRequestClient = createRequestClient;

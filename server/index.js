@@ -209,7 +209,13 @@ if (!isCloudflareWorker) {
 }
 
 app.use((req, res, next) => {
-  req.prisma = prisma;
+  if (isCloudflareWorker) {
+    // Hyperdrive connections are request-scoped — must create fresh client per request
+    const { createRequestClient } = require('./lib/prisma');
+    req.prisma = createRequestClient();
+  } else {
+    req.prisma = prisma;
+  }
   next();
 });
 
