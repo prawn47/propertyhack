@@ -31,14 +31,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocati
   const [locations, setLocations] = useState<string[]>([]);
 
   useEffect(() => {
-    getCategories(country !== 'GLOBAL' ? country : undefined).then((r) => setCategories(r.categories)).catch(() => {});
+    getCategories(country).then((r) => setCategories(r.categories)).catch(() => {});
   }, [country]);
 
   useEffect(() => {
-    if (country === 'GLOBAL') {
-      setLocations([]);
-      return;
-    }
     getLocations(country).then((r) => setLocations(r.locations)).catch(() => {});
   }, [country]);
 
@@ -61,8 +57,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocati
     onChange({ search: '', location: '', category: '', dateRange: 'all' });
   };
 
-  const isGlobal = country === 'GLOBAL';
-
   return (
     <div className="sticky top-14 z-20 bg-base-100 border-b border-base-300 shadow-soft">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
@@ -73,17 +67,15 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocati
             onChange={(e) => handleCountryChange(e.target.value)}
             className="py-1.5 px-2 text-xs bg-brand-primary text-base-100 border border-brand-secondary rounded-lg focus:outline-none focus:border-brand-gold transition-colors cursor-pointer font-medium"
           >
-            <option value="GLOBAL">🌐 Global</option>
-            {markets.map((m) => (
+            {markets.filter((m) => m.code !== 'GLOBAL').map((m) => (
               <option key={m.code} value={m.code}>
                 {m.flagEmoji} {m.code}
               </option>
             ))}
           </select>
 
-          {/* Location — hidden when GLOBAL */}
-          {!isGlobal && (
-            <select
+          {/* Location */}
+          <select
               value={filters.location}
               onChange={(e) => handleSelect('location', e.target.value)}
               className="py-1.5 px-2 text-xs bg-base-200 border border-base-300 rounded-lg text-content focus:outline-none focus:border-brand-gold transition-colors cursor-pointer max-w-[45%]"
@@ -93,7 +85,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onChange, detectedLocati
                 <option key={loc} value={loc}>{loc}</option>
               ))}
             </select>
-          )}
 
           {/* Category */}
           <select
