@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import authService from '../../services/authService';
+import { API_URL } from '../../services/apiConfig';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import EmptyState from '../shared/EmptyState';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface Subscriber {
   id: string;
@@ -46,7 +45,7 @@ const SubscriberList: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await authService.makeAuthenticatedRequest(`${API_BASE}/api/admin/subscribers?page=${page}&limit=50`);
+      const res = await authService.makeAuthenticatedRequest(`${API_URL}/api/admin/subscribers?page=${page}&limit=50`);
       if (!res.ok) {
         let msg = `Failed to load subscribers (${res.status})`;
         try { const body = await res.json(); if (body.error) msg = body.error; } catch {}
@@ -70,7 +69,7 @@ const SubscriberList: React.FC = () => {
     if (!confirm(`Delete subscriber ${email}? This cannot be undone.`)) return;
     setDeletingId(id);
     try {
-      const res = await authService.makeAuthenticatedRequest(`${API_BASE}/api/admin/subscribers/${id}`, { method: 'DELETE' });
+      const res = await authService.makeAuthenticatedRequest(`${API_URL}/api/admin/subscribers/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete subscriber');
       await load();
     } catch (e: unknown) {

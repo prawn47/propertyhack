@@ -11,11 +11,10 @@ Property news aggregation platform. Collects property news from multiple sources
 | Backend | Express 5 + Node.js (JavaScript) |
 | Database | PostgreSQL 16 + pgvector (vector search) |
 | ORM | Prisma |
-| Job Queue | BullMQ + Redis |
+| Job Queue | Cloudflare Queues (replaces BullMQ + Redis) |
 | AI (summaries) | Google Gemini 2.0 Flash |
 | AI (embeddings) | OpenAI text-embedding-3-small (1536 dims) |
-| Reverse Proxy | Caddy (auto-HTTPS) |
-| Hosting | Vultr VPS, Sydney region, Docker Compose |
+| Hosting | Cloudflare Workers/Pages + DigitalOcean Managed Postgres |
 
 ## Project Structure
 
@@ -109,12 +108,15 @@ Backend: Express (port 3001)
 Postgres: port 5432
 Redis: port 6379
 
-### Production (Vultr Sydney)
+### Production (Cloudflare)
 ```bash
-npm run build              # Vite → frontend-dist/
-docker compose up -d --build
+npm run build                                    # Vite → frontend-dist/
+npx wrangler pages deploy frontend-dist          # Deploy frontend to CF Pages
+cd server && npx wrangler deploy                 # Deploy API to CF Workers
 ```
-Caddy handles HTTPS (Let's Encrypt) and serves static files + reverse proxies API.
+Frontend: Cloudflare Pages (`propertyhack-web.pages.dev`)
+Backend: Cloudflare Workers (`propertyhack-api.dan-6ca.workers.dev`)
+Database: DigitalOcean Managed PostgreSQL (via Hyperdrive connection pooling)
 
 ## Common Commands
 
