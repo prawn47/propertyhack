@@ -279,7 +279,7 @@ router.get('/search-overview', async (req, res) => {
     let paramIdx = 2;
 
     if (applyCountryFilter) {
-      filterClauses.push(`($${paramIdx} = ANY(a.markets) OR 'ALL' = ANY(a.markets) OR a.is_evergreen = true OR a.is_global = true)`);
+      filterClauses.push(`($${paramIdx} = ANY(a.markets) OR 'ALL' = ANY(a.markets))`);
       filterValues.push(countryUpper);
       paramIdx++;
     }

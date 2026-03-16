@@ -555,4 +555,183 @@ router.post(
   }
 );
 
+// POST /reaudit-markets — Re-audit all article market assignments
+router.post('/reaudit-markets', async (req, res) => {
+  const MARKET_SIGNALS = {
+    NZ: {
+      strong: [
+        /\bnew zealand\b/i, /\baotearoa\b/i,
+        /interest\.co\.nz/i, /stuff\.co\.nz/i, /nzherald\.co\.nz/i,
+        /newshub\.co\.nz/i, /rnz\.co\.nz/i, /oneroof\.co\.nz/i,
+        /\brbnz\b/i, /\breserve bank of new zealand\b/i,
+        /\breinz\b/i, /\btrade me property\b/i,
+        /\bkainga ora\b/i, /\bk\u0101inga ora\b/i,
+        /\bhousing new zealand\b/i,
+      ],
+      cities: [
+        /\bauckland\b/i, /\bwellington\b/i, /\bchristchurch\b/i,
+        /\btauranga\b/i, /\bdunedin\b/i, /\bqueenstown\b/i,
+        /\brotorua\b/i, /\bnapier\b/i, /\bpalmerston north\b/i,
+        /\bwhangarei\b/i, /\binvercargill\b/i,
+        /\bwaikato\b/i, /\bbay of plenty\b/i, /\bhawke.s bay\b/i,
+        /\bcanterbury\b/i, /\botago\b/i, /\bmanawat/i,
+      ],
+    },
+    AU: {
+      strong: [
+        /\baustralia\b/i,
+        /realestate\.com\.au/i, /domain\.com\.au/i, /\.com\.au/i,
+        /\brba\b/i, /\breserve bank of australia\b/i,
+        /\bapra\b/i, /\basic\b/i,
+      ],
+      cities: [
+        /\bsydney\b/i, /\bmelbourne\b/i, /\bbrisbane\b/i,
+        /\bperth\b/i, /\badelaide\b/i, /\bcanberra\b/i,
+        /\bhobart\b/i, /\bdarwin\b/i, /\bgold coast\b/i,
+        /\bnsw\b/i, /\bvictoria\b/i, /\bqueensland\b/i,
+      ],
+    },
+    UK: {
+      strong: [
+        /\bunited kingdom\b/i, /\bbritain\b/i,
+        /rightmove\.co\.uk/i, /zoopla\.co\.uk/i, /\.co\.uk/i,
+        /\bbank of england\b/i, /\bhm treasury\b/i,
+        /\brics\b/i, /\bhm land registry\b/i,
+      ],
+      cities: [
+        /\blondon\b/i, /\bmanchester\b/i, /\bbirmingham\b/i,
+        /\bleeds\b/i, /\bbristol\b/i, /\bedinburgh\b/i,
+        /\bglasgow\b/i, /\bliverpool\b/i, /\bcardiff\b/i,
+      ],
+    },
+    US: {
+      strong: [
+        /\bunited states\b/i, /\bamerica\b/i,
+        /realtor\.com/i, /zillow\.com/i, /redfin\.com/i,
+        /\bfederal reserve\b/i, /\bthe fed\b/i,
+        /\bnar\b/i, /\bnational association of realtors\b/i,
+        /\bhud\b/i, /\bfannie mae\b/i, /\bfreddie mac\b/i,
+      ],
+      cities: [
+        /\bnew york\b/i, /\blos angeles\b/i, /\bchicago\b/i,
+        /\bhouston\b/i, /\bphoenix\b/i, /\bsan francisco\b/i,
+        /\bseattle\b/i, /\bdenver\b/i, /\baustin\b/i,
+        /\bmiami\b/i, /\bdallas\b/i, /\bboston\b/i,
+      ],
+    },
+    CA: {
+      strong: [
+        /\bcanada\b/i, /\bcanadian\b/i,
+        /\.ca\//i,
+        /\bbank of canada\b/i, /\bcmhc\b/i,
+        /\bcrea\b/i, /\bcanadian real estate\b/i,
+      ],
+      cities: [
+        /\btoronto\b/i, /\bvancouver\b/i, /\bmontreal\b/i,
+        /\bcalgary\b/i, /\bedmonton\b/i, /\bottawa\b/i,
+        /\bwinnipeg\b/i, /\bhalifax\b/i,
+        /\bontario\b/i, /\bbritish columbia\b/i, /\balberta\b/i,
+      ],
+    },
+  };
+
+  function detectMarket(text) {
+    const scores = {};
+    for (const [market, signals] of Object.entries(MARKET_SIGNALS)) {
+      let score = 0;
+      for (const pattern of signals.strong) {
+        if (pattern.test(text)) score += 3;
+      }
+      for (const pattern of signals.cities) {
+        if (pattern.test(text)) score += 1;
+      }
+      if (score > 0) scores[market] = score;
+    }
+    return scores;
+  }
+
+  try {
+    const articles = await req.prisma.article.findMany({
+      select: {
+        id: true, title: true, shortBlurb: true, longSummary: true,
+        location: true, sourceUrl: true, market: true, markets: true,
+        source: { select: { name: true, market: true } },
+      },
+    });
+
+    let updated = 0;
+    let arrayFixed = 0;
+
+    for (const article of articles) {
+      const srcMkt = article.source?.market === 'GLOBAL' ? 'ALL' : article.source?.market;
+      const text = [
+        article.title, article.shortBlurb, article.longSummary,
+        article.location, article.sourceUrl, article.source?.name,
+      ].filter(Boolean).join(' ');
+
+      const contentScores = detectMarket(text);
+
+      let newMarket = article.market;
+      let newMarkets = [...article.markets];
+      let changed = false;
+
+      if (srcMkt && srcMkt !== 'ALL') {
+        const srcScore = contentScores[srcMkt] || 0;
+        const currentScore = contentScores[article.market] || 0;
+
+        if (article.market !== srcMkt && article.market !== 'ALL') {
+          if (srcScore >= currentScore || currentScore < 3) {
+            newMarket = srcMkt;
+            changed = true;
+          }
+        }
+
+        if (!newMarkets.includes(srcMkt) && (srcScore > 0 || currentScore < 3)) {
+          newMarkets.push(srcMkt);
+          changed = true;
+        }
+      }
+
+      for (const [market, score] of Object.entries(contentScores)) {
+        if (score >= 3 && !newMarkets.includes(market)) {
+          newMarkets.push(market);
+          changed = true;
+        }
+      }
+
+      if (!newMarkets.includes(newMarket)) {
+        newMarkets.push(newMarket);
+        changed = true;
+      }
+
+      newMarkets = [...new Set(newMarkets)];
+
+      if (changed) {
+        await req.prisma.article.update({
+          where: { id: article.id },
+          data: { market: newMarket, markets: { set: newMarkets } },
+        });
+        if (newMarket !== article.market) updated++;
+        else arrayFixed++;
+      }
+    }
+
+    const counts = await req.prisma.article.groupBy({
+      by: ['market'],
+      _count: true,
+      orderBy: { _count: { market: 'desc' } },
+    });
+
+    res.json({
+      total: articles.length,
+      reassigned: updated,
+      arrayFixed,
+      marketCounts: Object.fromEntries(counts.map((r) => [r.market, r._count])),
+    });
+  } catch (error) {
+    console.error('Reaudit markets error:', error);
+    res.status(500).json({ error: 'Failed to reaudit markets' });
+  }
+});
+
 module.exports = router;
