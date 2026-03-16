@@ -21,7 +21,15 @@ export const getApiUrl = (path: string): string => {
   return fullUrl;
 };
 
+// Prefix relative image paths with API URL (for R2-served images)
+export const getImageUrl = (url: string | null | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (url.startsWith('http')) return url;
+  return API_URL ? `${API_URL}${url}` : url;
+};
+
 export default {
   API_URL,
-  getApiUrl
+  getApiUrl,
+  getImageUrl
 };

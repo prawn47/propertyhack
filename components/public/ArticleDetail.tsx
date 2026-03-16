@@ -8,6 +8,7 @@ import SeoHead, { SITE_URL } from '../shared/SeoHead';
 import Breadcrumbs from '../shared/Breadcrumbs';
 import Loader from '../Loader';
 import Footer from '../layout/Footer';
+import { getImageUrl } from '../../services/apiConfig';
 import { CountryLink, useCountryPath } from '../../hooks/useCountryPath';
 
 function formatDate(dateStr: string | null): string {
@@ -136,7 +137,7 @@ const ArticleDetail: React.FC = () => {
           description={article.shortBlurb || article.longSummary?.substring(0, 160)}
           canonicalUrl={`/articles/${article.slug}`}
           ogType="article"
-          ogImage={article.imageUrl?.startsWith('http') ? article.imageUrl : article.imageUrl ? `${SITE_URL}${article.imageUrl}` : undefined}
+          ogImage={getImageUrl(article.imageUrl) || undefined}
           ogImageAlt={article.imageAltText || article.title}
           article={{
             publishedTime: article.publishedAt || article.createdAt,
@@ -149,7 +150,7 @@ const ArticleDetail: React.FC = () => {
               '@type': 'NewsArticle',
               headline: article.title,
               description: article.shortBlurb,
-              image: article.imageUrl || `${SITE_URL}/ph-logo.jpg`,
+              image: getImageUrl(article.imageUrl) || `${SITE_URL}/ph-logo.jpg`,
               datePublished: article.publishedAt || article.createdAt,
               dateModified: article.updatedAt,
               author: { '@type': 'Organization', name: 'PropertyHack' },
@@ -190,7 +191,7 @@ const ArticleDetail: React.FC = () => {
               <div className="w-full h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-brand-secondary to-brand-primary overflow-hidden">
                 {article.imageUrl && !imgError ? (
                   <img
-                    src={article.imageUrl}
+                    src={getImageUrl(article.imageUrl)}
                     alt={article.imageAltText || article.title}
                     className="w-full h-full object-cover"
                     fetchPriority="high"

@@ -3,6 +3,7 @@ import { getRelatedArticles } from '../../services/publicArticleService';
 import { CountryLink } from '../../hooks/useCountryPath';
 import type { PublicArticle } from '../../services/publicArticleService';
 import ArticleImagePlaceholder from '../shared/ArticleImagePlaceholder';
+import { getImageUrl } from '../../services/apiConfig';
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Recently';
@@ -33,7 +34,7 @@ const RelatedArticleCard: React.FC<RelatedArticleCardProps> = ({ article }) => {
       <div className="h-36 bg-gradient-to-br from-brand-secondary to-brand-primary overflow-hidden">
         {article.imageUrl && !imgError ? (
           <img
-            src={article.imageUrl}
+            src={getImageUrl(article.imageUrl)}
             alt={article.imageAltText || article.title}
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
             loading="lazy"

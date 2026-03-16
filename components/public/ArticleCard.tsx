@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { PublicArticle } from '../../services/publicArticleService';
 import { CountryLink } from '../../hooks/useCountryPath';
 import ArticleImagePlaceholder from '../shared/ArticleImagePlaceholder';
+import { getImageUrl } from '../../services/apiConfig';
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Recently';
@@ -54,7 +55,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, featured }) => {
     <div className={`w-full bg-gradient-to-br from-brand-secondary to-brand-primary overflow-hidden${isFeatured ? ' h-64 sm:h-80' : isMobile ? ' h-36' : ' h-48'}`}>
       {article.imageUrl && !imgError ? (
         <img
-          src={article.imageUrl}
+          src={getImageUrl(article.imageUrl)}
           alt={article.imageAltText || article.title}
           className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
           loading="lazy"
