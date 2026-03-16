@@ -177,7 +177,9 @@ export default {
           url: url.pathname + url.search,
           originalUrl: url.pathname + url.search,
           baseUrl: '',
-          path: url.pathname,
+          get path() {
+            return (this.url || '/').split('?')[0];
+          },
           headers,
           body: parsedBody,
           rawBody,
@@ -300,7 +302,16 @@ export default {
               finishResponse(statusCode, responseHeaders, null);
               return;
             }
-            if (typeof body === 'object' && !Buffer.isBuffer(body)) {
+            // Handle binary data (Buffer/ArrayBuffer/TypedArray)
+            if (Buffer.isBuffer(body)) {
+              finishResponse(statusCode, responseHeaders, body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength));
+              return;
+            }
+            if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) {
+              finishResponse(statusCode, responseHeaders, body);
+              return;
+            }
+            if (typeof body === 'object') {
               if (!responseHeaders['content-type']) {
                 responseHeaders['content-type'] = 'application/json';
               }
