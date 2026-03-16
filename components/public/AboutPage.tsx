@@ -10,7 +10,7 @@ const AboutPage: React.FC = () => {
     <div className="min-h-screen bg-base-200 flex flex-col">
       <SeoHead
         title="About PropertyHack"
-        description="PropertyHack delivers agenda-free Australian property news. Learn about our editorial approach and how we curate property market coverage across every major Australian city."
+        description="PropertyHack delivers agenda-free property news across Australia, New Zealand, the UK, US, and Canada. Learn about our editorial approach and how we curate property market coverage."
         canonicalUrl="/about"
       />
       <Header />
@@ -25,9 +25,9 @@ const AboutPage: React.FC = () => {
 
           <div className="prose prose-lg max-w-none text-content">
             <p>
-              PropertyHack is an independent Australian property news platform that aggregates
+              PropertyHack is an independent property news platform that aggregates
               and summarises the most important property market stories from trusted sources
-              across the country.
+              across Australia, New Zealand, the United Kingdom, the United States, and Canada.
             </p>
 
             <h2 className="text-xl font-semibold text-brand-primary mt-8 mb-3">Our Mission</h2>
@@ -40,7 +40,7 @@ const AboutPage: React.FC = () => {
 
             <h2 className="text-xl font-semibold text-brand-primary mt-8 mb-3">How It Works</h2>
             <p>
-              We collect property news from dozens of reputable Australian sources including
+              We collect property news from dozens of reputable sources in each market including
               major media outlets, industry publications, and government announcements. Each
               article is summarised using AI to give you the key facts quickly, with a link
               to the original source for the full story.
@@ -52,15 +52,14 @@ const AboutPage: React.FC = () => {
               <li>Every article links back to its original source for verification</li>
               <li>We do not accept paid placements or sponsored content in our news feed</li>
               <li>AI-generated summaries are clearly identified as summaries, not original content</li>
-              <li>We cover all major Australian markets: Sydney, Melbourne, Brisbane, Perth, Adelaide, Canberra, Hobart, Darwin, and the Gold Coast</li>
             </ul>
 
             <h2 className="text-xl font-semibold text-brand-primary mt-8 mb-3">Coverage</h2>
             <p>
-              PropertyHack covers property market news across every major Australian city and
-              region. Our coverage includes market updates, price movements, interest rate
-              impacts, government policy, auction results, rental market trends, and
-              development news.
+              PropertyHack covers property market news across five markets: Australia, New Zealand,
+              the UK, the US, and Canada. Our coverage includes market updates, price movements,
+              interest rate impacts, government policy, auction results, rental market trends,
+              and development news.
             </p>
           </div>
 
