@@ -104,8 +104,11 @@ const SubscribeForm: React.FC<Props> = ({ variant = 'inline' }) => {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error ?? 'Subscription failed. Please try again.');
+        const msg = data?.error || data?.errors?.[0]?.msg || 'Subscription failed. Please try again.';
+        throw new Error(msg);
       }
+      const data = await res.json().catch(() => null);
+      if (!data?.message) throw new Error('Subscription failed. Please try again.');
       setSuccess(true);
       try { localStorage.setItem('ph_subscribed', '1'); } catch {}
     } catch (err: unknown) {

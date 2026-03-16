@@ -20,7 +20,7 @@ export interface CountryContextValue {
   loading: boolean;
 }
 
-const SUPPORTED_MARKETS = ['AU', 'US', 'UK', 'CA', 'NZ', 'GLOBAL'];
+const SUPPORTED_MARKETS = ['AU', 'US', 'UK', 'CA', 'NZ'];
 const STORAGE_KEY = 'ph_country';
 
 const CountryContext = createContext<CountryContextValue | null>(null);
@@ -84,18 +84,18 @@ export function CountryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 4. IP detection — map unsupported countries to GLOBAL
+    // 4. IP detection — map unsupported countries to AU
     if (detectedCountry) {
       const mapped = SUPPORTED_MARKETS.includes(detectedCountry.toUpperCase())
         ? detectedCountry.toUpperCase()
-        : 'GLOBAL';
+        : 'AU';
       setResolvedCountry(mapped);
       localStorage.setItem(STORAGE_KEY, mapped);
       return;
     }
 
     // 5. Final fallback
-    setResolvedCountry('GLOBAL');
+    setResolvedCountry('AU');
   }, [detectLoading, detectedCountry, params.country, user]);
 
   // Keep resolvedCountry in sync when URL param changes after initial mount
