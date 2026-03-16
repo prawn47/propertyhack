@@ -17,14 +17,14 @@ const OllamaProvider = require('./providers/ollamaProvider');
 
 // Default task configs — used when AiModelConfig DB record doesn't exist
 const DEFAULT_TASK_CONFIGS = {
-  'article-summarisation': { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
-  'image-alt-text':        { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
+  'article-summarisation': { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
+  'image-alt-text':        { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
   'image-generation':      { provider: 'gemini', model: 'gemini-2.5-flash-image', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.5-flash-image' },
-  'newsletter-generation': { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
-  'newsletter-editorial': { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
+  'newsletter-generation': { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
+  'newsletter-editorial':  { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
   'newsletter-image':      { provider: 'gemini', model: 'gemini-2.5-flash-image', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.5-flash-image' },
-  'newsletter-roundup':   { provider: 'gemini', model: 'gemini-2.5-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
-  'relevance-scoring':     { provider: 'gemini', model: 'gemini-2.0-flash', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.5-flash' },
+  'newsletter-roundup':    { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
+  'relevance-scoring':     { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
 };
 
 // Lazy-initialised provider instances (one per provider name)
