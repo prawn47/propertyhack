@@ -45,6 +45,9 @@ router.use('/images', async (req, res, next) => {
     res.set('Content-Type', contentType);
     res.set('Cache-Control', 'public, max-age=86400'); // 24h cache
     res.set('ETag', object.httpEtag);
+    // Override Helmet headers that block cross-origin image loading
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.removeHeader('Content-Security-Policy');
 
     // Stream the R2 object body to the response
     const arrayBuffer = await object.arrayBuffer();
