@@ -54,7 +54,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 NODE_ENV = "production"
 PORT = "3001"
-CORS_ORIGIN = "https://propertyhack.com,https://www.propertyhack.com,https://propertyhack-web.pages.dev,https://propertyhack.pages.dev"
+CORS_ORIGIN = "https://propertyhack.com,https://www.propertyhack.com,https://propertyhack-web.pages.dev,https://propertyhack.pages.dev,https://propertyhack.dan-6ca.workers.dev"
 RESEND_FROM_EMAIL = "hello@propertyhack.com"
 SITE_URL = "https://propertyhack.com"
 HENRY_MAX_ARTICLES = "10"
