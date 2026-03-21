@@ -435,6 +435,26 @@ model AgentAuditLog {
   @@map("agent_audit_logs")
 }
 
+model DailyWizardRun {
+  id                    String    @id @default(cuid())
+  date                  DateTime  @db.Date
+  currentStep           Int       @default(1) @map("current_step")
+  newsletterId          String?   @map("newsletter_id")
+  newsletterApproved    Boolean   @default(false) @map("newsletter_approved")
+  newsletterSent        Boolean   @default(false) @map("newsletter_sent")
+  socialPostsApproved   Int       @default(0) @map("social_posts_approved")
+  hotTakeCreated        Boolean   @default(false) @map("hot_take_created")
+  hotTakePostId         String?   @map("hot_take_post_id")
+  allPublished          Boolean   @default(false) @map("all_published")
+  metricsReviewed       Boolean   @default(false) @map("metrics_reviewed")
+  completedAt           DateTime? @map("completed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@unique([date])
+  @@map("daily_wizard_runs")
+}
+
 model NewsletterGenerationConfig {
   id                      String   @id @default(uuid())
   dailyArticleLimit       Int      @default(20) @map("daily_article_limit")
