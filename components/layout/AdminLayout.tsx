@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import authService from '../../services/authService';
+import { getApiUrl } from '../../services/apiConfig';
 
 interface NavItem {
   label: string;
@@ -9,6 +10,16 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  {
+    label: 'Daily Run',
+    path: '/admin/daily',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
   {
     label: 'Dashboard',
     path: '/admin',
@@ -138,6 +149,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dailyRunIncomplete, setDailyRunIncomplete] = useState(false);
+
+  useEffect(() => {
+    const checkDailyRun = async () => {
+      try {
+        const res = await authService.makeAuthenticatedRequest(getApiUrl('/api/admin/daily/today'));
+        if (res.ok) {
+          const run = await res.json();
+          setDailyRunIncomplete(!run.completedAt);
+        } else {
+          setDailyRunIncomplete(true);
+        }
+      } catch {
+        setDailyRunIncomplete(false);
+      }
+    };
+    checkDailyRun();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -184,6 +213,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, onLogout }) => {
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {navItems.map((item) => {
           const active = isActive(item.path);
+          const isDailyRunHighlight = item.path === '/admin/daily' && dailyRunIncomplete && !active;
           return (
             <Link
               key={item.path}
@@ -193,11 +223,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, onLogout }) => {
                 'flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors relative',
                 active
                   ? 'text-brand-gold bg-white/10 border-l-2 border-brand-gold pl-[10px]'
-                  : 'text-white/70 hover:text-white hover:bg-brand-secondary',
+                  : isDailyRunHighlight
+                    ? 'text-brand-gold hover:bg-brand-secondary'
+                    : 'text-white/70 hover:text-white hover:bg-brand-secondary',
               ].join(' ')}
             >
               {item.icon}
               {item.label}
+              {isDailyRunHighlight && (
+                <span className="ml-auto w-2 h-2 rounded-full bg-brand-gold" />
+              )}
             </Link>
           );
         })}

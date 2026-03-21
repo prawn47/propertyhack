@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { getDashboard, type DashboardData } from '../../services/adminDashboardService';
+import { getApiUrl } from '../../services/apiConfig';
+import authService from '../../services/authService';
 import LoadingSpinner from '../shared/LoadingSpinner';
 
 const TYPE_BADGE_CLASSES: Record<string, string> = {
@@ -57,6 +60,84 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, sub, accent }) 
   </div>
 );
 
+interface DailyRunStatus {
+  completedAt: string | null;
+}
+
+interface StreakData {
+  currentStreak: number;
+  maxStreak: number;
+}
+
+const DailyRunCard: React.FC = () => {
+  const [runComplete, setRunComplete] = useState<boolean | null>(null);
+  const [streak, setStreak] = useState<StreakData | null>(null);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const [todayRes, streakRes] = await Promise.all([
+          authService.makeAuthenticatedRequest(getApiUrl('/api/admin/daily/today')),
+          authService.makeAuthenticatedRequest(getApiUrl('/api/admin/daily/streak')),
+        ]);
+        if (todayRes.ok) {
+          const run: DailyRunStatus = await todayRes.json();
+          setRunComplete(!!run.completedAt);
+        } else {
+          setRunComplete(false);
+        }
+        if (streakRes.ok) {
+          setStreak(await streakRes.json());
+        }
+      } catch {
+        setRunComplete(false);
+      }
+    };
+    fetchStatus();
+  }, []);
+
+  if (runComplete === null) return null;
+
+  if (runComplete) {
+    return (
+      <Link to="/admin/daily" className="block">
+        <div className="bg-green-50 border border-green-300 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-green-800">Today's Run Complete</p>
+              {streak && streak.currentStreak > 0 && (
+                <p className="text-xs text-green-600 mt-0.5">{streak.currentStreak} day streak{streak.maxStreak > streak.currentStreak ? ` (best: ${streak.maxStreak})` : ''}</p>
+              )}
+            </div>
+          </div>
+          <span className="text-xs text-green-600 font-medium">View &rarr;</span>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <Link to="/admin/daily" className="block">
+      <div className="bg-brand-gold/10 border border-brand-gold rounded-lg p-4 flex items-center justify-between hover:bg-brand-gold/20 transition-colors">
+        <div className="flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-brand-gold">Start Today's Run</p>
+            <p className="text-xs text-content-secondary mt-0.5">Review newsletter, social posts, and metrics</p>
+          </div>
+        </div>
+        <span className="text-xs text-brand-gold font-medium">Go &rarr;</span>
+      </div>
+    </Link>
+  );
+};
+
 const IngestionMonitor: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,6 +192,9 @@ const IngestionMonitor: React.FC = () => {
           Refresh now
         </button>
       </div>
+
+      {/* Daily Run CTA */}
+      <DailyRunCard />
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
