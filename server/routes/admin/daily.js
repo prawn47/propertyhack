@@ -1,6 +1,7 @@
 const express = require('express');
 const wizardService = require('../../services/wizardService');
 const metricsService = require('../../services/metricsService');
+const hotTakeService = require('../../services/hotTakeService');
 
 const router = express.Router();
 
@@ -69,6 +70,25 @@ router.get('/metrics', async (req, res) => {
   } catch (error) {
     console.error('Get metrics error:', error);
     res.status(500).json({ error: 'Failed to get aggregated metrics' });
+  }
+});
+
+// POST /suggest-takes — AI hot take suggestions for an article
+router.post('/suggest-takes', async (req, res) => {
+  try {
+    const { articleId } = req.body;
+    if (!articleId) {
+      return res.status(400).json({ error: 'articleId is required' });
+    }
+
+    const result = await hotTakeService.suggestTakes(articleId, req.prisma);
+    res.json(result);
+  } catch (error) {
+    console.error('Suggest takes error:', error);
+    if (error.message?.startsWith('Article not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Failed to generate take suggestions' });
   }
 });
 
