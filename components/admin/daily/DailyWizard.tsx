@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDailyWizard } from '../../../hooks/useDailyWizard';
 import WizardStepper from './WizardStepper';
+import Step1_NewsletterReview from './Step1_NewsletterReview';
 import Step2_NewsletterSend from './Step2_NewsletterSend';
 import Step3_SocialReview from './Step3_SocialReview';
 import Step4_HotTake from './Step4_HotTake';
@@ -123,7 +124,14 @@ const DailyWizard: React.FC = () => {
       )}
 
       <div className="bg-base-100 rounded-lg shadow-soft p-8 mb-6">
-        {currentStep === 2 && run ? (
+        {currentStep === 1 ? (
+          <Step1_NewsletterReview
+            run={run}
+            nextStep={nextStep}
+            skipStep={skipStep}
+            updateRun={updateRun}
+          />
+        ) : currentStep === 2 && run ? (
           <Step2_NewsletterSend
             run={run}
             updateRun={updateRun}
@@ -142,6 +150,12 @@ const DailyWizard: React.FC = () => {
             updateRun={updateRun}
             nextStep={nextStep}
             skipStep={skipStep}
+          />
+        ) : currentStep === 5 && run ? (
+          <Step5_Publish
+            run={run}
+            onNext={nextStep}
+            onUpdateRun={updateRun}
           />
         ) : currentStep === 6 ? (
           <Step6_Metrics onComplete={completeRun} />
