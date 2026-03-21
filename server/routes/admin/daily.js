@@ -1,5 +1,6 @@
 const express = require('express');
 const wizardService = require('../../services/wizardService');
+const metricsService = require('../../services/metricsService');
 
 const router = express.Router();
 
@@ -57,6 +58,17 @@ router.get('/streak', async (req, res) => {
   } catch (error) {
     console.error('Get streak error:', error);
     res.status(500).json({ error: 'Failed to get streak data' });
+  }
+});
+
+// GET /metrics — aggregated metrics for the daily wizard
+router.get('/metrics', async (req, res) => {
+  try {
+    const metrics = await metricsService.getAggregatedMetrics(req.prisma);
+    res.json(metrics);
+  } catch (error) {
+    console.error('Get metrics error:', error);
+    res.status(500).json({ error: 'Failed to get aggregated metrics' });
   }
 });
 
