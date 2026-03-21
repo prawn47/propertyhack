@@ -4,6 +4,7 @@ import WizardStepper from './WizardStepper';
 import Step2_NewsletterSend from './Step2_NewsletterSend';
 import Step3_SocialReview from './Step3_SocialReview';
 import Step4_HotTake from './Step4_HotTake';
+import Step5_Publish from './Step5_Publish';
 import Step6_Metrics from './Step6_Metrics';
 import Loader from '../../Loader';
 
