@@ -129,6 +129,13 @@ const DailyWizard: React.FC = () => {
             nextStep={nextStep}
             skipStep={skipStep}
           />
+        ) : currentStep === 4 && run ? (
+          <Step4_HotTake
+            run={run}
+            updateRun={updateRun}
+            nextStep={nextStep}
+            skipStep={skipStep}
+          />
         ) : currentStep === 6 ? (
           <Step6_Metrics onComplete={completeRun} />
         ) : (
