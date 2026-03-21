@@ -55,7 +55,10 @@ interface MetricsData {
 }
 
 interface StreakData {
-  streak: number;
+  streak: {
+    current: number;
+    max: number;
+  };
   calendar: {
     month: number;
     year: number;
@@ -195,7 +198,7 @@ const Step6_Metrics: React.FC<Step6Props> = ({ onComplete }) => {
         </div>
         <h2 className="text-2xl font-bold text-content mb-2">Run Complete!</h2>
         <p className="text-content-secondary mb-6">Great work. See you tomorrow.</p>
-        <StreakCounter streak={streak.streak} size="lg" />
+        <StreakCounter streak={streak.streak.current} maxStreak={streak.streak.max} size="lg" />
         <div className="mt-6 flex justify-center">
           <CalendarView
             completedDates={streak.calendar.completedDates}
@@ -320,7 +323,7 @@ const Step6_Metrics: React.FC<Step6Props> = ({ onComplete }) => {
             {streakLoading ? (
               <div className="w-24 h-24 bg-base-200 rounded-full animate-pulse" />
             ) : streak ? (
-              <StreakCounter streak={streak.streak} size="lg" />
+              <StreakCounter streak={streak.streak.current} maxStreak={streak.streak.max} size="lg" />
             ) : (
               <StreakCounter streak={0} size="lg" />
             )}
