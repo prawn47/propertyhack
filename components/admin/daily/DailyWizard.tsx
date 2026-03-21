@@ -1,6 +1,10 @@
 import React from 'react';
 import { useDailyWizard } from '../../../hooks/useDailyWizard';
 import WizardStepper from './WizardStepper';
+import Step2_NewsletterSend from './Step2_NewsletterSend';
+import Step3_SocialReview from './Step3_SocialReview';
+import Step4_HotTake from './Step4_HotTake';
+import Step6_Metrics from './Step6_Metrics';
 import Loader from '../../Loader';
 
 const STEP_LABELS = ['Newsletter', 'Send', 'Social', 'Hot Take', 'Publish', 'Metrics'];
@@ -15,6 +19,7 @@ const DailyWizard: React.FC = () => {
     nextStep,
     prevStep,
     skipStep,
+    updateRun,
     completeRun,
     isComplete,
   } = useDailyWizard();
@@ -117,12 +122,23 @@ const DailyWizard: React.FC = () => {
       )}
 
       <div className="bg-base-100 rounded-lg shadow-soft p-8 mb-6">
-        <div className="text-center py-12">
-          <p className="text-lg text-content font-medium">
-            Step {currentStep}: {STEP_LABELS[currentStep - 1]}
-          </p>
-          <p className="text-content-secondary mt-2">Coming soon</p>
-        </div>
+        {currentStep === 2 && run ? (
+          <Step2_NewsletterSend
+            run={run}
+            updateRun={updateRun}
+            nextStep={nextStep}
+            skipStep={skipStep}
+          />
+        ) : currentStep === 6 ? (
+          <Step6_Metrics onComplete={completeRun} />
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-lg text-content font-medium">
+              Step {currentStep}: {STEP_LABELS[currentStep - 1]}
+            </p>
+            <p className="text-content-secondary mt-2">Coming soon</p>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between">
