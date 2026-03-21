@@ -38,6 +38,7 @@ const adminSubscribersRoutes = require('./routes/admin/subscribers');
 const adminNewslettersRoutes = require('./routes/admin/newsletters');
 const adminAiModelsRoutes = require('./routes/admin/aiModels');
 const adminAgentKeysRoutes = require('./routes/admin/agentKeys');
+const adminImagesRoutes = require('./routes/admin/images');
 const publicArticlesRoutes = require('./routes/public/articles');
 const publicCategoriesRoutes = require('./routes/public/categories');
 const publicLocationsRoutes = require('./routes/public/locations');
@@ -292,6 +293,7 @@ app.use('/api/admin/subscribers', adminSubscribersRoutes);
 app.use('/api/admin/newsletters', adminNewslettersRoutes);
 app.use('/api/admin/ai-models', adminAiModelsRoutes);
 app.use('/api/admin/agent-keys', adminAgentKeysRoutes);
+app.use('/api/admin/images', adminImagesRoutes);
 app.use('/api/admin/agent-audit', require('./routes/admin/agentAudit'));
 // Agent API gateway — auth + rate limit + audit + no-cache
 app.use('/api/agent/v1', agentRateLimiter, authenticateAgentKey, auditLog, (req, res, next) => {
