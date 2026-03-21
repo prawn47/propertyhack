@@ -273,6 +273,35 @@ router.post(
   }
 );
 
+// POST /:id/send-manual — Mark as SENT without calling Beehiiv (copy-paste workflow)
+router.post(
+  '/:id/send-manual',
+  [param('id').isUUID()],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const existing = await req.prisma.newsletterDraft.findUnique({
+        where: { id: req.params.id },
+      });
+      if (!existing) return res.status(404).json({ error: 'Newsletter draft not found' });
+
+      if (existing.status !== 'APPROVED') {
+        return res.status(400).json({ error: 'Only APPROVED newsletters can be sent' });
+      }
+
+      const draft = await req.prisma.newsletterDraft.update({
+        where: { id: req.params.id },
+        data: { status: 'SENT', sentAt: new Date() },
+      });
+
+      res.json(draft);
+    } catch (error) {
+      console.error('Manual send newsletter error:', error);
+      res.status(500).json({ error: 'Failed to mark newsletter as sent' });
+    }
+  }
+);
+
 // POST /:id/send — Publish to Beehiiv and mark as SENT
 router.post(
   '/:id/send',
