@@ -340,15 +340,12 @@ const TimelineEntry: React.FC<TimelineEntryProps> = ({
   onPublish,
   onDownloadImage,
 }) => {
-  const platformInfo = post.platform
-    ? PLATFORM_ICONS[post.platform]
-    : post.platforms?.[0]
-      ? PLATFORM_ICONS[post.platforms[0]]
-      : null;
+  const primaryPlatform = post.platforms?.[0];
+  const platformInfo = primaryPlatform ? PLATFORM_ICONS[primaryPlatform] : null;
 
   const statusBadge = STATUS_BADGES[post.localStatus];
   const isActionable = post.localStatus === 'queued' || post.localStatus === 'scheduled';
-  const platformLabel = post.platform || post.platforms?.[0] || 'unknown';
+  const platformLabel = primaryPlatform || 'unknown';
   const imageUrl = getImageUrl(post.imageUrl || undefined);
 
   return (
