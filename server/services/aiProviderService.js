@@ -25,6 +25,7 @@ const DEFAULT_TASK_CONFIGS = {
   'newsletter-image':      { provider: 'gemini', model: 'gemini-2.5-flash-image', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.5-flash-image' },
   'newsletter-roundup':    { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
   'relevance-scoring':     { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
+  'hot-take-suggestions':  { provider: 'openai', model: 'gpt-4o-mini', fallbackProvider: 'gemini', fallbackModel: 'gemini-2.0-flash' },
 };
 
 // Lazy-initialised provider instances (one per provider name)

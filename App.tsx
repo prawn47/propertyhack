@@ -59,6 +59,7 @@ import HenryPage from './components/henry/HenryPage';
 import AiModelConfig from './components/admin/AiModelConfig';
 import AgentApiKeys from './components/admin/AgentApiKeys';
 import AgentAuditLog from './components/admin/AgentAuditLog';
+import DailyWizard from './components/admin/daily/DailyWizard';
 import AdminFloatingButton from './components/shared/AdminFloatingButton';
 import ProfileLayout from './components/layout/ProfileLayout';
 
@@ -389,6 +390,14 @@ function AppInner() {
         }
       />
 
+      <Route
+        path="/admin/daily"
+        element={
+          <RequireAdmin>
+            <AdminPage onLogout={handleLogout}><DailyWizard /></AdminPage>
+          </RequireAdmin>
+        }
+      />
       <Route
         path="/admin/agent-keys"
         element={

@@ -214,6 +214,20 @@ function generateSlug(title) {
     .substring(0, 80);
 }
 
+function generateDescriptiveFilename(market, slug, date) {
+  const m = (market || 'au').toLowerCase();
+  const s = generateSlug(slug || 'untitled');
+  const d = date instanceof Date
+    ? date.toISOString().slice(0, 10)
+    : typeof date === 'string' ? date.slice(0, 10) : new Date().toISOString().slice(0, 10);
+  return `propertyhack-article-${m}-${s}-${d}`;
+}
+
+function generateImageAltText(title, category) {
+  const cat = category ? ` - ${category.replace(/-/g, ' ')}` : '';
+  return `Property news: ${title}${cat}`;
+}
+
 const FALLBACK_QUOTES = [
   '/images/fallbacks/quote-1.svg',
   '/images/fallbacks/quote-2.svg',
@@ -258,9 +272,17 @@ async function generateArticleImage(title, shortBlurb, category, slug, market = 
   const rawSlug = slug || generateSlug(title);
   const fileSlug = rawSlug.replace(/-[a-z0-9]{5}$/, '');
   const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
-  
-  // Add market prefix to filename: {market}-{slug}.png
-  let filename = `${market.toLowerCase()}-${fileSlug}.${ext}`;
+
+  // Use descriptive filename with date, falling back to legacy pattern
+  const altText = generateImageAltText(title, category);
+  let filename;
+  try {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    filename = `${generateDescriptiveFilename(market, fileSlug, dateStr)}.${ext}`;
+  } catch {
+    // Fallback to legacy pattern: {market}-{slug}.{ext}
+    filename = `${market.toLowerCase()}-${fileSlug}.${ext}`;
+  }
   let filePath = path.join(IMAGES_DIR, filename);
 
   // Collision prevention: if file exists and is owned by a different article, add a hash suffix
@@ -304,11 +326,22 @@ async function generateArticleImage(title, shortBlurb, category, slug, market = 
     // TODO: Update this URL once R2 custom domain is configured
     // Use the SITE_URL + /images/ path, or the R2 public URL
     const siteUrl = process.env.SITE_URL || 'https://propertyhack.com';
+
+    // Set alt text on article record if we have an articleId
+    if (articleId) {
+      try {
+        await prisma.article.update({ where: { id: articleId }, data: { imageAltText: altText } });
+      } catch (e) {
+        console.warn(`[imageGen] Could not set imageAltText on article ${articleId}: ${e.message}`);
+      }
+    }
+
     return {
       imageData,
       mimeType,
       filename,
       publicPath: `/images/articles/${filename}`,
+      altText,
       // r2Url can be used if serving directly from R2 with custom domain:
       // r2Url: `https://images.propertyhack.com/articles/${filename}`,
     };
@@ -322,11 +355,21 @@ async function generateArticleImage(title, shortBlurb, category, slug, market = 
       throw new Error(`Failed to save image: ${err.message}`);
     }
 
+    // Set alt text on article record if we have an articleId
+    if (articleId) {
+      try {
+        await prisma.article.update({ where: { id: articleId }, data: { imageAltText: altText } });
+      } catch (e) {
+        console.warn(`[imageGen] Could not set imageAltText on article ${articleId}: ${e.message}`);
+      }
+    }
+
     return {
       imageData,
       mimeType,
       filename,
       publicPath: `/images/articles/${filename}`,
+      altText,
     };
   }
 }
@@ -334,4 +377,7 @@ async function generateArticleImage(title, shortBlurb, category, slug, market = 
 module.exports = {
   generateArticleImage,
   buildImagePrompt,
+  generateDescriptiveFilename,
+  generateImageAltText,
+  generateSlug,
 };
