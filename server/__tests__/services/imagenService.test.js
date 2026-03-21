@@ -88,23 +88,56 @@ describe('imagenService', () => {
   });
 
   describe('generateHeroImage', () => {
-    it('orchestrates the full flow', async () => {
+    it('orchestrates the full flow and returns url + altText', async () => {
       const imageBuffer = Buffer.from('hero-image');
       mockGenerateImage.mockResolvedValue({ imageData: imageBuffer, mimeType: 'image/png' });
 
-      const url = await imagenService.generateHeroImage('nl-1', 'Big News Today', 'Housing market update');
+      const result = await imagenService.generateHeroImage('nl-1', 'Big News Today', 'Housing market update');
 
       expect(mockGenerateImage).toHaveBeenCalled();
       expect(mockWriteFile).toHaveBeenCalled();
-      expect(url).toBe('/images/newsletters/nl-1.png');
+      expect(result.url).toMatch(/^\/images\/newsletters\/propertyhack-newsletter-.*\.png$/);
+      expect(result.altText).toBe('PropertyHack newsletter hero image: Big News Today');
     });
 
-    it('returns null on error', async () => {
+    it('uses jurisdiction in filename when provided', async () => {
+      const imageBuffer = Buffer.from('hero-image');
+      mockGenerateImage.mockResolvedValue({ imageData: imageBuffer, mimeType: 'image/png' });
+
+      const result = await imagenService.generateHeroImage('nl-1', 'UK Housing', 'Theme', { jurisdiction: 'UK' });
+
+      expect(result.url).toContain('propertyhack-newsletter-uk-');
+    });
+
+    it('returns null url on error', async () => {
       mockGenerateImage.mockRejectedValue(new Error('AI service unavailable'));
 
-      const url = await imagenService.generateHeroImage('nl-2', 'Subject', 'Theme');
+      const result = await imagenService.generateHeroImage('nl-2', 'Subject', 'Theme');
 
-      expect(url).toBeNull();
+      expect(result.url).toBeNull();
+      expect(result.altText).toBe('PropertyHack newsletter hero image: Subject');
+    });
+  });
+
+  describe('generateNewsletterFilename', () => {
+    it('creates descriptive filename', () => {
+      const filename = imagenService.generateNewsletterFilename('AU', '2026-03-21');
+      expect(filename).toBe('propertyhack-newsletter-au-2026-03-21-hero');
+    });
+
+    it('defaults to au when no jurisdiction', () => {
+      const filename = imagenService.generateNewsletterFilename(null, '2026-01-01');
+      expect(filename).toBe('propertyhack-newsletter-au-2026-01-01-hero');
+    });
+  });
+
+  describe('generateNewsletterAltText', () => {
+    it('creates alt text from subject', () => {
+      expect(imagenService.generateNewsletterAltText('Big News')).toBe('PropertyHack newsletter hero image: Big News');
+    });
+
+    it('handles missing subject', () => {
+      expect(imagenService.generateNewsletterAltText(null)).toBe('PropertyHack newsletter hero image: latest edition');
     });
   });
 });

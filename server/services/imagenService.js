@@ -49,17 +49,30 @@ async function saveImage(imageData, filename) {
   return `/images/newsletters/${filename}.png`;
 }
 
+function generateNewsletterFilename(jurisdiction, date) {
+  const j = (jurisdiction || 'au').toLowerCase();
+  const d = date instanceof Date
+    ? date.toISOString().slice(0, 10)
+    : typeof date === 'string' ? date.slice(0, 10) : new Date().toISOString().slice(0, 10);
+  return `propertyhack-newsletter-${j}-${d}-hero`;
+}
+
+function generateNewsletterAltText(subject) {
+  return `PropertyHack newsletter hero image: ${subject || 'latest edition'}`;
+}
+
 /**
  * Orchestrator: generate and save a hero image for a newsletter draft.
  * Loads an optional prompt template from SystemPrompt, interpolates subject/theme,
  * generates the image, and saves it.
  *
- * @param {string} newsletterId - Used as the filename
+ * @param {string} newsletterId - Used as fallback filename
  * @param {string} subject - Newsletter subject line
  * @param {string} themeText - Theme or topic description
- * @returns {Promise<string|null>} URL path or null on failure
+ * @param {object} [options] - Optional: { jurisdiction }
+ * @returns {Promise<{url: string|null, altText: string}>} URL path and alt text
  */
-async function generateHeroImage(newsletterId, subject, themeText) {
+async function generateHeroImage(newsletterId, subject, themeText, options = {}) {
   try {
     let prompt = `${subject}. ${themeText}`;
 
@@ -79,12 +92,21 @@ async function generateHeroImage(newsletterId, subject, themeText) {
       // No template found — use default prompt
     }
 
+    // Use descriptive filename, fall back to newsletterId
+    let filename;
+    try {
+      filename = generateNewsletterFilename(options.jurisdiction, new Date());
+    } catch {
+      filename = newsletterId;
+    }
+
     const { imageData } = await generateNewsletterImage(prompt);
-    const urlPath = await saveImage(imageData, newsletterId);
-    return urlPath;
+    const urlPath = await saveImage(imageData, filename);
+    const altText = generateNewsletterAltText(subject);
+    return { url: urlPath, altText };
   } catch (err) {
     console.warn(`[imagenService] Failed to generate hero image for newsletter ${newsletterId}: ${err.message}`);
-    return null;
+    return { url: null, altText: generateNewsletterAltText(subject) };
   }
 }
 
@@ -92,4 +114,6 @@ module.exports = {
   generateNewsletterImage,
   saveImage,
   generateHeroImage,
+  generateNewsletterFilename,
+  generateNewsletterAltText,
 };

@@ -497,11 +497,19 @@ async function generateNewsletter(jurisdiction, cadence = 'DAILY') {
 
   // Hero image — try AI generation, fallback to first article image, or skip
   let heroImageUrl = null;
+  let heroImageAltText = null;
   const firstSectionText = sections[0]?.html || '';
   try {
-    heroImageUrl = await imagenService.generateHeroImage(draft.id, subject, firstSectionText);
+    const heroResult = await imagenService.generateHeroImage(draft.id, subject, firstSectionText, { jurisdiction });
+    if (heroResult && typeof heroResult === 'object') {
+      heroImageUrl = heroResult.url;
+      heroImageAltText = heroResult.altText;
+    } else {
+      // Backwards compat: if string returned (shouldn't happen, but safe)
+      heroImageUrl = heroResult;
+    }
   } catch (_err) {
-    // generateHeroImage returns null on failure, but catch just in case
+    // generateHeroImage returns {url: null} on failure, but catch just in case
   }
 
   if (!heroImageUrl && allArticles.length > 0) {
